@@ -53,6 +53,18 @@ jobs:
           cargo metadata --locked --no-deps --format-version 1 > metadata-second.json
           diff -u metadata-first.json metadata-second.json
 
+  numerical-prototype:
+    name: Fixed-point scale experiment reproducibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Recompute exact rational scale results
+        run: |
+          python3 experiments/fixed-point-scale.py > fixed-point-scale-generated.json
+          diff -u experiments/fixed-point-scale-results.json fixed-point-scale-generated.json
+
   quality-gate-probe:
     name: Verify quality gate rejects unwrap
     runs-on: ubuntu-latest
