@@ -34,3 +34,16 @@ Validate:
 ## Acceptance
 
 Reject any backend that requires converting all text to outlines or cannot prove logical Unicode extraction. Selection requires both visual and text-extraction evidence, pinned library version and cross-platform build tests.
+
+## Research snapshot — 2026-11-01
+
+- `printpdf 0.12.8` documents embedded fonts, Unicode text output, automatic font subsetting, and advanced text operations. Its own documentation labels text extraction as experimental. This is useful functionality but does not by itself prove correct Type0/CID mapping and ToUnicode behavior for Hebrew niqqud and shaped glyph clusters.
+- `lopdf 0.46.0` is a lower-level PDF object manipulation library. It can support a custom writer, but a correct Type0 font dictionary, CIDFont, widths, CIDToGIDMap, ToUnicode CMap and subset remapping would remain our responsibility.
+- A dedicated font/PDF crate exposes ToUnicode parsing and subsetting capabilities, but its suitability for PDF *writing* and the exact Type0 mapping still needs a direct prototype.
+
+Sources:
+- https://docs.rs/crate/printpdf/latest
+- https://docs.rs/lopdf/latest/lopdf/
+- https://docs.rs/prismpdf-fonts/latest/pdf_fonts/
+
+**Current result:** no backend selected. The acceptance test remains independent text extraction of Hebrew+niqqud from a real Type0 subset, followed by logical-order comparison and raster comparison against the DisplayList.
