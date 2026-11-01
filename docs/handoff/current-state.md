@@ -19,8 +19,8 @@
 
 ## מצב Git ובדיקות אחרונות
 
-- תיקון rustfmt נמצא ב-commit `dd4d33e172f816bdf2fdbb8e70ab53195821a2e2`; מסמכי המעקב עודכנו לאחר מכן.
-- [Rust CI 41360259748](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360259748) עבר על commit `3c8387f894c3c5bbd429ee98f88f42c9b78364d3`, event מסוג push, conclusion=`success`. כל חמשת ה-jobs עברו: שלושת Quality jobs (Ubuntu/macOS/Windows), fixed-point reproducibility ו-negative unwrap quality gate. בכל שלוש הפלטפורמות עברו Formatting, Clippy, unit/integration tests, doc tests, release build ו-repeat clean build + metadata comparison.
+- תיקון rustfmt נמצא ב-commit `dd4d33e172f816bdf2fdbb8e70ab53195821a2e2`; לאחריו עודכנו מסמכי המעקב ב-commits `6810658c428c77e007d1667ef9c91ba2eff68d74` (worklog), `3152c7430e396bedbf09c99ac338e16b594d1605` (תוכנית 100 המשימות), `a173f38b1779ffe165776c21a7771468fccea135` (handoff) ו-commit התיקון הנוכחי של ledger.
+- [Rust CI 41360259748](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360259748) עבר על commit `3c8387f894c3c5bbd429ee98f88f42c9b78364d3`, event מסוג push, conclusion=`success`. זהו commit הקוד האחרון שנבדק; commits התיעוד המאוחרים יותר דורשים CI על HEAD העדכני. כל חמשת ה-jobs עברו: שלושת Quality jobs (Ubuntu/macOS/Windows), fixed-point reproducibility ו-negative unwrap quality gate. בכל שלוש הפלטפורמות עברו Formatting, Clippy, unit/integration tests, doc tests, release build ו-repeat clean build + metadata comparison.
 - [Manifest scan 41355862823](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823) עבר בעבר: 6 sources, 18,854 records, 35,356 resolved local edges, 413 unresolved local edges, 5,423 external references; שתי סריקות byte-identical. [Artifact](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823/artifacts/13103227452). 413 unresolved edges עדיין לא סווגו סופית.
 - [Manifest scan חדש 41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733), על commit `dd4d33e172f816bdf2fdbb8e70ab53195821a2e2`: כל ששת ה-checkouts ואימות commits עברו; יצירת manifest כפולה עדיין in progress בזמן עדכון זה. אין עדיין artifact או מסקנה חדשה.
 - [Legacy runner 41356048158](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41356048158), על target commit `8ccd6611c19a87abf5e7934c9eb6b92eb992362a`: checkout, התקנת Node/dependencies/Chromium ו-offline smoke עברו; Orange V23 full-book corpus מול baseline עדיין in progress. ה-workflow נבדק ומוגדר עם concurrency group ייחודית לכל commit ו-`cancel-in-progress: false`; אין לבטל אותו. אין עדיין report מלא או artifacts.
@@ -52,7 +52,7 @@
 
 1. לבדוק את סיום [Manifest scan 41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733), להוריד את ה-artifact ולבצע audit על כל unresolved edges. אין לסגור provenance או manifest לפני triage.
 2. להמשיך לעקוב אחרי [Legacy runner 41356048158](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41356048158) עד סיום full-book corpus; לבדוק report, DOM, geometry, ledger ו-provenance artifacts מול baseline המוצמד. אין לשנות baseline/tolerance ואין לבטל את הריצה.
-3. לבדוק את Rust CI החדש שנוצר בעקבות עדכון מסמכי המעקב; אין להניח שהוא עבר עד לקבלת conclusion=success.
+3. לבדוק את [Rust CI 41360514316](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360514316) שנוצר על HEAD התיעודי; אין להניח שהוא עבר עד לקבלת conclusion=success.
 4. להשלים provenance, source-of-truth matrix, scanner, manifest ו-parity matrix רק אחרי ראיות עדכניות ו-triage.
 5. להשלים ניסויי fixed-point, shaping/bidi, Tauri ו-PDF ולתעד במפורש מה עבר ומה עדיין חסר.
 6. משימות 1–2 בלבד סגורות; שלב א נשאר פתוח. אין להתחיל משימה 11 לפני שכל שערי שלב א נסגרו במפורש.
