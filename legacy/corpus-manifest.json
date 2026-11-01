@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Pinned legacy corpus references. Source files remain in their read-only repositories; this manifest prevents accidental substitution or cross-profile baseline mixing.",
+  "hashes": {
+    "gitBlobSha1": "Git object identifier for exact repository blob",
+    "sha256": "SHA-256 over exact UTF-8 bytes of the pinned source file"
+  },
+  "profiles": [
+    {
+      "profile": "legacy-orange-v23",
+      "repository": "SUGINACH/Tora_Book_Typesetter_Orange",
+      "commit": "0b0ee279464a3db14672cd3f4051275aba5985da",
+      "input": {
+        "path": "very_long_test_text.txt",
+        "gitBlobSha1": "6f4d8e2d88eb065b01e00a51eec45c939e1aa6b3",
+        "sha256": "5e73b913f9843fce695d0e4073c176961b8dbc2fa87e8e4c3d99051a826ce0e4",
+        "bytes": 3424454
+      },
+      "additionalFixtures": [
+        {
+          "path": "tests/fixtures/geometry-audit-smoke.txt",
+          "gitBlobSha1": "ab5e1807b162b6157fddcd1294adeefda8f1f28e",
+          "sha256": "1aec6688976243118051068752d72acc85b8830fdc0a0be96bd133c2b018276c"
+        },
+        {
+          "path": "fixtures/base_very_long_test_text.txt",
+          "gitBlobSha1": "e083e254321531603f338295b20460b3affb8a03",
+          "bytes": 3387848,
+          "sha256": null,
+          "note": "Git blob pinned; SHA-256 deferred until task-7 scanner runs against the complete checkout."
+        },
+        {
+          "path": "fixtures/ch63_final_paragraph_failure_case.txt",
+          "gitBlobSha1": "1cdc9865d7027c03ea89916f206b3c5be1fd9c3f",
+          "bytes": 28668,
+          "sha256": null,
+          "note": "Git blob pinned; SHA-256 deferred until task-7 scanner runs against the complete checkout."
+        }
+      ],
+      "configuration": {
+        "path": "default_settings.json",
+        "gitBlobSha1": "9eb93203c2b87c46932ba932482ba5a39b806d03",
+        "sha256": "5c78a49ca2b205f0a846e6f87a1058b4a61595967b472bda65ac7412f13f5b3f"
+      },
+      "presets": [
+        {"path":"setting_sets/פרשנות.json","gitBlobSha1":"2f92a7002f3a9ef64e7e6592fb848ddf077bbe83","sha256":"f7705745c20b449871b7d4ac73ff32707d8ae1366454fb0e7aa85a84ac42f9ce"},
+        {"path":"setting_sets/קונטרס.json","gitBlobSha1":"c56c30f4f3d3c0f46411bba8760fa37a4ad5645a","sha256":"567461b08a9b184967525301183c2db928907d126056f26f0a7d13258a536d07"},
+        {"path":"setting_sets/תלמוד.json","gitBlobSha1":"bb99eb2cc8d59edce7a18c8f92a5597627217d93","sha256":"d27ae1d52e85dadf42109103b75ab856ac8f2966d7c716509c7302ece0a5b8d1"}
+      ],
+      "fontEnvironment": {
+        "fontCssPath": "selfhost-fonts/google-fonts-selfhost.css",
+        "fontCssSha256": "eec01e2b2a65ab67ad959625dd7b3640dceeb09a5cee8b7677787a1e89acd229",
+        "playwright": "1.55.0",
+        "chromium": "140.0.7339.0",
+        "network": "offline-enforced in the pinned geometry-audit CLI",
+        "viewport": null,
+        "fingerprintCompleteness": "partial: viewport and per-font binary inventory are not part of the historical baseline record"
+      },
+      "baseline": {
+        "path": "expected_baseline.json",
+        "gitBlobSha1": "5eda82c5d02c29ce1bd107b1c93b9a9b70df84cc",
+        "sha256": "9a5692bd109b6ba8d572e83daf71fc3663c32eff3210cc330fb17e60f1c037df",
+        "classification": "measured Orange default-config baseline; reproducibility runner must remeasure it before parity acceptance",
+        "metrics": {"pages":639,"issues":39,"high":0,"medium":11,"low":28,"decisionLedger":"857/857"},
+        "baselineFingerprint": "known-input-config-fonts-browser-playwright-and-commit; viewport is not pinned"
+      },
+      "nonBaselineHistoricalReference": {
+        "profile": "legacy-green-v23",
+        "sourceCommit": "0ddaf89010e84e9e999c0e1faef2888994393915",
+        "metrics": {"pages":639,"issues":40,"high":0,"medium":12,"low":28,"decisionLedger":"858/858"},
+        "classification": "historical comparison embedded in Orange expected_baseline.json; do not merge into Orange baseline"
+      },
+      "notAcceptedAsMeasuredBaseline": {
+        "ornamentConfig": {"pages":659,"issues":56,"high":0,"medium":21,"low":35},
+        "reason": "expected_baseline.json explicitly says these ornament metrics came from Green documentation and were NOT reproduced in the Orange lab."
+      }
+    },
+    {
+      "profile": "legacy-green-v23",
+      "repository": "SUGINACH/Tora_Book_Typesetter_Green",
+      "commit": "e5cde5f194d0d9e9b20fdaa2a742f9bf6e8aec53",
+      "input": {
+        "path": "text_files_for_typesetter_tests/very_long_test_text.txt",
+        "gitBlobSha1": "19b9dcd65daa90d57c02cd90b8637be3b1596985",
+        "sha256": "fdaf3fe024ffff3f547c0fe8ce27c2da287715c911cbe2000338d19f1438c282",
+        "bytes": 3418753
+      },
+      "configuration": {"path":"default_settings.json","gitBlobSha1":"12bb3fd10e682d326b02e64c37037b5af4423e2d","sha256":"cc03174d6d8df360813ee34a7718e2745364e5a5c8db21774ffa9c09dd8fb609"},
+      "presets": [
+        {"path":"setting_sets/פרשנות.json","gitBlobSha1":"2f92a7002f3a9ef64e7e6592fb848ddf077bbe83"},
+        {"path":"setting_sets/קונטרס.json","gitBlobSha1":"c56c30f4f3d3c0f46411bba8760fa37a4ad5645a"},
+        {"path":"setting_sets/תלמוד.json","gitBlobSha1":"bb99eb2cc8d59edce7a18c8f92a5597627217d93"}
+      ],
+      "baseline": null,
+      "baselineStatus": "no current-commit full-document baseline with complete input/config/environment fingerprint was verified; historical worklog measurements remain evidence only"
+    },
+    {
+      "profile": "legacy-gold-v21",
+      "repository": "SUGINACH/Tora_Book_Typesetter_Gold",
+      "commit": "a444d34ccad30fd5ed0d6fd3873adbe9c23cb7e0",
+      "input": {
+        "path": "text_files_for_typesetter_tests/very_long_test_text.txt",
+        "gitBlobSha1": "709f7246c62813f9f47e8add8adcfce0de7e057f",
+        "sha256": "7919f48b14779d3fb98fd19b62388b7b772e1f977c00229217dc481af5529419",
+        "bytes": 3386061
+      },
+      "configuration": {"path":"default_settings.json","gitBlobSha1":"779a7c733c48660fc4beecc827ba27949c0da8ba","sha256":"5ec4f40f41de5f1c8cbfcaa942b8703a0311cd30610c4346a22ab9f8d0efcc17"},
+      "presets": [
+        {"path":"setting_sets/פרשנות.json","gitBlobSha1":"2f92a7002f3a9ef64e7e6592fb848ddf077bbe83"},
+        {"path":"setting_sets/קונטרס.json","gitBlobSha1":"c56c30f4f3d3c0f46411bba8760fa37a4ad5645a"},
+        {"path":"setting_sets/תלמוד.json","gitBlobSha1":"bb99eb2cc8d59edce7a18c8f92a5597627217d93"}
+      ],
+      "baseline": null,
+      "baselineStatus": "README contains historical 79-chapter figures, not a complete long-input/config/environment baseline for this pinned commit"
+    },
+    {
+      "profile": "legacy-yellow-v10",
+      "repository": "SUGINACH/Tora_Book_Typesetter_Yellow",
+      "commit": "878535e12eb4aa7e3c4a72e0e79687082d8a6d3b",
+      "branchLabel": "V22",
+      "input": {
+        "path": "long_test_text.txt",
+        "gitBlobSha1": "48be1d3d90cc31ce2ed660b1cbcacbf7eb320ffc",
+        "sha256": "624f70cf78fd09ceb1342bc75ccec11c6dc99fc30bf341c99aafa4e1520f6e64",
+        "bytes": 2719578
+      },
+      "configuration": {"path":"default_settings.json","gitBlobSha1":"61f3922e45d1fedfc457a4e5e221199a9780e519","sha256":"ec5d8d98f5c24546605a35c32dca17c4ef8428d506d53aaa65f65cbf47d5dd68"},
+      "presets": [
+        {"path":"setting_sets/פרשנות.json","gitBlobSha1":"2f92a7002f3a9ef64e7e6592fb848ddf077bbe83"},
+        {"path":"setting_sets/קונטרס.json","gitBlobSha1":"c56c30f4f3d3c0f46411bba8760fa37a4ad5645a"},
+        {"path":"setting_sets/תלמוד.json","gitBlobSha1":"bb99eb2cc8d59edce7a18c8f92a5597627217d93"}
+      ],
+      "baseline": null,
+      "baselineStatus": "no complete baseline with input/config/environment identity was verified"
+    },
+    {
+      "profile": "legacy-imud-v20x",
+      "repository": "SUGINACH/IMUD_TORANI",
+      "commit": "6dd79d0ba224c169b0d19778ba181fc90edc8319",
+      "input": {
+        "path": "text_files_for_typesetter_tests/very_long_test_text.txt",
+        "gitBlobSha1": "709f7246c62813f9f47e8add8adcfce0de7e057f",
+        "sha256": "7919f48b14779d3fb98fd19b62388b7b772e1f977c00229217dc481af5529419",
+        "bytes": 3386061
+      },
+      "configuration": {"path":"default_settings.json","gitBlobSha1":"779a7c733c48660fc4beecc827ba27949c0da8ba","sha256":"5ec4f40f41de5f1c8cbfcaa942b8703a0311cd30610c4346a22ab9f8d0efcc17"},
+      "additionalPreset": {
+        "path":"presets/makom-bina-v20.5/default_settings.json",
+        "gitBlobSha1":"48612d30f3122ec176baed57b956f35393b53be0",
+        "sha256":"319af6a7838aad1487bab0448cf55ef94d63e6549b1a3c0bb1b046ebd6467979"
+      },
+      "historicalTestBaseline": {
+        "path":"tests/layout/baseline.json",
+        "gitBlobSha1":"306f2932c06efc9cfd65afcdb16381ca75c4d7bb",
+        "sha256":"66941228e3e4a4a64272bc87424387d08e1266a60c601deab9aa4b50f802d9fe",
+        "classification": "historical scenario baseline; contains page counts and zero reported issue counts but does not identify every scenario's input/config/font environment, so not a cross-profile parity baseline"
+      }
+    }
+  ],
+  "policy": [
+    "Never reuse an input from one profile with another profile's settings unless the fixture explicitly declares a cross-profile experiment.",
+    "A Git blob SHA-1 is retained as the repository's immutable object identity; SHA-256 is retained for content-addressed compatibility records.",
+    "Historical metrics without input/config/environment identity are not accepted as parity baselines.",
+    "The Orange ornament baseline in expected_baseline.json is documentary-only until reproduced locally by the pinned runner.",
+    "The legacy runner is a smoke oracle, not a complete corpus runner. Full corpus replay is a later stage."
+  ]
+}
