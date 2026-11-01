@@ -26,7 +26,7 @@ jobs:
   legacy-orange-smoke:
     name: Pinned Orange V23 / Chromium offline smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout Rust target
         uses: actions/checkout@v4
@@ -62,13 +62,22 @@ jobs:
           RUST_TARGET_COMMIT: ${{ github.sha }}
         run: node tools/legacy-runner/run.cjs
 
+      - name: Verify pinned Orange full-book corpus and compare historical baseline
+        env:
+          LEGACY_SOURCE_COMMIT: 0b0ee279464a3db14672cd3f4051275aba5985da
+          RUST_TARGET_COMMIT: ${{ github.sha }}
+        run: node tools/legacy-runner/run-long-corpus.cjs
+
       - name: Upload legacy DOM, geometry, ledger and provenance artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: legacy-orange-v23-renderer-smoke
+          name: legacy-orange-v23-renderer-smoke-and-long-corpus
           path: |
             artifacts/legacy-runner-manifest.json
+            artifacts/legacy-long-corpus-manifest.json
             legacy/orange/artifacts/rust-legacy-smoke-report.json
             legacy/orange/artifacts/rust-legacy-smoke-summary.md
+            legacy/orange/artifacts/rust-legacy-long-report.json
+            legacy/orange/artifacts/rust-legacy-long-summary.md
           if-no-files-found: warn
