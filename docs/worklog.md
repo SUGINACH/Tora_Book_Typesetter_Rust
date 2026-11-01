@@ -270,3 +270,11 @@
 - הריצות 41363221442/41363221527 על 2d2bede הוחלפו בריצות commit 99e4266; אין להשתמש בהן כראיית קבלה.
 - Legacy runner 41361263075 עדיין פעיל ב-full-corpus; smoke עבר ואין עדיין report/artifacts מלאים.
 - שלב א נשאר פתוח. אין להתחיל שלב ב עד CI ירוק, manifest diff מתוקן ו-full-corpus report מול baseline.
+
+
+### השלמת formatting של extractor — 2026-11-02
+
+- [Rust CI 41363244229](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363244229) עבר את שלבי ה-parser/compile עד שער Formatting, ונכשל רק משום ש-rustfmt דרש לפרוס assert_eq אחד למספר שורות. לא זוהה כשל לוגי בבדיקות, אך ה-CI אינו ירוק.
+- תיקון formatting בלבד ב-[commit 17c68ea](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/17c68ea72860798d5f1f31b2c02f9acca7a06a22). לא שונו תנאי resolver או התנהגות scanner.
+- [Rust CI 41363321746](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363321746) ו-[Manifest scan 41363321758](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363321758) הופעלו על 17c68ea והם queued/pending. אלה הריצות העדכניות לבדיקת הקוד.
+- [Manifest scan 41363244210](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363244210) על 99e4266 עדיין in progress בעת הבדיקה, אך אינו הריצה הקובעת לאחר commit formatting החדש.

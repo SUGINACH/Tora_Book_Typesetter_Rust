@@ -99,3 +99,10 @@
 - [Rust CI 41363244229](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363244229) ו-[Manifest 41363244210](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363244210) על commit 99e4266 queued/pending. יש להמתין לתוצאות אלה לפני שימוש ב-manifest החדש.
 - [Legacy runner 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין full-corpus in progress; אין report מלא.
 - שלב א פתוח; משימות 1–2 בלבד סגורות. אין לשנות baselines/tolerances ואין להתחיל שלב ב.
+
+
+## עדכון formatting — 2026-11-02
+
+- [CI 41363244229](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363244229) נכשל רק ב-rustfmt על assert_eq אחד; התיקון formatting-only ב-[commit 17c68ea](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/17c68ea72860798d5f1f31b2c02f9acca7a06a22).
+- [Rust CI 41363321746](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363321746) ו-[Manifest 41363321758](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363321758) queued/pending על 17c68ea; אין עדיין תוצאת קבלה.
+- Legacy runner 41361263075 נשאר full-corpus in progress; אין report מלא. שלב א נשאר פתוח.
