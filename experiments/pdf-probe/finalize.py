@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import platform
+import re
 import subprocess
 from pathlib import Path
 
@@ -37,7 +38,7 @@ def main() -> None:
         line for line in args.corpus.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
     pdf_bytes = args.pdf.read_bytes()
-    if b"/Subtype /Type0" not in pdf_bytes or b"/ToUnicode" not in pdf_bytes:
+    if not re.search(rb"/Subtype\\s*/Type0", pdf_bytes) or not re.search(rb"/ToUnicode\\b", pdf_bytes):
         raise SystemExit("PDF does not contain a Type0 font and ToUnicode CMap")
     if not raw_report.get("glyphToUnicodeMappings"):
         raise SystemExit("no glyph-to-Unicode mappings were written")
@@ -99,8 +100,10 @@ def main() -> None:
         "results": {
             "pdfSha256": sha256(args.pdf),
             "extractedTextSha256": sha256(extracted_path),
+            "layoutExtractedTextSha256": sha256(layout_extracted_path),
             "glyphToUnicodeMappingCount": raw_report.get("glyphToUnicodeMappings"),
             "logicalTextExtractionExact": True,
+            "rawAndLayoutExtractionExact": True,
             "type0FontPresent": True,
             "toUnicodeCMapPresent": True,
             "pdffonts": fonts,
