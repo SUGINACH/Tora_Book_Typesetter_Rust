@@ -80,8 +80,9 @@ def main() -> None:
             "nativeHarfBuzzComparedSampleCount": comparison.get("comparedSampleCount"),
             "nativeHarfBuzzExactParity": comparison.get("allExactMatches"),
             "limitations": [
-                "Mixed-direction samples are processed by unicode-bidi for levels and visual text, but are not yet segmented into shaping runs.",
-                "The probe does not yet compare glyph output against native HarfBuzz or test a second shaping engine.",
+                "Mixed-direction samples are processed by unicode-bidi for levels and visual text, but are not yet segmented into script/direction shaping runs.",
+                "Native HarfBuzz comparison covers pure Hebrew shaping samples only; it does not prove mixed-direction run segmentation or visual line reordering.",
+                "No second independent Rust shaping implementation has been compared.",
                 "The font's redistribution terms are pinned but still require project-level license review before bundling.",
             ],
         },
