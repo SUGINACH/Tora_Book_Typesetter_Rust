@@ -1253,9 +1253,10 @@ fn sha256(input: &[u8]) -> [u8; 32] {
 mod tests {
     use super::{
         apply_runner_evidence_rows, classify, extract_asset_dependencies, hex, json_string,
-        normalize_asset_reference, ownership_for, parse_runner_evidence_line, sha256, status_for,
-        FileRecord, SourceSpec,
+        normalize_asset_reference, ownership_for, parse_runner_evidence_line,
+        resolve_local_asset_path, sha256, status_for, FileRecord, SourceSpec,
     };
+    use std::collections::BTreeSet;
     use std::path::PathBuf;
 
     #[test]
@@ -1389,6 +1390,51 @@ mod tests {
         let bad_row = row.replace(&"a".repeat(64), &"b".repeat(64));
         assert!(apply_runner_evidence_rows(&mut mismatched, &bad_row).is_err());
         assert_eq!(mismatched[0].status, "historical-only");
+    }
+
+    #[test]
+    fn font_catalog_basenames_resolve_to_unique_profile_font_paths() {
+        let paths = BTreeSet::from(["fonts/Abir-Black.woff2".to_string()]);
+        assert_eq!(
+            resolve_local_asset_path("Abir-Black.woff2", &paths).as_deref(),
+            Some("fonts/Abir-Black.woff2")
+        );
+    }
+
+    #[test]
+    fn ambiguous_bare_asset_names_are_not_guessed() {
+        let paths = BTreeSet::from([
+            "fonts/logo.svg".to_string(),
+            "assets/logo.svg".to_string(),
+        ]);
+        assert_eq!(resolve_local_asset_path("logo.svg", &paths), None);
+    }
+
+    #[test]
+    fn dynamic_and_non_path_strings_are_not_static_asset_edges() {
+        assert_eq!(
+            normalize_asset_reference("app.js", "fonts/${encodeURIComponent(font.file)}"),
+            None
+        );
+        assert_eq!(normalize_asset_reference("app.js", "a.href"), None);
+        assert_eq!(
+            normalize_asset_reference("app.js", "מתוך ornaments_left_right.json"),
+            None
+        );
+        assert_eq!(
+            normalize_asset_reference("app.js", "Abir-Black.woff2").as_deref(),
+            Some("local:Abir-Black.woff2")
+        );
+    }
+
+    #[test]
+    fn generated_report_outputs_do_not_become_runtime_asset_edges() {
+        let dependencies = extract_asset_dependencies(
+            "reports/run-1/layout-issue-screenshot-manifest.json",
+            "data",
+            br#"{"reportPdf":"artifacts/report.pdf"}"#,
+        );
+        assert!(dependencies.is_empty());
     }
 
     #[test]
