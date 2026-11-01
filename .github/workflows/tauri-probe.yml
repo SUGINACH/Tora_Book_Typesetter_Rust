@@ -27,6 +27,8 @@ jobs:
     name: Windows Tauri 2 build and IPC tests
     runs-on: windows-latest
     timeout-minutes: 45
+    env:
+      CARGO_TARGET_DIR: target/tauri-probe
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,5 +70,5 @@ jobs:
             experiments/tauri-probe/Cargo.lock
             artifacts-tauri-dependency-tree.txt
             artifacts-tauri-metadata.json
-            target/release/tauri-probe.exe
+            target/tauri-probe/release/tauri-probe.exe
           if-no-files-found: warn
