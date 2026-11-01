@@ -19,9 +19,10 @@
 
 ## מצב Git ובדיקות אחרונות
 
-- commit אחרון לפני יצירת קובץ זה: `6a2afeaf49a764bcdb79af63739a3dca524833bb`.
-- [Rust CI 41355862773](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862773) נפתח אחרי תיקוני syntax ו-rustfmt; היה בתהליך בעת כתיבת העדכון.
-- [Manifest scan 41355862823](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823) נפתח על אותו commit; היה pending/in progress בעת כתיבת העדכון.
+- commit אחרון לפני תיקון formatting ועדכון מסמכי המעקב: `6a2afeaf49a764bcdb79af63739a3dca524833bb`.
+- תיקון rustfmt הועלה ב-commit `dd4d33e172f816bdf2fdbb8e70ab53195821a2e2`; מסמכי המעקב מתעדכנים לאחריו.
+- [Rust CI 41355862773](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862773) הסתיים בכשל Formatting בשלוש הפלטפורמות. log של macOS מצביע על סטיית rustfmt יחידה בלולאת `resolved_asset_dependencies` ב-`xtask/src/main.rs`; יתר שלבי Quality דולגו.
+- [Manifest scan 41355862823](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823) עבר: 6 sources, 18,854 records, 35,356 resolved local edges, 413 unresolved local edges, 5,423 external references; שתי סריקות byte-identical. [Artifact](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823/artifacts/13103227452).
 - הכשל ב-`e2b8a1d...` נגרם מבלוק `if` לא סגור ב-`normalize_asset_reference`. תוקן ב-`e8aac03...`.
 - לאחר מכן rustfmt הצביע על שתי סטיות ב-`xtask/src/main.rs`; תוקנו ב-`6a2afea...`.
 - [Manifest scan קודם 41349723140](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41349723140) עבר, אך קדם להרחבת סריקת asset dependencies. לכן הוא אינו סוגר את ה-manifest הנוכחי.
