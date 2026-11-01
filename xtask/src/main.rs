@@ -1079,7 +1079,10 @@ fn json_string(value: &str) -> String {
             '\\' => output.push_str("\\\\"),
             '\n' => output.push_str("\\n"),
             '\r' => output.push_str("\\r"),
-            '\t' => output.push_str("\t"),
+            '\t' => {
+                output.push('\\');
+                output.push('t');
+            },
             character if character.is_control() => {
                 output.push_str(&format!("\\u{:04x}", character as u32));
             }
@@ -1247,7 +1250,9 @@ mod tests {
     fn runner_evidence_rows_require_exactly_eight_tab_separated_fields() {
         let valid =
             "legacy-orange-v23\tcommit\trunner\turl\toffline-smoke-tested\tfile.js\tsha\tloaded";
-        let fields = parse_runner_evidence_line(valid).expect("valid row should parse");
+        let fields = parse_runner_evidence_line(valid);
+        assert!(fields.is_some(), "valid runner evidence row should parse");
+        let fields = fields.unwrap_or([""; 8]);
         assert_eq!(fields[0], "legacy-orange-v23");
         assert_eq!(fields[7], "loaded");
         assert!(parse_runner_evidence_line("only\ttwo").is_none());
