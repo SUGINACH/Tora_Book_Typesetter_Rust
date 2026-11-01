@@ -34,6 +34,12 @@ Inputs: A4 `595.276 × 841.89 pt`, line height `13.2 pt`, 1,000 repeated lines, 
 
 All three have zero final drift in this particular 1,000-line case when the cumulative exact position is rounded with residual carry. This demonstrates that a fine quantum alone does not prevent drift: the accumulation/rounding policy is equally important. `1/65536 pt` exactly represents a legacy `1/64 CSS px` quantum (768 ticks), but this is not yet a production selection.
 
+## Reproducibility evidence — 2026-11-01
+
+The exact-rational scale calculation was rerun in GitHub Actions as part of [Rust CI run 41347908551](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41347908551) and passed. The committed JSON result is `experiments/fixed-point-scale-results.json`.
+
+This confirms reproducibility of the comparison only. It does **not** complete the required property tests for signed conversions, percentage/font-unit conversions, tie cases, checked overflow or real font/page geometry. No production scale is selected by this result.
+
 ## Required follow-up experiment
 
 Build property tests and arithmetic prototypes for:
