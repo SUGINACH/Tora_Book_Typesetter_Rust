@@ -746,14 +746,12 @@ fn normalize_asset_reference(source_path: &str, value: &str) -> Option<String> {
     {
         return Some(format!("external:{value}"));
     }
-    if value.contains("\${")
+    if (value.contains('$') && value.contains('{'))
         || value.contains('}')
         || value.contains(" + ")
         || (value.chars().any(char::is_whitespace) && !value.contains('/'))
         || !is_path_candidate(value)
     {
-        return None;
-    }
 
     let path_only = value
         .split(['?', '#'])
