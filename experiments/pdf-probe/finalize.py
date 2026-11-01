@@ -41,7 +41,9 @@ def main() -> None:
         raise SystemExit("PDF does not contain a Type0 font and ToUnicode CMap")
     if not raw_report.get("glyphToUnicodeMappings"):
         raise SystemExit("no glyph-to-Unicode mappings were written")
-    if raw_report.get("saveWarnings") not in ("[]", "[]"):
+    if raw_report.get("fontParseWarnings") != "[]":
+        raise SystemExit(f"printpdf font parse warnings: {raw_report.get('fontParseWarnings')}")
+    if raw_report.get("saveWarnings") != "[]":
         raise SystemExit(f"printpdf save warnings: {raw_report.get('saveWarnings')}")
 
     extracted_path = args.output.parent / "pdf-probe-extracted.txt"
