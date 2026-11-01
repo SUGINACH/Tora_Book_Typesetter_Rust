@@ -830,10 +830,7 @@ fn status_for(profile: &str, kind: &str) -> &'static str {
         "spec-only"
     } else if kind == "font" {
         "blocked-license"
-    } else if matches!(
-        kind,
-        "settings" | "data" | "asset" | "fixture" | "corpus"
-    ) {
+    } else if matches!(kind, "settings" | "data" | "asset" | "fixture" | "corpus") {
         "verified-data"
     } else {
         "historical-only"
@@ -1173,12 +1170,14 @@ mod tests {
         assert!(migration.contains("spec-only"));
     }
 
-
     #[test]
     fn fonts_remain_blocked_until_license_review() {
         assert_eq!(status_for("legacy-orange-v23", "font"), "blocked-license");
         assert_eq!(status_for("legacy-orange-v23", "asset"), "verified-data");
-        assert_eq!(status_for("requirements-docs", "documentation"), "spec-only");
+        assert_eq!(
+            status_for("requirements-docs", "documentation"),
+            "spec-only"
+        );
     }
 
     #[test]
