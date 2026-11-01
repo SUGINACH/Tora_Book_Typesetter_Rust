@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
@@ -27,6 +27,9 @@ struct FileRecord {
     owning_profile: String,
     status: String,
     parser_or_consumer: String,
+    asset_dependencies: Vec<String>,
+    unresolved_asset_dependencies: Vec<String>,
+    asset_dependency_status: String,
     parity_fixtures: Vec<String>,
     rust_owner: String,
     migration_rule: String,
@@ -108,6 +111,7 @@ fn run() -> Result<(), String> {
         })?;
     }
 
+    validate_asset_dependencies(&mut records);
     records.sort_by(|left, right| {
         (
             left.repository.as_str(),
@@ -221,6 +225,7 @@ fn scan_source(source: &SourceSpec, records: &mut Vec<FileRecord>) -> io::Result
         let (parser_or_consumer, rust_owner, migration_rule, parity_fixtures) =
             ownership_for(source, &source_path, &kind);
         let (test_ids, acceptance_criteria) = tests_for(source, &kind, &rust_owner);
+        let asset_dependencies = extract_asset_dependencies(&source_path, &kind, &bytes);
         let notes = match kind.as_str() {
             "font" => "Byte identity scanned; glyph coverage, font tables and redistribution license are not yet verified. Ownership is provisional.",
             "documentation" => "Documentation source; not proof of executable behavior. Converted to requirements/ADRs only after review.",
@@ -240,6 +245,9 @@ fn scan_source(source: &SourceSpec, records: &mut Vec<FileRecord>) -> io::Result
             owning_profile: source.profile.clone(),
             status: status.to_string(),
             parser_or_consumer,
+            asset_dependencies,
+            unresolved_asset_dependencies: Vec::new(),
+            asset_dependency_status: "pending-validation".to_string(),
             parity_fixtures,
             rust_owner,
             migration_rule,
@@ -471,6 +479,270 @@ fn tests_for(source: &SourceSpec, kind: &str, owner: &str) -> (Vec<String>, Stri
             vec!["SRC-PIN-HASH".to_string()],
             "Source identity is pinned; semantic ownership and migration remain historical-only until reviewed.".to_string(),
         ),
+    }
+}
+
+
+fn extract_asset_dependencies(source_path: &str, kind: &str, bytes: &[u8]) -> Vec<String> {
+    if !matches!(
+        kind,
+        "javascript" | "dom-contract" | "style" | "settings" | "data"
+    ) {
+        return Vec::new();
+    }
+    let text = String::from_utf8_lossy(bytes);
+    let mut dependencies = BTreeSet::new();
+
+    extract_url_functions(&text, &mut dependencies, source_path);
+    extract_attributes(
+        &text,
+        &[
+            "src=",
+            "href=",
+            "poster=",
+            "data-src=",
+            "xlink:href=",
+            "srcset=",
+        ],
+        &mut dependencies,
+        source_path,
+    );
+    if matches!(kind, "javascript" | "settings" | "data") {
+        for value in extract_quoted_strings(&text) {
+            if is_path_candidate(&value) {
+                if let Some(normalized) = normalize_asset_reference(source_path, &value) {
+                    dependencies.insert(normalized);
+                }
+            }
+        }
+    }
+    dependencies.into_iter().collect()
+}
+
+fn extract_url_functions(text: &str, output: &mut BTreeSet<String>, source_path: &str) {
+    let lower = text.to_ascii_lowercase();
+    let mut offset = 0usize;
+    while let Some(relative) = lower[offset..].find("url(") {
+        let start = offset + relative + 4;
+        let Some(end_relative) = text[start..].find(')') else {
+            break;
+        };
+        let end = start + end_relative;
+        let value = text[start..end]
+            .trim()
+            .trim_matches(|character| character == '"' || character == '\'');
+        if let Some(normalized) = normalize_asset_reference(source_path, value) {
+            output.insert(normalized);
+        }
+        offset = end + 1;
+    }
+}
+
+fn extract_attributes(
+    text: &str,
+    patterns: &[&str],
+    output: &mut BTreeSet<String>,
+    source_path: &str,
+) {
+    let lower = text.to_ascii_lowercase();
+    for pattern in patterns {
+        let mut offset = 0usize;
+        while let Some(relative) = lower[offset..].find(pattern) {
+            let value_start = offset + relative + pattern.len();
+            let mut value_end = value_start;
+            let bytes = text.as_bytes();
+            while value_end < bytes.len() && bytes[value_end].is_ascii_whitespace() {
+                value_end += 1;
+            }
+            if value_end >= bytes.len() {
+                break;
+            }
+            let quote = bytes[value_end];
+            let value = if quote == b'"' || quote == b'\'' {
+                value_end += 1;
+                let start = value_end;
+                while value_end < bytes.len() && bytes[value_end] != quote {
+                    value_end += 1;
+                }
+                let extracted = &text[start..value_end];
+                if value_end < bytes.len() {
+                    value_end += 1;
+                }
+                extracted
+            } else {
+                let start = value_end;
+                while value_end < bytes.len()
+                    && !bytes[value_end].is_ascii_whitespace()
+                    && bytes[value_end] != b'>'
+                {
+                    value_end += 1;
+                }
+                &text[start..value_end]
+            };
+
+            if *pattern == "srcset=" {
+                for candidate in value.split(',') {
+                    let url = candidate.split_whitespace().next().unwrap_or("");
+                    if let Some(normalized) = normalize_asset_reference(source_path, url) {
+                        output.insert(normalized);
+                    }
+                }
+            } else if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                output.insert(normalized);
+            }
+            offset = value_end.max(offset + relative + pattern.len());
+        }
+    }
+}
+
+fn extract_quoted_strings(text: &str) -> Vec<String> {
+    let bytes = text.as_bytes();
+    let mut values = Vec::new();
+    let mut index = 0usize;
+    while index < bytes.len() {
+        let quote = bytes[index];
+        if quote != b'"' && quote != b'\'' {
+            index += 1;
+            continue;
+        }
+        index += 1;
+        let start = index;
+        let mut escaped = false;
+        while index < bytes.len() {
+            let current = bytes[index];
+            if escaped {
+                escaped = false;
+            } else if current == b'\\' {
+                escaped = true;
+            } else if current == quote {
+                let value = text[start..index].replace("\\/", "/");
+                values.push(value);
+                index += 1;
+                break;
+            }
+            index += 1;
+        }
+    }
+    values
+}
+
+fn is_path_candidate(value: &str) -> bool {
+    let lower = value.to_ascii_lowercase();
+    lower.starts_with("./")
+        || lower.starts_with("../")
+        || lower.starts_with('/')
+        || lower.starts_with("//")
+        || lower.contains("://")
+        || [
+            "assets/",
+            "fonts/",
+            "images/",
+            "decorations/",
+            "presets/",
+            "backgrounds/",
+            "ornaments/",
+        ]
+        .iter()
+        .any(|prefix| lower.contains(prefix))
+        || [
+            ".css", ".js", ".mjs", ".cjs", ".json", ".svg", ".png", ".jpg", ".jpeg",
+            ".webp", ".ico", ".woff", ".woff2", ".ttf", ".otf", ".gif", ".avif",
+        ]
+        .iter()
+        .any(|extension| lower.ends_with(extension))
+}
+
+fn normalize_asset_reference(source_path: &str, value: &str) -> Option<String> {
+    let value = value.trim().trim_matches(|character| character == '"' || character == '\'');
+    if value.is_empty()
+        || value.starts_with('#')
+        || value.starts_with("data:")
+        || value.starts_with("blob:")
+        || value.starts_with("javascript:")
+        || value.starts_with("mailto:")
+    {
+        return None;
+    }
+    if value.starts_with("http://")
+        || value.starts_with("https://")
+        || value.starts_with("//")
+        || value.contains("://")
+    {
+        return Some(format!("external:{value}"));
+    }
+
+    let path_only = value
+        .split(|character| character == '?' || character == '#')
+        .next()
+        .unwrap_or("")
+        .replace('\\', "/");
+    if path_only.is_empty() {
+        return None;
+    }
+
+    let mut components = Vec::<String>::new();
+    if !path_only.starts_with('/') {
+        if let Some(parent) = Path::new(source_path).parent() {
+            for component in parent.to_string_lossy().split('/') {
+                if !component.is_empty() && component != "." {
+                    components.push(component.to_string());
+                }
+            }
+        }
+    }
+    for component in path_only.trim_start_matches('/').split('/') {
+        match component {
+            "" | "." => {}
+            ".." => {
+                if components.last().is_some_and(|last| last != "..") {
+                    components.pop();
+                } else {
+                    components.push("..".to_string());
+                }
+            }
+            value => components.push(value.to_string()),
+        }
+    }
+    if components.is_empty() {
+        None
+    } else {
+        Some(format!("local:{}", components.join("/")))
+    }
+}
+
+fn validate_asset_dependencies(records: &mut [FileRecord]) {
+    let mut paths_by_profile = BTreeMap::<String, BTreeSet<String>>::new();
+    for record in records.iter() {
+        paths_by_profile
+            .entry(record.owning_profile.clone())
+            .or_default()
+            .insert(record.source_path.clone());
+    }
+    for record in records.iter_mut() {
+        let Some(known_paths) = paths_by_profile.get(&record.owning_profile) else {
+            record.asset_dependency_status = "profile-path-index-missing".to_string();
+            continue;
+        };
+        record.unresolved_asset_dependencies = record
+            .asset_dependencies
+            .iter()
+            .filter_map(|dependency| dependency.strip_prefix("local:"))
+            .filter(|path| !known_paths.contains(*path))
+            .map(|path| format!("local:{path}"))
+            .collect();
+        let has_external = record
+            .asset_dependencies
+            .iter()
+            .any(|dependency| dependency.starts_with("external:"));
+        record.asset_dependency_status = if has_external {
+            "contains-external".to_string()
+        } else if !record.unresolved_asset_dependencies.is_empty() {
+            "unresolved-local".to_string()
+        } else if record.asset_dependencies.is_empty() {
+            "no-references-detected".to_string()
+        } else {
+            "all-local-resolved".to_string()
+        };
     }
 }
 
