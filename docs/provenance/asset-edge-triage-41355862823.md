@@ -17,7 +17,7 @@ Artifact: [legacy-compatibility-manifest.zip](https://github.com/SUGINACH/Tora_B
   - Yellow V10: 48
   - Green V23: 23
   - Gold V21: 10
-- סטטוס הרשומה: 290 רשומות/מקרים מסומנים `unresolved-local`, ו-123 מסומנים `contains-external`. זהו סטטוס ברמת הרשומה; הוא אינו אומר שכל edge ברשומה הוא external.
+- ברמת הרשומות שמכילות את ה-edges: 290 edges נמצאים ברשומות שסטטוסן `unresolved-local`, ו-123 edges נמצאים ברשומות שסטטוסן `contains-external`. זהו סטטוס ברמת הרשומה; הוא אינו אומר שכל edge ברשומה הוא external.
 
 ## 2. ממצא בקוד הסורק
 
