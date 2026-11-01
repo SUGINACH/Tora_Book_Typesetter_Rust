@@ -161,3 +161,32 @@
 2. להפעיל מחדש את legacy full-corpus workflow על אותו commit, בלי cancel-in-progress ובלי שינוי baseline/tolerance; לשמור report, DOM, geometry, ledger ו-provenance artifacts.
 3. לבדוק את כל 413 unresolved local edges לפי רשומות/פרופילים, ולסווג false positives לעומת תלות חסרה אמיתית. אין להמיר אותם ל-resolved ללא הוכחה.
 4. משימות 1–2 נשארות סגורות; שלב א נשאר פתוח. אין להתחיל שלב ב.
+
+
+## עדכון ביצוע — 2026-11-02, CI ירוק ובדיקות ארוכות פעילות
+
+### אימות Rust CI לאחר תיקון rustfmt
+
+- [Rust CI 41360259748](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360259748) הופעל על `main` ועל commit `3c8387f894c3c5bbd429ee98f88f42c9b78364d3`; הסתיים `success`.
+- כל ארבעת ה-jobs עברו: Quality / Ubuntu, Quality / macOS, Quality / Windows, Fixed-point scale experiment reproducibility ו-Verify quality gate rejects unwrap (סה״כ חמישה jobs; שלושת ה-platform jobs עברו את כל השלבים).
+- בכל שלוש הפלטפורמות עברו: pinned toolchain, Formatting, Clippy, unit/integration tests, documentation tests, release build ו-repeat clean build + workspace metadata comparison.
+- לכן תיקון rustfmt ב-`xtask/src/main.rs` מאומת. אין שינוי במימוש האלגוריתמי או ב-baselines.
+
+### ריצות ראיות שעדיין פעילות
+
+- [Legacy runner 41356048158](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41356048158), על commit יעד `8ccd6611c19a87abf5e7934c9eb6b92eb992362a`: checkout, התקנת dependencies ו-Chromium, ו-smoke renderer עברו; שלב Orange V23 full-book corpus מול baseline עדיין `in_progress`. ה-workflow משתמש בקבוצת concurrency ייחודית ל-commit וב-`cancel-in-progress: false`; אין לבטל אותו. עדיין אין report סופי או artifacts זמינים.
+- [Manifest scan 41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733), על commit `dd4d33e172f816bdf2fdbb8e70ab53195821a2e2`: כל ששת ה-checkouts ואימות commits עברו; יצירת manifest כפולה עדיין `in_progress`. אין להתייחס לסטטיסטיקות או ל-artifact כמאומתים עד לסיום.
+- [Manifest scan 41355862823](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823) נותרה ראיה קודמת תקפה ל-6 sources, 18,854 records, 35,356 resolved local edges, 413 unresolved local edges ו-5,423 external references, עם שתי סריקות byte-identical. 413 unresolved edges עדיין דורשים triage; אין לסווגם אוטומטית כ-false positives.
+
+### מסקנת שלב
+
+- משימות 1–2 סגורות; שער CI הרב-פלטפורמי עבר שוב על ה-HEAD המתועד.
+- משימות 3–9 אינן נסגרות עדיין: manifest עדכני ממתין, 413 unresolved edges דורשים triage, ו-full-corpus replay עדיין רץ.
+- משימה 10 נשארת בתהליך בגלל פערי shaping/bidi, Tauri WebView round-trip והיעדר PDF backend מאושר.
+- שלב א נשאר פתוח. אין להתחיל שלב ב ואין לטעון שמנוע עימוד production קיים.
+
+### הפעולה הבאה
+
+1. להמתין לסיום 41356048158 ו-41360202733 ולבדוק את כל ה-artifacts וה-reports, בלי לעצור את הריצות.
+2. לנתח את 413 unresolved local edges לפי source, profile, reference type ו-resolution reason; לתעד כל קטגוריה ורשומה בעייתית.
+3. לעדכן את מטריצת parity וה-checklist רק לאחר שהראיות תומכות בסגירה מפורשת.
