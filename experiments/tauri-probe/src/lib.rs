@@ -9,7 +9,7 @@ impl JobGate {
     pub fn accept(&self, generation: u64) -> bool {
         let mut current = self.current_generation.load(Ordering::SeqCst);
         loop {
-            if generation < current {
+            if generation <= current {
                 return false;
             }
             match self.current_generation.compare_exchange(
@@ -25,10 +25,17 @@ impl JobGate {
     }
 
     pub fn cancel(&self, generation: u64) -> bool {
-        let next_generation = generation.saturating_add(1);
+        let Some(next_generation) = generation.checked_add(1) else {
+            return false;
+        };
         self.current_generation
-            .fetch_max(next_generation, Ordering::SeqCst);
-        true
+            .compare_exchange(
+                generation,
+                next_generation,
+                Ordering::SeqCst,
+                Ordering::SeqCst,
+            )
+            .is_ok()
     }
 
     pub fn current_generation(&self) -> u64 {
@@ -46,6 +53,7 @@ mod tests {
         assert!(gate.accept(1));
         assert!(gate.accept(2));
         assert!(!gate.accept(1));
+        assert!(!gate.accept(2));
         assert_eq!(gate.current_generation(), 2);
     }
 
@@ -54,6 +62,7 @@ mod tests {
         let gate = JobGate::default();
         assert!(gate.accept(7));
         assert!(gate.cancel(7));
+        assert!(!gate.cancel(7));
         assert!(!gate.accept(7));
         assert!(gate.accept(8));
         assert_eq!(gate.current_generation(), 8);
