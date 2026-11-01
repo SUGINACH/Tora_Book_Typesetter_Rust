@@ -496,8 +496,15 @@ fn parse_runner_evidence_line(line: &str) -> Option<[&str; 8]> {
 
 fn apply_runner_evidence(records: &mut [FileRecord]) -> Result<(), String> {
     const EVIDENCE: &str = include_str!("../../legacy/runner-evidence.tsv");
+    apply_runner_evidence_rows(records, EVIDENCE)
+}
+
+fn apply_runner_evidence_rows(
+    records: &mut [FileRecord],
+    evidence: &str,
+) -> Result<(), String> {
     let mut applied_rows = 0usize;
-    for line in EVIDENCE.lines() {
+    for line in evidence.lines() {
         if line.trim().is_empty() || line.starts_with('#') {
             continue;
         }
@@ -1189,8 +1196,9 @@ fn sha256(input: &[u8]) -> [u8; 32] {
 #[cfg(test)]
 mod tests {
     use super::{
-        classify, extract_asset_dependencies, hex, json_string, normalize_asset_reference,
-        ownership_for, parse_runner_evidence_line, sha256, status_for, SourceSpec,
+        apply_runner_evidence_rows, classify, extract_asset_dependencies, hex, json_string,
+        normalize_asset_reference, ownership_for, parse_runner_evidence_line, sha256, status_for,
+        FileRecord, SourceSpec,
     };
     use std::path::PathBuf;
 
@@ -1256,6 +1264,51 @@ mod tests {
         assert_eq!(fields[0], "legacy-orange-v23");
         assert_eq!(fields[7], "loaded");
         assert!(parse_runner_evidence_line("only\ttwo").is_none());
+    }
+
+    fn runner_record() -> FileRecord {
+        FileRecord {
+            compat_id: "legacy-orange-v23:javascript:typesetter.js".to_string(),
+            kind: "javascript".to_string(),
+            repository: "SUGINACH/Tora_Book_Typesetter_Orange".to_string(),
+            commit: "0b0ee279464a3db14672cd3f4051275aba5985da".to_string(),
+            source_path: "typesetter.js".to_string(),
+            source_sha256: "a".repeat(64),
+            external_identifier: "typesetter.js".to_string(),
+            legacy_name: "typesetter.js".to_string(),
+            owning_profile: "legacy-orange-v23".to_string(),
+            status: "historical-only".to_string(),
+            parser_or_consumer: "legacy-layout-engine".to_string(),
+            asset_dependencies: Vec::new(),
+            unresolved_asset_dependencies: Vec::new(),
+            asset_dependency_status: "no-references-detected".to_string(),
+            parity_fixtures: Vec::new(),
+            rust_owner: "engine-core".to_string(),
+            migration_rule: "profile-scoped".to_string(),
+            test_ids: Vec::new(),
+            acceptance_criteria: "exact".to_string(),
+            verification_level: "scanned-hash-only".to_string(),
+            verification_evidence: Vec::new(),
+            notes: String::new(),
+        }
+    }
+
+    #[test]
+    fn runner_evidence_requires_exact_profile_commit_path_and_hash() {
+        let mut records = vec![runner_record()];
+        let row = format!(
+            "legacy-orange-v23\\t0b0ee279464a3db14672cd3f4051275aba5985da\\trunner-sha\\thttps://example.test/run\\toffline-smoke-tested\\ttypesetter.js\\{}\\tloaded",
+            "a".repeat(64)
+        );
+        assert!(apply_runner_evidence_rows(&mut records, &row).is_ok());
+        assert_eq!(records[0].status, "verified-executable");
+        assert_eq!(records[0].verification_level, "offline-smoke-tested");
+        assert_eq!(records[0].verification_evidence.len(), 1);
+
+        let mut mismatched = vec![runner_record()];
+        let bad_row = row.replace(&"a".repeat(64), &"b".repeat(64));
+        assert!(apply_runner_evidence_rows(&mut mismatched, &bad_row).is_err());
+        assert_eq!(mismatched[0].status, "historical-only");
     }
 
     #[test]
