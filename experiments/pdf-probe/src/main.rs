@@ -58,13 +58,7 @@ fn run() -> Result<(), String> {
         .ok_or_else(|| format!("printpdf could not parse the font: {font_parse_warnings:?}"))?;
     let mut document = PdfDocument::new("Hebrew Type0 ToUnicode probe");
     let font_id = document.add_font(&parsed_font);
-    let mut ops = vec![
-        Op::StartTextSection,
-        Op::SetFont {
-            font: PdfFontHandle::External(font_id),
-            size: Pt(18.0),
-        },
-    ];
+    let mut ops = Vec::new();
     let mut report = String::from(
         "{\n  \"schemaVersion\": 1,\n  \"shaper\": \"HarfRust hr-shape 0.15.0\",\n  \"pdfWriter\": \"printpdf 0.12.8\",\n  \"fontSizePt\": 18,\n  \"lines\": [\n",
     );
@@ -86,8 +80,8 @@ fn run() -> Result<(), String> {
             mapping.insert((glyph.gid, glyph.cid.clone()));
         }
 
-        // ActualText preserves the logical Unicode sequence while glyphs are
-        // positioned independently for correct visual rendering and mark placement.
+        // Keep BDC/EMC outside the BT/ET text object. This is the most
+        // interoperable structure for extractors that honor /ActualText.
         ops.push(Op::BeginMarkedContentWithProperties {
             tag: "Span".to_string(),
             properties: DictItem::Dict {
@@ -99,6 +93,11 @@ fn run() -> Result<(), String> {
                     },
                 )]),
             },
+        });
+        ops.push(Op::StartTextSection);
+        ops.push(Op::SetFont {
+            font: PdfFontHandle::External(font_id),
+            size: Pt(18.0),
         });
         // Glyphs are emitted in logical cluster order; their absolute positions
         // retain HarfRust's visual shaping order.
@@ -115,6 +114,7 @@ fn run() -> Result<(), String> {
                 }])],
             });
         }
+        ops.push(Op::EndTextSection);
         ops.push(Op::EndMarkedContent);
 
         report.push_str(&format!(
@@ -143,7 +143,6 @@ fn run() -> Result<(), String> {
         report.push_str("]}");
     }
 
-    ops.push(Op::EndTextSection);
     let page = PdfPage::new(Mm(210.0), Mm(297.0), ops);
     let options = PdfSaveOptions {
         subset_fonts: true,
