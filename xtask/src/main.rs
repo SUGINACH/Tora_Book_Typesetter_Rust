@@ -840,11 +840,14 @@ fn classify(path: &str) -> String {
         .unwrap_or("")
         .to_ascii_lowercase();
     let lower = path.to_ascii_lowercase();
-    if matches!(extension.as_str(), "woff" | "woff2" | "ttf" | "otf") {
+    if matches!(
+        extension.as_str(),
+        "woff" | "woff2" | "ttf" | "otf" | "eot"
+    ) {
         "font".to_string()
     } else if matches!(
         extension.as_str(),
-        "svg" | "png" | "jpg" | "jpeg" | "webp" | "ico"
+        "svg" | "png" | "jpg" | "jpeg" | "webp" | "gif" | "avif" | "bmp" | "ico"
     ) {
         "asset".to_string()
     } else if matches!(extension.as_str(), "js" | "mjs" | "cjs") {
@@ -853,12 +856,14 @@ fn classify(path: &str) -> String {
         "dom-contract".to_string()
     } else if extension == "css" {
         "style".to_string()
-    } else if extension == "json" {
+    } else if matches!(extension.as_str(), "json" | "jsonc" | "webmanifest") {
         if lower.contains("setting") || lower.contains("preset") || lower.contains("config") {
             "settings".to_string()
         } else {
             "data".to_string()
         }
+    } else if extension == "xml" {
+        "data".to_string()
     } else if extension == "txt" {
         if lower.contains("fixture") || lower.contains("/tests/") || lower.starts_with("tests/") {
             "fixture".to_string()
@@ -1106,7 +1111,10 @@ fn sha256(input: &[u8]) -> [u8; 32] {
 
 #[cfg(test)]
 mod tests {
-    use super::{classify, hex, json_string, ownership_for, sha256, SourceSpec};
+    use super::{
+        classify, extract_asset_dependencies, hex, json_string, normalize_asset_reference,
+        ownership_for, sha256, SourceSpec,
+    };
     use std::path::PathBuf;
 
     #[test]
@@ -1159,6 +1167,53 @@ mod tests {
         );
         assert_eq!(owner, "docs/requirements");
         assert!(migration.contains("spec-only"));
+    }
+
+
+    #[test]
+    fn css_asset_references_are_normalized_and_external_urls_are_retained() {
+        let css = br#"
+            @font-face { src: url("../fonts/Book.woff2"); }
+            .ornament { background-image: url("https://cdn.example.test/ornament.svg"); }
+            .inline { background: url(data:image/png;base64,AAAA); }
+        "#;
+        let dependencies = extract_asset_dependencies("styles/book.css", "style", css);
+        assert_eq!(
+            dependencies,
+            vec![
+                "external:https://cdn.example.test/ornament.svg".to_string(),
+                "local:fonts/Book.woff2".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn html_asset_references_skip_data_urls_and_resolve_relative_paths() {
+        let html = br#"
+            <img src="../images/ornament.svg">
+            <script src="https://cdn.example.test/app.js"></script>
+            <img src="data:image/png;base64,AAAA">
+        "#;
+        let dependencies = extract_asset_dependencies("pages/index.html", "dom-contract", html);
+        assert_eq!(
+            dependencies,
+            vec![
+                "external:https://cdn.example.test/app.js".to_string(),
+                "local:images/ornament.svg".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn asset_reference_normalization_removes_query_and_fragment() {
+        assert_eq!(
+            normalize_asset_reference("css/site.css", "../fonts/book.woff2?v=2#face"),
+            Some("local:fonts/book.woff2".to_string())
+        );
+        assert_eq!(
+            normalize_asset_reference("css/site.css", "#gradient"),
+            None
+        );
     }
 
     #[test]
