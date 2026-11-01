@@ -567,30 +567,259 @@ fn extract_asset_dependencies(source_path: &str, kind: &str, bytes: &[u8]) -> Ve
     let text = String::from_utf8_lossy(bytes);
     let mut dependencies = BTreeSet::new();
 
-    extract_url_functions(&text, &mut dependencies, source_path);
-    extract_attributes(
-        &text,
-        &[
-            "src=",
-            "href=",
-            "poster=",
-            "data-src=",
-            "xlink:href=",
-            "srcset=",
-        ],
-        &mut dependencies,
-        source_path,
-    );
-    if matches!(kind, "javascript" | "settings" | "data") {
-        for value in extract_quoted_strings(&text) {
-            if is_path_candidate(&value) {
-                if let Some(normalized) = normalize_asset_reference(source_path, &value) {
-                    dependencies.insert(normalized);
+    if kind == "javascript" {
+        extract_javascript_dependencies(&text, &mut dependencies, source_path);
+    } else {
+        extract_url_functions(&text, &mut dependencies, source_path);
+        extract_attributes(
+            &text,
+            &[
+                "src=",
+                "href=",
+                "poster=",
+                "data-src=",
+                "xlink:href=",
+                "srcset=",
+            ],
+            &mut dependencies,
+            source_path,
+        );
+        // Settings and data files are structured catalogs. Retain their
+        // explicit file-name values, but reject extension-only and directory
+        // fragments in normalize_asset_reference.
+        if matches!(kind, "settings" | "data") {
+            for value in extract_quoted_strings(&text) {
+                if is_path_candidate(&value) {
+                    if let Some(normalized) = normalize_asset_reference(source_path, &value) {
+                        dependencies.insert(normalized);
+                    }
                 }
             }
         }
     }
     dependencies.into_iter().collect()
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum JsToken {
+    Identifier(String),
+    String(String),
+    Template(String),
+    Punct(char),
+}
+
+fn tokenize_javascript(text: &str) -> Vec<JsToken> {
+    let bytes = text.as_bytes();
+    let mut tokens = Vec::new();
+    let mut index = 0usize;
+
+    while index < bytes.len() {
+        let current = bytes[index];
+        if current.is_ascii_whitespace() {
+            index += 1;
+            continue;
+        }
+
+        if current == b'/' && bytes.get(index + 1) == Some(&b'/') {
+            index += 2;
+            while index < bytes.len() && bytes[index] != b'\n' {
+                index += 1;
+            }
+            continue;
+        }
+        if current == b'/' && bytes.get(index + 1) == Some(&b'*') {
+            index += 2;
+            while index + 1 < bytes.len()
+                && !(bytes[index] == b'*' && bytes[index + 1] == b'/')
+            {
+                index += 1;
+            }
+            index = (index + 2).min(bytes.len());
+            continue;
+        }
+
+        if current == b'\'' || current == b'"' {
+            let quote = current;
+            index += 1;
+            let start = index;
+            let mut escaped = false;
+            while index < bytes.len() {
+                let byte = bytes[index];
+                if escaped {
+                    escaped = false;
+                } else if byte == b'\\' {
+                    escaped = true;
+                } else if byte == quote {
+                    break;
+                }
+                index += 1;
+            }
+            let value = text[start..index]
+                .replace("\\/", "/")
+                .replace("\\\\", "\\");
+            tokens.push(JsToken::String(value));
+            if index < bytes.len() {
+                index += 1;
+            }
+            continue;
+        }
+
+        // Template literals are retained as opaque text so explicit HTML/CSS
+        // URL references inside them can be inspected, but their interpolated
+        // expressions are never mistaken for static file-name strings.
+        if current == 0x60 {
+            index += 1;
+            let start = index;
+            let mut escaped = false;
+            while index < bytes.len() {
+                let byte = bytes[index];
+                if escaped {
+                    escaped = false;
+                } else if byte == b'\\' {
+                    escaped = true;
+                } else if byte == 0x60 {
+                    break;
+                }
+                index += 1;
+            }
+            tokens.push(JsToken::Template(text[start..index].to_string()));
+            if index < bytes.len() {
+                index += 1;
+            }
+            continue;
+        }
+
+        if current.is_ascii_alphabetic() || current == b'_' || current == b'$' {
+            let start = index;
+            index += 1;
+            while index < bytes.len()
+                && (bytes[index].is_ascii_alphanumeric()
+                    || bytes[index] == b'_'
+                    || bytes[index] == b'$')
+            {
+                index += 1;
+            }
+            tokens.push(JsToken::Identifier(text[start..index].to_string()));
+            continue;
+        }
+
+        tokens.push(JsToken::Punct(current as char));
+        index += 1;
+    }
+    tokens
+}
+
+fn extract_javascript_dependencies(
+    text: &str,
+    output: &mut BTreeSet<String>,
+    source_path: &str,
+) {
+    let tokens = tokenize_javascript(text);
+    let mut index = 0usize;
+
+    while index < tokens.len() {
+        match &tokens[index] {
+            JsToken::Identifier(identifier) => {
+                let next_is_open_call = tokens.get(index + 1) == Some(&JsToken::Punct('('));
+                if matches!(identifier.as_str(), "fetch" | "require" | "import")
+                    && next_is_open_call
+                {
+                    if let Some(JsToken::String(value)) = tokens.get(index + 2) {
+                        if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                            output.insert(normalized);
+                        }
+                    }
+                }
+
+                if identifier == "new"
+                    && tokens.get(index + 1) == Some(&JsToken::Identifier("URL".to_string()))
+                    && tokens.get(index + 2) == Some(&JsToken::Punct('('))
+                {
+                    if let Some(JsToken::String(value)) = tokens.get(index + 3) {
+                        if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                            output.insert(normalized);
+                        }
+                    }
+                }
+
+                // Static module specifiers: import ... from "x" / export ... from "x".
+                if identifier == "from" {
+                    if let Some(JsToken::String(value)) = tokens.get(index + 1) {
+                        if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                            output.insert(normalized);
+                        }
+                    }
+                }
+
+                // Explicit asset properties in object literals and manifests.
+                if matches!(
+                    identifier.as_str(),
+                    "file" | "src" | "href" | "poster" | "url" | "path" | "asset" | "fontFile"
+                ) && tokens.get(index + 1) == Some(&JsToken::Punct(':'))
+                {
+                    if let Some(JsToken::String(value)) = tokens.get(index + 2) {
+                        if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                            output.insert(normalized);
+                        }
+                    }
+                }
+
+                // Static arrays with names that explicitly describe asset
+                // inventories (for example PRIORITY_FONT_FILES). These preserve
+                // real font basenames used to construct runtime URLs.
+                if matches!(identifier.as_str(), "const" | "let" | "var") {
+                    if let (Some(JsToken::Identifier(name)), Some(JsToken::Punct('=')), Some(JsToken::Punct('['))) =
+                        (tokens.get(index + 1), tokens.get(index + 2), tokens.get(index + 3))
+                    {
+                        let upper = name.to_ascii_uppercase();
+                        if ["FONT", "FILE", "ASSET", "IMAGE", "ORNAMENT", "DECORATION", "PRESET"]
+                            .iter()
+                            .any(|marker| upper.contains(marker))
+                        {
+                            let mut cursor = index + 4;
+                            let mut depth = 1usize;
+                            while cursor < tokens.len() && depth > 0 {
+                                match &tokens[cursor] {
+                                    JsToken::Punct('[') => depth += 1,
+                                    JsToken::Punct(']') => depth -= 1,
+                                    JsToken::String(value) if depth == 1 => {
+                                        if let Some(normalized) =
+                                            normalize_asset_reference(source_path, value)
+                                        {
+                                            output.insert(normalized);
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                                cursor += 1;
+                            }
+                        }
+                    }
+                }
+            }
+            JsToken::String(value) | JsToken::Template(value) => {
+                // HTML attributes and CSS url() inside literal/template content
+                // are explicit runtime asset references. Arbitrary prose
+                // strings are not treated as paths.
+                extract_url_functions(value, output, source_path);
+                extract_attributes(
+                    value,
+                    &[
+                        "src=",
+                        "href=",
+                        "poster=",
+                        "data-src=",
+                        "xlink:href=",
+                        "srcset=",
+                    ],
+                    output,
+                    source_path,
+                );
+            }
+            JsToken::Punct(_) => {}
+        }
+        index += 1;
+    }
 }
 
 fn extract_url_functions(text: &str, output: &mut BTreeSet<String>, source_path: &str) {
@@ -702,6 +931,21 @@ fn extract_quoted_strings(text: &str) -> Vec<String> {
 
 fn is_path_candidate(value: &str) -> bool {
     let lower = value.to_ascii_lowercase();
+    if lower.trim() != lower || lower.ends_with('/') || lower.is_empty() {
+        return false;
+    }
+    let known_extension = [
+        ".css", ".js", ".mjs", ".cjs", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp",
+        ".ico", ".woff", ".woff2", ".ttf", ".otf", ".gif", ".avif",
+    ]
+    .iter()
+    .any(|extension| {
+        lower.ends_with(extension)
+            && lower
+                .rsplit('/')
+                .next()
+                .is_some_and(|filename| filename.len() > extension.len())
+    });
     lower.starts_with("./")
         || lower.starts_with("../")
         || lower.starts_with('/')
@@ -718,12 +962,7 @@ fn is_path_candidate(value: &str) -> bool {
         ]
         .iter()
         .any(|prefix| lower.contains(prefix))
-        || [
-            ".css", ".js", ".mjs", ".cjs", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp",
-            ".ico", ".woff", ".woff2", ".ttf", ".otf", ".gif", ".avif",
-        ]
-        .iter()
-        .any(|extension| lower.ends_with(extension))
+        || known_extension
 }
 
 fn normalize_asset_reference(source_path: &str, value: &str) -> Option<String> {
@@ -746,10 +985,10 @@ fn normalize_asset_reference(source_path: &str, value: &str) -> Option<String> {
     {
         return Some(format!("external:{value}"));
     }
-    if (value.contains('$') && value.contains('{'))
+    if value.chars().any(char::is_whitespace)
+        || (value.contains('$') && value.contains('{'))
         || value.contains('}')
         || value.contains(" + ")
-        || (value.chars().any(char::is_whitespace) && !value.contains('/'))
         || !is_path_candidate(value)
     {
         return None;
@@ -760,7 +999,7 @@ fn normalize_asset_reference(source_path: &str, value: &str) -> Option<String> {
         .next()
         .unwrap_or("")
         .replace('\\', "/");
-    if path_only.is_empty() {
+    if path_only.is_empty() || path_only.ends_with('/') {
         return None;
     }
 
@@ -1422,6 +1661,63 @@ mod tests {
         assert_eq!(
             normalize_asset_reference("app.js", "Abir-Black.woff2").as_deref(),
             Some("local:Abir-Black.woff2")
+        );
+    }
+
+    #[test]
+    fn javascript_asset_extraction_uses_static_syntax_and_asset_inventories() {
+        let javascript = br#"
+            // "comment-only.svg"
+            const prose = "this sentence mentions sample.json";
+            const markup = \`<svg><image href="icons/real.svg"></image></svg>\`;
+            const PRIORITY_FONT_FILES = ["Alpha-Black.woff2", "Book-Regular.woff2"];
+            const assetsToLoad = [{ file: "ornaments.json", type: "ornaments" }];
+            fetch("fonts/fonts.json");
+            fetch("fonts/" + fontFile);
+            import module from "./module.js";
+            const helper = require("./helper.cjs");
+            const worker = new URL("./worker.mjs", import.meta.url);
+        "#;
+        let dependencies = extract_asset_dependencies("app.js", "javascript", javascript);
+        for expected in [
+            "local:icons/real.svg",
+            "local:Alpha-Black.woff2",
+            "local:Book-Regular.woff2",
+            "local:ornaments.json",
+            "local:fonts/fonts.json",
+            "local:module.js",
+            "local:helper.cjs",
+            "local:worker.mjs",
+        ] {
+            assert!(
+                dependencies.iter().any(|dependency| dependency == expected),
+                "missing expected dependency {expected:?} in {dependencies:?}"
+            );
+        }
+        for rejected in [
+            "local:comment-only.svg",
+            "local:sample.json",
+            "local:fonts",
+        ] {
+            assert!(
+                !dependencies.iter().any(|dependency| dependency == rejected),
+                "unexpected dependency {rejected:?} in {dependencies:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn extension_only_and_directory_fragments_are_not_asset_paths() {
+        for value in [".json", ".svg", "scripts/.css", "fonts/", "assets/"] {
+            assert_eq!(
+                normalize_asset_reference("app.js", value),
+                None,
+                "must reject non-file path fragment {value:?}"
+            );
+        }
+        assert_eq!(
+            normalize_asset_reference("app.js", "fonts/Book-Regular.woff2").as_deref(),
+            Some("local:fonts/Book-Regular.woff2")
         );
     }
 
