@@ -115,8 +115,7 @@ jobs:
           path: |
             experiments/pdf-probe/Cargo.lock
             experiments/pdf-probe/corpus.txt
-            experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf
-            experiments/google-fonts/ofl/notoserifhebrew/OFL.txt
+            experiments/google-fonts/ofl/notoserifhebrew/
             artifacts/pdf-probe.pdf
             artifacts/pdf-probe-raw.json
             artifacts/pdf-probe-extracted.txt
