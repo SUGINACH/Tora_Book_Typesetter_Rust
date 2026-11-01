@@ -1055,9 +1055,7 @@ fn render_manifest(sources: &[SourceSpec], records: &[FileRecord]) -> String {
         }
         output.push_str("],\n");
         output.push_str("      \"resolvedAssetDependencies\": [");
-        for (dependency_index, dependency) in
-            record.resolved_asset_dependencies.iter().enumerate()
-        {
+        for (dependency_index, dependency) in record.resolved_asset_dependencies.iter().enumerate() {
             if dependency_index > 0 {
                 output.push_str(", ");
             }
@@ -1405,10 +1403,7 @@ mod tests {
 
     #[test]
     fn ambiguous_bare_asset_names_are_not_guessed() {
-        let paths = BTreeSet::from([
-            "fonts/logo.svg".to_string(),
-            "assets/logo.svg".to_string(),
-        ]);
+        let paths = BTreeSet::from(["fonts/logo.svg".to_string(), "assets/logo.svg".to_string()]);
         assert_eq!(resolve_local_asset_path("logo.svg", &paths), None);
     }
 
