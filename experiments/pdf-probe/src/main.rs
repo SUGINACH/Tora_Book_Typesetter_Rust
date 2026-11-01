@@ -1,10 +1,9 @@
 use printpdf::text::Codepoint;
-use std::collections::BTreeMap;
 use printpdf::{
     DictItem, Mm, Op, ParsedFont, PdfDocument, PdfFontHandle, PdfPage, PdfSaveOptions, Pt,
     TextItem, TextMatrix,
 };
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fs;
 use std::process::ExitCode;
