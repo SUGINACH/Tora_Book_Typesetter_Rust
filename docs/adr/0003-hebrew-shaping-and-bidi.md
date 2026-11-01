@@ -53,4 +53,10 @@ Sources:
 - https://docs.rs/crate/tectonic-rustybuzz/latest
 - https://github.com/taiki-e/rustsec-advisory-db (advisory database; inspect the exact RUSTSEC-2026-0206 record before any dependency selection)
 
-**Current result:** no crate/version selected. The first HarfRust probe has been executed and a native HarfBuzz comparison has been added for pure Hebrew samples. Mixed-direction text is currently analyzed by UAX #9 but is not yet segmented into shaping runs; source-span mapping and a second independent shaping stack remain open acceptance requirements.
+**Current result:** no crate/version selected.
+
+- [Run 41348164089](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41348164089) passed: HarfRust 0.15.0 and Unicode Bidi 0.3.18 processed the pinned eight-line corpus; the five pure-Hebrew shaping samples matched upstream HarfBuzz 15.0.0 exactly at the serialized glyph-line level (5/5).
+- The run also verified pinned font/license/corpus/source commits, repeat-run identity, \`hr-shape --verify\`, Clippy and probe tests.
+- This is component-level shaping parity, not full shaping integration. Mixed-direction text is analyzed by UAX #9 but is not yet segmented into script/direction shaping runs before shaping.
+- The experiment does not yet prove full source-span/cluster round-trip, mark positioning in PDF output, a second independent Rust shaping implementation, or the complete profile font inventory.
+- HarfRust remains the leading prototype candidate only; no crate/version is selected for production.
