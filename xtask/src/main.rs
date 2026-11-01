@@ -1314,5 +1314,6 @@ mod tests {
     #[test]
     fn json_escaping_is_valid_for_control_characters() {
         assert_eq!(json_string("a\n\"b"), "\"a\\n\\\"b\"");
+        assert_eq!(json_string("a\tb"), "\"a\\tb\"");
     }
 }
