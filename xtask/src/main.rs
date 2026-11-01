@@ -654,7 +654,7 @@ fn render_manifest(sources: &[SourceSpec], records: &[FileRecord]) -> String {
             }
             output.push_str(&json_string(test_id));
         }
-        output.push_str("],\\n");
+        output.push_str("],\n");
         push_field(
             &mut output,
             "acceptanceCriteria",
