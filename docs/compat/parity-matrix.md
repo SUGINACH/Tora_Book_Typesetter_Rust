@@ -92,7 +92,7 @@ Evidence: [legacy renderer workflow run](https://github.com/SUGINACH/Tora_Book_T
 
 - Pinned Orange commit: `0b0ee279464a3db14672cd3f4051275aba5985da`.
 - Playwright: `1.55.0`; Chromium: `140.0.7339.16`; viewport: `1440×1000`.
-- Self-hosted font CSS fingerprint matched; all 485 enumerated font faces loaded, none failed.
+- Self-hosted font CSS fingerprint matched. This artifact does not contain an independently verifiable 485/485 font-load result; font preflight must remain unverified until a runner report records each face and its load outcome.
 - 6 pages; 3 audit findings (0 high, 2 medium, 1 low).
 - 2 decision-ledger records matched 2 DOM blocks; no malformed or missing ledger record.
 - Text conservation: 7 source tokens, 4 source paragraphs; no missing/mismatched paragraphs, headings or notes.
