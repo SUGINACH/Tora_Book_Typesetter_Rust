@@ -86,11 +86,13 @@ jobs:
           cp artifacts/pdf-probe-first.pdf artifacts/pdf-probe.pdf
           cp artifacts/pdf-probe-first.json artifacts/pdf-probe-raw.json
 
-      - name: Independent PDF extraction and font inspection
+      - name: Independent PDF extraction, font inspection and rendering
         run: |
           pdftotext -raw artifacts/pdf-probe.pdf artifacts/pdf-probe-extracted.txt
+          pdftotext -layout artifacts/pdf-probe.pdf artifacts/pdf-probe-layout-extracted.txt
           pdffonts artifacts/pdf-probe.pdf > artifacts/pdf-probe-fonts.txt
           pdfinfo artifacts/pdf-probe.pdf > artifacts/pdf-probe-info.txt
+          pdftoppm -png -r 120 artifacts/pdf-probe.pdf artifacts/pdf-probe-render
 
       - name: Clippy and tests for the isolated PDF probe
         run: |
@@ -119,6 +121,8 @@ jobs:
             artifacts/pdf-probe.pdf
             artifacts/pdf-probe-raw.json
             artifacts/pdf-probe-extracted.txt
+            artifacts/pdf-probe-layout-extracted.txt
+            artifacts/pdf-probe-render-1.png
             artifacts/pdf-probe-fonts.txt
             artifacts/pdf-probe-info.txt
             artifacts/pdf-probe-manifest.json
