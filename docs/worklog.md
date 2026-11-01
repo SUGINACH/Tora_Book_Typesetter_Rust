@@ -4,9 +4,9 @@
 
 - מאגר: `SUGINACH/Tora_Book_Typesetter_Rust`
 - ענף עבודה: `main`
-- נקודת מוצא שנבדקה: `2a6c4f11075a75a883c284c484e26db6db9e7828`
-- מצב הקוד בתחילת העבודה: מאגר תיעוד; לא נמצאו Cargo workspace, קוד Rust, בדיקות או CI.
-- שלב פעיל: משימה 1 מתוך 100 — אתחול workspace ונעילת toolchain.
+- נקודת מוצא: `2a6c4f11075a75a883c284c484e26db6db9e7828`
+- commit אתחול workspace: `0b76c2e8cdda388f6e6ef7b843db21656a880d90`
+- שלב פעיל: משימות 1–2 מתוך 100.
 
 ## החלטות והבהרות
 
@@ -20,12 +20,22 @@
 
 ### משימה 1 — אתחול workspace ונעילת toolchain
 
-- [x] יצירת Cargo workspace עם resolver 2 וחבילות בסיס.
-- [x] יצירת `rust-toolchain.toml` עם גרסה מוצמדת ו-rustfmt/Clippy.
-- [x] יצירת `Cargo.lock` ראשוני ללא תלות חיצונית.
-- [x] הגדרת פרופיל release עם overflow checks.
-- [x] יצירת `xtask` ראשוני.
-- [ ] בדיקת build פעמיים מאותו commit — ממתינה ל-CI/סביבת Rust; סביבת העבודה הנוכחית אינה כוללת `rustc` או `cargo`.
-- [ ] שמירת תוצאת בדיקה וקישור commit — תושלם לאחר הרצת הבדיקה.
+- [x] Cargo workspace עם resolver 2 וחבילות בסיס.
+- [x] `rust-toolchain.toml` מוצמד ל-Rust 1.99.1 עם rustfmt ו-Clippy.
+- [x] `Cargo.lock` ראשוני ללא תלות חיצונית.
+- [x] פרופיל release עם overflow checks.
+- [x] שלד `xtask`.
+- [x] בדיקת build כפולה ומבנה artifacts — **ממתינה להרצת CI של משימה 2**; סביבת העבודה המקומית אינה כוללת `rustc` או `cargo`.
 
-**סטטוס:** הוכן שלד הקוד; המשימה אינה מסומנת כהושלמה עד שתתקבל ראיית build אמיתית.
+**סטטוס משימה 1:** מימוש הושלם; אימות build טרם הוכח ולכן המשימה טרם נסגרה.
+
+### משימה 2 — CI ומדיניות איכות
+
+- [x] workflow רב־פלטפורמי ל-Linux, Windows ו-macOS.
+- [x] rustfmt, Clippy עם warnings כשגיאות, unit/integration tests ו-doc tests.
+- [x] נעילת תלויות באמצעות `--locked`.
+- [x] איסור `unsafe`, `unwrap()` ו-`expect()` באמצעות workspace lints.
+- [x] בדיקת probe שלילית שמוודאת ש-Clippy אכן חוסם `unwrap()`.
+- [ ] תוצאת CI ירוקה ואימות שה-probe השלילי נכשל מהסיבה הצפויה — ממתינים להרצת GitHub Actions.
+
+**סטטוס משימה 2:** workflow ומדיניות הוכנו; אין לסמן כהושלמה עד בדיקת ריצת CI בפועל.
