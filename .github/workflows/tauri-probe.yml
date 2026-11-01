@@ -41,6 +41,9 @@ jobs:
       - name: Formatting
         run: cargo fmt --manifest-path experiments/tauri-probe/Cargo.toml -- --check
 
+      - name: Generate deterministic Windows resource icon
+        run: node experiments/tauri-probe/create-icon.cjs
+
       - name: Build Tauri desktop application (generates isolated lockfile)
         run: cargo build --manifest-path experiments/tauri-probe/Cargo.toml
 
