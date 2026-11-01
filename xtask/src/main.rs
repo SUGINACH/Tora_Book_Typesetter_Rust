@@ -36,6 +36,7 @@ struct FileRecord {
     test_ids: Vec<String>,
     acceptance_criteria: String,
     verification_level: String,
+    verification_evidence: Vec<String>,
     notes: String,
 }
 
@@ -112,6 +113,7 @@ fn run() -> Result<(), String> {
     }
 
     validate_asset_dependencies(&mut records);
+    apply_runner_evidence(&mut records)?;
     records.sort_by(|left, right| {
         (
             left.repository.as_str(),
@@ -471,6 +473,69 @@ fn tests_for(source: &SourceSpec, kind: &str, owner: &str) -> (Vec<String>, Stri
             "Source identity is pinned; semantic ownership and migration remain historical-only until reviewed.".to_string(),
         ),
     }
+}
+
+
+fn parse_runner_evidence_line(line: &str) -> Option<[&str; 8]> {
+    let mut fields = line.split('\t');
+    let parsed = [
+        fields.next()?,
+        fields.next()?,
+        fields.next()?,
+        fields.next()?,
+        fields.next()?,
+        fields.next()?,
+        fields.next()?,
+        fields.next()?,
+    ];
+    if fields.next().is_some() {
+        return None;
+    }
+    Some(parsed)
+}
+
+fn apply_runner_evidence(records: &mut [FileRecord]) -> Result<(), String> {
+    const EVIDENCE: &str = include_str!("../../legacy/runner-evidence.tsv");
+    let mut applied_rows = 0usize;
+    for line in EVIDENCE.lines() {
+        if line.trim().is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let fields = parse_runner_evidence_line(line)
+            .ok_or_else(|| format!("malformed runner evidence row: {line:?}"))?;
+        let [profile, source_commit, runner_commit, runner_url, level, path, sha256, role] = fields;
+        let mut matched = false;
+        for record in records.iter_mut() {
+            if record.owning_profile == profile
+                && record.source_commit == source_commit
+                && record.source_path == path
+                && record.source_sha256 == sha256
+            {
+                record.verification_level = level.to_string();
+                record.verification_evidence.push(format!(
+                    "{runner_url} (runner commit {runner_commit}; role {role})"
+                ));
+                if record.status != "blocked-license" {
+                    record.status = match record.kind.as_str() {
+                        "javascript" | "dom-contract" => "verified-executable".to_string(),
+                        "style" | "fixture" | "data" | "asset" => "verified-data".to_string(),
+                        _ => record.status.clone(),
+                    };
+                }
+                matched = true;
+            }
+        }
+        if !matched {
+            return Err(format!(
+                "runner evidence did not match an exact profile/commit/path/SHA-256 record: {line}"
+            ));
+        }
+        applied_rows += 1;
+    }
+    if applied_rows == 0 {
+        return Err("runner evidence table contains no evidence rows".to_string());
+    }
+    Ok(())
 }
 
 fn extract_asset_dependencies(source_path: &str, kind: &str, bytes: &[u8]) -> Vec<String> {
@@ -980,6 +1045,14 @@ fn render_manifest(sources: &[SourceSpec], records: &[FileRecord]) -> String {
             &record.verification_level,
             true,
         );
+        output.push_str("      \"verificationEvidence\": [");
+        for (evidence_index, evidence) in record.verification_evidence.iter().enumerate() {
+            if evidence_index > 0 {
+                output.push_str(", ");
+            }
+            output.push_str(&json_string(evidence));
+        }
+        output.push_str("],\\n");
         push_field(&mut output, "notes", &record.notes, false);
         output.push_str("    }");
     }
@@ -1114,7 +1187,7 @@ fn sha256(input: &[u8]) -> [u8; 32] {
 mod tests {
     use super::{
         classify, extract_asset_dependencies, hex, json_string, normalize_asset_reference,
-        ownership_for, sha256, status_for, SourceSpec,
+        ownership_for, parse_runner_evidence_line, sha256, status_for, SourceSpec,
     };
     use std::path::PathBuf;
 
@@ -1168,6 +1241,16 @@ mod tests {
         );
         assert_eq!(owner, "docs/requirements");
         assert!(migration.contains("spec-only"));
+    }
+
+
+    #[test]
+    fn runner_evidence_rows_require_exactly_eight_tab_separated_fields() {
+        let valid = "legacy-orange-v23\\tcommit\\trunner\\turl\\toffline-smoke-tested\\tfile.js\\tsha\\tloaded";
+        let fields = parse_runner_evidence_line(valid).expect("valid row should parse");
+        assert_eq!(fields[0], "legacy-orange-v23");
+        assert_eq!(fields[7], "loaded");
+        assert!(parse_runner_evidence_line("only\\ttwo").is_none());
     }
 
     #[test]
