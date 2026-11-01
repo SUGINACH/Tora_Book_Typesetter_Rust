@@ -1,0 +1,74 @@
+name: Isolated legacy renderer audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/legacy-runner/**'
+      - 'docs/provenance/**'
+      - '.github/workflows/legacy-runner.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/legacy-runner/**'
+      - 'docs/provenance/**'
+      - '.github/workflows/legacy-runner.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: legacy-runner-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  legacy-orange-smoke:
+    name: Pinned Orange V23 / Chromium offline smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Rust target
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout exact Orange V23 source commit
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/Tora_Book_Typesetter_Orange
+          ref: 0b0ee279464a3db14672cd3f4051275aba5985da
+          path: legacy/orange
+          persist-credentials: false
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: legacy/orange/package-lock.json
+
+      - name: Install pinned legacy dependencies
+        working-directory: legacy/orange
+        run: npm ci
+
+      - name: Install pinned Playwright Chromium
+        working-directory: legacy/orange
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify pinned offline renderer and persist DOM geometry/ledger
+        env:
+          LEGACY_SOURCE_COMMIT: 0b0ee279464a3db14672cd3f4051275aba5985da
+          RUST_TARGET_COMMIT: ${{ github.sha }}
+        run: node tools/legacy-runner/run.cjs
+
+      - name: Upload legacy DOM, geometry, ledger and provenance artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-orange-v23-renderer-smoke
+          path: |
+            artifacts/legacy-runner-manifest.json
+            legacy/orange/artifacts/rust-legacy-smoke-report.json
+            legacy/orange/artifacts/rust-legacy-smoke-summary.md
+          if-no-files-found: warn
