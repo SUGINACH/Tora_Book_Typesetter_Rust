@@ -41,11 +41,14 @@ fn run() -> Result<(), String> {
     let corpus_path = &args[2];
     let pdf_path = &args[3];
     let report_path = &args[4];
-    let font_bytes = fs::read(font_path)
-        .map_err(|error| format!("cannot read font {font_path}: {error}"))?;
+    let font_bytes =
+        fs::read(font_path).map_err(|error| format!("cannot read font {font_path}: {error}"))?;
     let corpus = fs::read_to_string(corpus_path)
         .map_err(|error| format!("cannot read corpus {corpus_path}: {error}"))?;
-    let lines: Vec<&str> = corpus.lines().filter(|line| !line.trim().is_empty()).collect();
+    let lines: Vec<&str> = corpus
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .collect();
     if lines.len() != 3 {
         return Err(format!("expected 3 corpus lines, got {}", lines.len()));
     }
@@ -72,11 +75,12 @@ fn run() -> Result<(), String> {
         if line_index > 0 {
             report.push_str(",\n");
         }
-        let (direction, script, language, baseline) = if text.chars().any(|c| c.is_ascii_alphabetic()) {
-            ("ltr", "Latn", "en", 105.0_f32)
-        } else {
-            ("rtl", "Hebr", "he", 205.0_f32 - (line_index as f32 * 45.0))
-        };
+        let (direction, script, language, baseline) =
+            if text.chars().any(|c| c.is_ascii_alphabetic()) {
+                ("ltr", "Latn", "en", 105.0_f32)
+            } else {
+                ("rtl", "Hebr", "he", 205.0_f32 - (line_index as f32 * 45.0))
+            };
         let mut glyphs = shape_line(font_path, text, direction, script, language, baseline)?;
         assign_cluster_text(text, &mut glyphs)?;
         for glyph in &glyphs {
@@ -146,11 +150,15 @@ fn run() -> Result<(), String> {
         optimize: false,
         ..Default::default()
     };
-    let pdf = document.with_pages(vec![page]).save(&options, &mut warnings);
-    fs::write(pdf_path, &pdf)
-        .map_err(|error| format!("cannot write PDF {pdf_path}: {error}"))?;
+    let pdf = document
+        .with_pages(vec![page])
+        .save(&options, &mut warnings);
+    fs::write(pdf_path, &pdf).map_err(|error| format!("cannot write PDF {pdf_path}: {error}"))?;
     report.push_str("\n  ],\n");
-    report.push_str(&format!("  \"glyphToUnicodeMappings\": {},\n", mapping.len()));
+    report.push_str(&format!(
+        "  \"glyphToUnicodeMappings\": {},\n",
+        mapping.len()
+    ));
     report.push_str(&format!(
         "  \"saveWarnings\": {}\n}}\n",
         json_string(&format!("{warnings:?}"))
@@ -193,8 +201,7 @@ fn shape_line(
     let mut raw_positions = Vec::new();
 
     for (original_index, token) in body.split('|').enumerate() {
-        let (gid, cluster, x_offset, y_offset, x_advance, y_advance) =
-            parse_glyph_token(token)?;
+        let (gid, cluster, x_offset, y_offset, x_advance, y_advance) = parse_glyph_token(token)?;
         let x_units = pen_x + i64::from(x_offset);
         let y_units = pen_y + i64::from(y_offset);
         raw_positions.push((x_units, y_units));
@@ -282,9 +289,7 @@ fn assign_cluster_text(text: &str, glyphs: &mut [Glyph]) -> Result<(), String> {
         let indices: Vec<usize> = glyphs
             .iter()
             .enumerate()
-            .filter_map(|(glyph_index, glyph)| {
-                (glyph.cluster == *cluster).then_some(glyph_index)
-            })
+            .filter_map(|(glyph_index, glyph)| (glyph.cluster == *cluster).then_some(glyph_index))
             .collect();
         if indices.len() == source.chars().count() {
             for (glyph_index, character) in indices.iter().zip(source.chars()) {
