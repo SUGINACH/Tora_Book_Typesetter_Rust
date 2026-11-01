@@ -143,6 +143,8 @@ jobs:
               assert record["migrationRule"].strip(), f"record {index} has no migration rule"
               assert record["acceptanceCriteria"].strip(), f"record {index} has no acceptance criteria"
               assert isinstance(record["testIds"], list) and record["testIds"], f"record {index} has no test IDs"
+              if record["status"] not in ("spec-only", "conflict"):
+                  assert isinstance(record["parityFixtures"], list) and record["parityFixtures"], f"record {index} has no profile fixture or conflict exemption"
               assert isinstance(record["verificationEvidence"], list), f"record {index} evidence is not an array"
               if record["verificationEvidence"]:
                   assert record["verificationLevel"] != "scanned-hash-only", f"record {index} evidence level was not advanced"
