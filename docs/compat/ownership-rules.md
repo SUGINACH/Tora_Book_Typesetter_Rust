@@ -23,7 +23,9 @@ The scanner assigns a conservative owner and migration rule to every scanned rec
 - `rustOwner` means "the Rust subsystem responsible for resolving or migrating this source record"; it does not mean that subsystem is already implemented.
 - `parserOrConsumer` records the legacy consumer or intended reader boundary.
 - `parityFixtures` contains exact repository/commit/path references for profile inputs and smoke fixtures where available.
-- `assetDependencies` remains empty until CSS, SVG and JSON reference edges are extracted and validated. Empty is not evidence of no dependencies.
-- `verificationLevel=scanned-hash-only` means only that exact file bytes were inventoried.
-- Fonts are not cleared for redistribution by a hash scan. Font licensing and glyph coverage remain a later mandatory audit.
+- `assetDependencies` now records conservative local and external references found in CSS `url()`, HTML/SVG resource attributes, and path-like JavaScript/JSON strings. Local references are normalized relative to the source file and checked against the same profile's inventory.
+- `unresolvedAssetDependencies` records local references that do not resolve to a scanned file; `assetDependencyStatus` distinguishes resolved local edges, unresolved local edges, external URLs and no recognized references.
+- An empty dependency list means only that this conservative extractor found no recognized reference; it is not proof that the file has no runtime dependency. Dynamic code, computed paths and unsupported reference forms still require manual review.
+- `verificationLevel=scanned-hash-only` means only that exact file bytes were inventoried. A runner-backed level is assigned only after the corresponding fixture or full-corpus run passes.
+- Every font binary is marked `status=blocked-license` until its redistribution license is reviewed. A hash, successful load or glyph-shaping result does not clear licensing or glyph-coverage requirements.
 - Any heuristic owner assignment can be overridden only by a reviewed compatibility record and a corresponding ADR/fixture update.
