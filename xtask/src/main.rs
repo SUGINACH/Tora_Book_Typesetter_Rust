@@ -1015,7 +1015,7 @@ fn normalize_asset_reference_impl(
     }
     if (!allow_whitespace && value.chars().any(char::is_whitespace))
         || value.chars().any(char::is_control)
-        || (value.contains('
+        || (value.contains('$') && value.contains('{'))
         || value.contains('}')
         || value.contains(" + ")
         || !is_path_candidate(value)
