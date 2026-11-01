@@ -693,7 +693,8 @@ fn sha256(input: &[u8]) -> [u8; 32] {
 
 #[cfg(test)]
 mod tests {
-    use super::{classify, hex, json_string, sha256};
+    use super::{classify, hex, json_string, ownership_for, sha256, SourceSpec};
+    use std::path::PathBuf;
 
     #[test]
     fn sha256_matches_standard_empty_and_abc_vectors() {
@@ -713,6 +714,36 @@ mod tests {
         assert_eq!(classify("tests/fixtures/layout.txt"), "fixture");
         assert_eq!(classify("setting_sets/תלמוד.json"), "settings");
         assert_eq!(classify("decorations.js"), "javascript");
+    }
+
+
+    #[test]
+    fn decorations_are_owned_by_the_engine_core() {
+        let source = SourceSpec {
+            repository: "SUGINACH/Tora_Book_Typesetter_Orange".to_string(),
+            commit: "0b0ee279464a3db14672cd3f4051275aba5985da".to_string(),
+            profile: "legacy-orange-v23".to_string(),
+            root: PathBuf::from("legacy/orange"),
+        };
+        let (_, owner, migration, fixtures) =
+            ownership_for(&source, "decorations.js", "javascript");
+        assert_eq!(owner, "engine-core::decorations");
+        assert!(migration.contains("geometry"));
+        assert_eq!(fixtures.len(), 1);
+    }
+
+    #[test]
+    fn requirements_documents_are_not_classified_as_executable_code() {
+        let source = SourceSpec {
+            repository: "SUGINACH/Typesetter_doc".to_string(),
+            commit: "534b8f4e0ba9f5cb8abe9e3ad888904a217910cd".to_string(),
+            profile: "requirements-docs".to_string(),
+            root: PathBuf::from("legacy/docs"),
+        };
+        let (_, owner, migration, _) =
+            ownership_for(&source, "shared/specs/Software_specification.md", "documentation");
+        assert_eq!(owner, "docs/requirements");
+        assert!(migration.contains("spec-only"));
     }
 
     #[test]
