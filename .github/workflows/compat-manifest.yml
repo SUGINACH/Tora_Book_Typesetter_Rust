@@ -1,0 +1,128 @@
+name: Generate legacy compatibility manifest
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'xtask/**'
+      - 'docs/compat/**'
+      - 'docs/provenance/**'
+      - '.github/workflows/compat-manifest.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'xtask/**'
+      - 'docs/compat/**'
+      - 'docs/provenance/**'
+      - '.github/workflows/compat-manifest.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compat-manifest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan-pinned-sources:
+    name: Scan six pinned source repositories
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Rust target
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout Orange V23
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/Tora_Book_Typesetter_Orange
+          ref: 0b0ee279464a3db14672cd3f4051275aba5985da
+          path: legacy/orange
+          persist-credentials: false
+
+      - name: Checkout Green V23
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/Tora_Book_Typesetter_Green
+          ref: e5cde5f194d0d9e9b20fdaa2a742f9bf6e8aec53
+          path: legacy/green
+          persist-credentials: false
+
+      - name: Checkout Gold V21
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/Tora_Book_Typesetter_Gold
+          ref: a444d34ccad30fd5ed0d6fd3873adbe9c23cb7e0
+          path: legacy/gold
+          persist-credentials: false
+
+      - name: Checkout Yellow V10 compatibility source
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/Tora_Book_Typesetter_Yellow
+          ref: 878535e12eb4aa7e3c4a72e0e79687082d8a6d3b
+          path: legacy/yellow
+          persist-credentials: false
+
+      - name: Checkout IMUD historical source
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/IMUD_TORANI
+          ref: 6dd79d0ba224c169b0d19778ba181fc90edc8319
+          path: legacy/imud
+          persist-credentials: false
+
+      - name: Checkout requirements and research source
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/Typesetter_doc
+          ref: 534b8f4e0ba9f5cb8abe9e3ad888904a217910cd
+          path: legacy/docs
+          persist-credentials: false
+
+      - name: Verify all detached checkout commits
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C legacy/orange rev-parse HEAD)" = "0b0ee279464a3db14672cd3f4051275aba5985da"
+          test "$(git -C legacy/green rev-parse HEAD)" = "e5cde5f194d0d9e9b20fdaa2a742f9bf6e8aec53"
+          test "$(git -C legacy/gold rev-parse HEAD)" = "a444d34ccad30fd5ed0d6fd3873adbe9c23cb7e0"
+          test "$(git -C legacy/yellow rev-parse HEAD)" = "878535e12eb4aa7e3c4a72e0e79687082d8a6d3b"
+          test "$(git -C legacy/imud rev-parse HEAD)" = "6dd79d0ba224c169b0d19778ba181fc90edc8319"
+          test "$(git -C legacy/docs rev-parse HEAD)" = "534b8f4e0ba9f5cb8abe9e3ad888904a217910cd"
+          echo "All six source checkouts match their exact commit pins."
+
+      - name: Generate canonical compatibility manifest twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo run -p xtask --locked -- compat-scan \
+            --source SUGINACH/Tora_Book_Typesetter_Orange@0b0ee279464a3db14672cd3f4051275aba5985da@legacy-orange-v23=legacy/orange \
+            --source SUGINACH/Tora_Book_Typesetter_Green@e5cde5f194d0d9e9b20fdaa2a742f9bf6e8aec53@legacy-green-v23=legacy/green \
+            --source SUGINACH/Tora_Book_Typesetter_Gold@a444d34ccad30fd5ed0d6fd3873adbe9c23cb7e0@legacy-gold-v21=legacy/gold \
+            --source SUGINACH/Tora_Book_Typesetter_Yellow@878535e12eb4aa7e3c4a72e0e79687082d8a6d3b@legacy-yellow-v10=legacy/yellow \
+            --source SUGINACH/IMUD_TORANI@6dd79d0ba224c169b0d19778ba181fc90edc8319@legacy-imud-v20x=legacy/imud \
+            --source SUGINACH/Typesetter_doc@534b8f4e0ba9f5cb8abe9e3ad888904a217910cd@requirements-docs=legacy/docs \
+            --out artifacts/legacy-compatibility-manifest-first.json
+          cargo run -p xtask --locked -- compat-scan \
+            --source SUGINACH/Tora_Book_Typesetter_Orange@0b0ee279464a3db14672cd3f4051275aba5985da@legacy-orange-v23=legacy/orange \
+            --source SUGINACH/Tora_Book_Typesetter_Green@e5cde5f194d0d9e9b20fdaa2a742f9bf6e8aec53@legacy-green-v23=legacy/green \
+            --source SUGINACH/Tora_Book_Typesetter_Gold@a444d34ccad30fd5ed0d6fd3873adbe9c23cb7e0@legacy-gold-v21=legacy/gold \
+            --source SUGINACH/Tora_Book_Typesetter_Yellow@878535e12eb4aa7e3c4a72e0e79687082d8a6d3b@legacy-yellow-v10=legacy/yellow \
+            --source SUGINACH/IMUD_TORANI@6dd79d0ba224c169b0d19778ba181fc90edc8319@legacy-imud-v20x=legacy/imud \
+            --source SUGINACH/Typesetter_doc@534b8f4e0ba9f5cb8abe9e3ad888904a217910cd@requirements-docs=legacy/docs \
+            --out artifacts/legacy-compatibility-manifest-second.json
+          cmp artifacts/legacy-compatibility-manifest-first.json artifacts/legacy-compatibility-manifest-second.json
+          cp artifacts/legacy-compatibility-manifest-first.json artifacts/legacy-compatibility-manifest.json
+          echo "Canonical manifest is byte-identical across two scans."
+
+      - name: Upload generated manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-compatibility-manifest
+          path: artifacts/legacy-compatibility-manifest.json
+          if-no-files-found: warn
