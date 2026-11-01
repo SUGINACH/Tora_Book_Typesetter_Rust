@@ -247,6 +247,7 @@ fn scan_source(source: &SourceSpec, records: &mut Vec<FileRecord>) -> io::Result
             test_ids,
             acceptance_criteria,
             verification_level: "scanned-hash-only".to_string(),
+            verification_evidence: Vec::new(),
             notes: notes.to_string(),
         });
     }
@@ -506,7 +507,7 @@ fn apply_runner_evidence(records: &mut [FileRecord]) -> Result<(), String> {
         let mut matched = false;
         for record in records.iter_mut() {
             if record.owning_profile == profile
-                && record.source_commit == source_commit
+                && record.commit == source_commit
                 && record.source_path == path
                 && record.source_sha256 == sha256
             {
