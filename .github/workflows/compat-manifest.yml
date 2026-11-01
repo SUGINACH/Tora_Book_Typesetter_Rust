@@ -151,8 +151,10 @@ jobs:
                   assert record["verificationEvidence"], f"record {index} claims execution without runner evidence"
           font_records = [record for record in records if record["kind"] == "font"]
           assert font_records and all(record["status"] == "blocked-license" for record in font_records), "font records must remain blocked pending license review"
-          spec_records = [record for record in records if record["owningProfile"] == "requirements-docs"]
-          assert spec_records and all(record["status"] == "spec-only" for record in spec_records), "requirements-only records must remain spec-only"
+          spec_records = [record for record in records if record["owningProfile"] == "requirements-docs" and record["kind"] == "documentation"]
+          assert spec_records and all(record["status"] == "spec-only" for record in spec_records), "requirements documentation must remain spec-only"
+          snapshot_records = [record for record in records if record["owningProfile"] == "requirements-docs" and record["kind"] == "source-snapshot"]
+          assert snapshot_records and all(record["status"] == "historical-only" for record in snapshot_records), "archived source snapshots must remain historical-only"
           print(f"Manifest schema and provenance validation passed: {len(actual_sources)} sources, {len(records)} records.")
           PY
           cp artifacts/legacy-compatibility-manifest-first.json artifacts/legacy-compatibility-manifest.json
