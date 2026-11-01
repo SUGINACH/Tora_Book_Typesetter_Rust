@@ -77,6 +77,15 @@ mod tests {
     }
 
     #[test]
+    fn cancelling_an_old_generation_does_not_cancel_a_newer_job() {
+        let gate = JobGate::default();
+        assert!(gate.accept(7));
+        assert!(gate.accept(8));
+        assert!(!gate.cancel(7));
+        assert!(gate.is_current(8));
+    }
+
+    #[test]
     fn cancellation_invalidates_the_cancelled_generation() {
         let gate = JobGate::default();
         assert!(gate.accept(7));
