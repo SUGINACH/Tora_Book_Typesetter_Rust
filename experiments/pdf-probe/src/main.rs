@@ -53,9 +53,9 @@ fn run() -> Result<(), String> {
         return Err(format!("expected 3 corpus lines, got {}", lines.len()));
     }
 
-    let mut warnings = Vec::new();
-    let parsed_font = ParsedFont::from_bytes(&font_bytes, 0, &mut warnings)
-        .ok_or_else(|| format!("printpdf could not parse the font: {warnings:?}"))?;
+    let mut font_parse_warnings = Vec::new();
+    let parsed_font = ParsedFont::from_bytes(&font_bytes, 0, &mut font_parse_warnings)
+        .ok_or_else(|| format!("printpdf could not parse the font: {font_parse_warnings:?}"))?;
     let mut document = PdfDocument::new("Hebrew Type0 ToUnicode probe");
     let font_id = document.add_font(&parsed_font);
     let mut ops = vec![
@@ -135,9 +135,10 @@ fn run() -> Result<(), String> {
         optimize: false,
         ..Default::default()
     };
+    let mut save_warnings = Vec::new();
     let pdf = document
         .with_pages(vec![page])
-        .save(&options, &mut warnings);
+        .save(&options, &mut save_warnings);
     fs::write(pdf_path, &pdf).map_err(|error| format!("cannot write PDF {pdf_path}: {error}"))?;
     report.push_str("\n  ],\n");
     report.push_str(&format!(
@@ -145,8 +146,12 @@ fn run() -> Result<(), String> {
         mapping.len()
     ));
     report.push_str(&format!(
+        "  \"fontParseWarnings\": {},\n",
+        json_string(&format!("{font_parse_warnings:?}"))
+    ));
+    report.push_str(&format!(
         "  \"saveWarnings\": {}\n}}\n",
-        json_string(&format!("{warnings:?}"))
+        json_string(&format!("{save_warnings:?}"))
     ));
     fs::write(report_path, report)
         .map_err(|error| format!("cannot write report {report_path}: {error}"))?;
