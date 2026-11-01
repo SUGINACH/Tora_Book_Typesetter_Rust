@@ -72,11 +72,11 @@ def main() -> None:
     )
     mupdf_extracted = mupdf_extracted_path.read_text(encoding="utf-8")
     mupdf_normalized = [
-        line.strip() for line in mupdf_extracted.replace("\\f", "").splitlines() if line.strip()
+        line.strip() for line in mupdf_extracted.replace("\f", "").splitlines() if line.strip()
     ]
     if mupdf_normalized != expected_lines:
         raise SystemExit(
-            "MuPDF logical text extraction mismatch.\\nExpected: "
+            "MuPDF logical text extraction mismatch.\nExpected: "
             + repr(expected_lines)
             + "\\nActual: "
             + repr(mupdf_normalized)
