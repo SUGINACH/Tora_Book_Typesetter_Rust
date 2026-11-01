@@ -26,6 +26,10 @@ struct FileRecord {
     legacy_name: String,
     owning_profile: String,
     status: String,
+    parser_or_consumer: String,
+    parity_fixtures: Vec<String>,
+    rust_owner: String,
+    migration_rule: String,
     verification_level: String,
     notes: String,
 }
@@ -190,7 +194,11 @@ fn scan_source(source: &SourceSpec, records: &mut Vec<FileRecord>) -> io::Result
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "path escaped source root"))?
             .to_string_lossy()
             .replace('\\', "/");
-        let kind = classify(&source_path);
+        let kind = if source.profile == "requirements-docs" && source_path.starts_with("source_code/") {
+            "source-snapshot".to_string()
+        } else {
+            classify(&source_path)
+        };
         let hash = hex(&sha256(&bytes));
         let legacy_name = path
             .file_name()
@@ -207,11 +215,14 @@ fn scan_source(source: &SourceSpec, records: &mut Vec<FileRecord>) -> io::Result
         } else {
             "historical-only"
         };
+        let (parser_or_consumer, rust_owner, migration_rule, parity_fixtures) =
+            ownership_for(source, &source_path, &kind);
         let notes = match kind.as_str() {
-            "font" => "Byte identity scanned; glyph coverage, font tables and redistribution license are not yet verified.",
-            "verified-data" => "File existence and content hash verified; semantic schema and runtime consumption remain to be assigned.",
-            "documentation" => "Documentation source; not proof of executable behavior.",
-            _ => "Scanner-generated inventory record; semantic ownership and parity coverage require review.",
+            "font" => "Byte identity scanned; glyph coverage, font tables and redistribution license are not yet verified. Ownership is provisional.",
+            "documentation" => "Documentation source; not proof of executable behavior. Converted to requirements/ADRs only after review.",
+            "source-snapshot" => "Historical source snapshot stored as documentation text; not compiled or executed as source code.",
+            "fixture" | "corpus" => "Pinned profile input; retain independently and never substitute another profile's fixture.",
+            _ => "Scanner-generated record with a conservative owner/migration classification; semantic dependency edges require review.",
         };
         records.push(FileRecord {
             compat_id: format!("{}:{}:{}", source.profile, kind, source_path),
@@ -224,11 +235,136 @@ fn scan_source(source: &SourceSpec, records: &mut Vec<FileRecord>) -> io::Result
             legacy_name,
             owning_profile: source.profile.clone(),
             status: status.to_string(),
+            parser_or_consumer,
+            parity_fixtures,
+            rust_owner,
+            migration_rule,
             verification_level: "scanned-hash-only".to_string(),
             notes: notes.to_string(),
         });
     }
     Ok(())
+}
+
+fn ownership_for(
+    source: &SourceSpec,
+    source_path: &str,
+    kind: &str,
+) -> (String, String, String, Vec<String>) {
+    let lower = source_path.to_ascii_lowercase();
+    let profile_fixture = format!("legacy/corpus-manifest.json#{}", source.profile);
+    let (parser, owner, migration) = if source.profile == "requirements-docs" {
+        (
+            "requirements-and-research".to_string(),
+            "docs/requirements".to_string(),
+            "spec-only; convert accepted requirement to feature or ADR, never infer executable behavior".to_string(),
+        )
+    } else if lower.ends_with("/typesetter.js") || lower == "typesetter.js" {
+        (
+            "legacy-layout-engine".to_string(),
+            "engine-core".to_string(),
+            "port behavior under its owning profile with a named fixture; never merge algorithms across profiles".to_string(),
+        )
+    } else if lower.ends_with("/decorations.js") || lower == "decorations.js" {
+        (
+            "legacy-decoration-and-geometry-runtime".to_string(),
+            "engine-core::decorations".to_string(),
+            "model decoration flow/visual/anchor geometry as explicit engine operations; preserve profile behavior".to_string(),
+        )
+    } else if lower.ends_with("/geometry-audit.js") {
+        (
+            "legacy-independent-geometry-audit".to_string(),
+            "audit".to_string(),
+            "reimplement as an independent audit; do not use audit measurements as layout inputs".to_string(),
+        )
+    } else if lower.ends_with("geometry-audit-cli.js") {
+        (
+            "legacy-offline-renderer-runner".to_string(),
+            "xtask".to_string(),
+            "retain as read-only pinned oracle; do not link legacy JavaScript into Rust crates".to_string(),
+        )
+    } else if lower == "app.js" || lower.ends_with("/app.js") {
+        (
+            "legacy-application-orchestration".to_string(),
+            "app-core".to_string(),
+            "replace with immutable typed jobs and explicit application state; preserve profile settings".to_string(),
+        )
+    } else if lower == "index.html"
+        || lower.ends_with("/index.html")
+        || lower == "renderer.html"
+        || lower.ends_with("/renderer.html")
+        || lower.ends_with("/renderer-bridge.js")
+        || kind == "style"
+        || kind == "dom-contract"
+    {
+        (
+            "legacy-dom-and-css-renderer".to_string(),
+            "legacy-renderer-adapter".to_string(),
+            "retain only as a compatibility/export adapter; never use browser reflow to decide Rust pagination".to_string(),
+        )
+    } else if lower.contains("setting")
+        || lower.contains("preset")
+        || lower.contains("default_settings")
+        || kind == "settings"
+    {
+        (
+            "legacy-profile-settings-loader".to_string(),
+            "settings".to_string(),
+            "preserve losslessly and resolve defaults only within the selected legacy profile".to_string(),
+        )
+    } else if kind == "font" {
+        (
+            "font-environment-inventory".to_string(),
+            "font-environment".to_string(),
+            "verify font tables, glyph coverage, aliases and license before packaging or selecting fallback".to_string(),
+        )
+    } else if kind == "asset" {
+        (
+            "legacy-asset-loader".to_string(),
+            "asset-registry".to_string(),
+            "validate and hash assets; retain offline and profile-specific dependencies".to_string(),
+        )
+    } else if kind == "fixture" || kind == "corpus" {
+        (
+            "legacy-fixture-runner".to_string(),
+            "compat-test-harness".to_string(),
+            "retain exact bytes and profile identity; use as a parity fixture, never mutate baseline input".to_string(),
+        )
+    } else if kind == "documentation" || kind == "source-snapshot" {
+        (
+            "documentation-and-history".to_string(),
+            "docs/history".to_string(),
+            "historical-only; cite as context and require executable evidence for behavior claims".to_string(),
+        )
+    } else if kind == "test-infrastructure" {
+        (
+            "legacy-test-infrastructure".to_string(),
+            "compat-test-harness".to_string(),
+            "port test intent into deterministic Rust tests; keep legacy runner pinned".to_string(),
+        )
+    } else if kind == "build-config" {
+        (
+            "legacy-build-tooling".to_string(),
+            "build-system".to_string(),
+            "retain only the configuration required by the isolated legacy runner".to_string(),
+        )
+    } else {
+        (
+            "legacy-source-inventory".to_string(),
+            "legacy-source-reference".to_string(),
+            "historical-only until a concrete feature owner and parity fixture are approved".to_string(),
+        )
+    };
+    let fixtures = if matches!(kind, "fixture" | "corpus") {
+        vec![profile_fixture]
+    } else if owner == "engine-core" || owner == "engine-core::decorations" {
+        vec![profile_fixture]
+    } else if owner == "xtask" {
+        vec!["tools/legacy-runner/README.md".to_string()]
+    } else {
+        Vec::new()
+    };
+    (parser, owner, migration, fixtures)
 }
 
 fn collect_files(root: &Path, directory: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
@@ -386,14 +522,26 @@ fn render_manifest(sources: &[SourceSpec], records: &[FileRecord]) -> String {
         push_field(&mut output, "legacyName", &record.legacy_name, true);
         push_field(&mut output, "owningProfile", &record.owning_profile, true);
         push_field(&mut output, "status", &record.status, true);
-        output.push_str("      \"parserOrConsumer\": null,\n");
+        push_field(
+            &mut output,
+            "parserOrConsumer",
+            &record.parser_or_consumer,
+            true,
+        );
         output.push_str("      \"assetDependencies\": [],\n");
-        output.push_str("      \"parityFixtures\": [],\n");
-        output.push_str("      \"rustOwner\": null,\n");
+        output.push_str("      \"parityFixtures\": [");
+        for (fixture_index, fixture) in record.parity_fixtures.iter().enumerate() {
+            if fixture_index > 0 {
+                output.push_str(", ");
+            }
+            output.push_str(&json_string(fixture));
+        }
+        output.push_str("],\n");
+        push_field(&mut output, "rustOwner", &record.rust_owner, true);
         push_field(
             &mut output,
             "migrationRule",
-            "unassigned; task 8 review required",
+            &record.migration_rule,
             true,
         );
         push_field(
