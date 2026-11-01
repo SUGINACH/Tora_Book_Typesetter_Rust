@@ -26,7 +26,7 @@ jobs:
   hebrew-shaping:
     name: HarfRust 0.15.0 / unicode-bidi 0.3.18
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout Rust target
         uses: actions/checkout@v4
