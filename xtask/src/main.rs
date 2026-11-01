@@ -1055,7 +1055,8 @@ fn render_manifest(sources: &[SourceSpec], records: &[FileRecord]) -> String {
         }
         output.push_str("],\n");
         output.push_str("      \"resolvedAssetDependencies\": [");
-        for (dependency_index, dependency) in record.resolved_asset_dependencies.iter().enumerate() {
+        for (dependency_index, dependency) in record.resolved_asset_dependencies.iter().enumerate()
+        {
             if dependency_index > 0 {
                 output.push_str(", ");
             }
