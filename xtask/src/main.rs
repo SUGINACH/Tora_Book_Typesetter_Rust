@@ -1297,7 +1297,7 @@ mod tests {
     fn runner_evidence_requires_exact_profile_commit_path_and_hash() {
         let mut records = vec![runner_record()];
         let row = format!(
-            "legacy-orange-v23\\t0b0ee279464a3db14672cd3f4051275aba5985da\\trunner-sha\\thttps://example.test/run\\toffline-smoke-tested\\ttypesetter.js\\{}\\tloaded",
+            "legacy-orange-v23\t0b0ee279464a3db14672cd3f4051275aba5985da\trunner-sha\thttps://example.test/run\toffline-smoke-tested\ttypesetter.js\\{}\tloaded",
             "a".repeat(64)
         );
         assert!(apply_runner_evidence_rows(&mut records, &row).is_ok());
