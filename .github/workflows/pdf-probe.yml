@@ -52,7 +52,7 @@ jobs:
       - name: Install independent PDF inspection tools
         run: |
           sudo apt-get update
-          sudo apt-get install --yes poppler-utils
+          sudo apt-get install --yes poppler-utils mupdf-tools
 
       - name: Verify immutable source and font inputs
         shell: bash
@@ -122,6 +122,7 @@ jobs:
             artifacts/pdf-probe-raw.json
             artifacts/pdf-probe-extracted.txt
             artifacts/pdf-probe-layout-extracted.txt
+            artifacts/pdf-probe-mupdf-extracted.txt
             artifacts/pdf-probe-render-1.png
             artifacts/pdf-probe-fonts.txt
             artifacts/pdf-probe-info.txt
