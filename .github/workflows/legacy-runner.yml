@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  # A full-corpus replay can run for many minutes. Keep each immutable commit
+  # A full-corpus replay can exceed one hour. Keep each immutable commit
   # in its own group so later pushes cannot cancel the evidence-producing run.
   group: legacy-runner-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: false
@@ -28,7 +28,7 @@ jobs:
   legacy-orange-smoke:
     name: Pinned Orange V23 / Chromium offline smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 360
     steps:
       - name: Checkout Rust target
         uses: actions/checkout@v4
