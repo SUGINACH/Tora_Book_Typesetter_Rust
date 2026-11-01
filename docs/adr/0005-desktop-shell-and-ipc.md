@@ -47,6 +47,6 @@ Evidence: [Tauri workflow run 41347404787](https://github.com/SUGINACH/Tora_Book
 - The exact graph included `tauri 2.12.5` and `tauri-build 2.7.4`.
 - The probe demonstrated a minimal offline local frontend, typed command signatures and a generation gate that rejects stale/cancelled jobs.
 - Scope limitation: this run did **not** exercise an actual WebView `invoke` round-trip, file dialogs, project save/load, progress events or packaged installer. The bundle is intentionally disabled. It is build feasibility evidence, not acceptance of the desktop architecture.
-- A follow-up adds input validation for profile IDs, job IDs, generations and SHA-256 fingerprints; its Windows CI is pending.
+- Follow-up [run 41348380250](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41348380250) passed after adding strict validation for profile IDs, job IDs, positive generations and 64-character hexadecimal SHA-256 fingerprints. Tests prove invalid input does not advance the generation gate; stale generations are rejected. This remains a Rust-side command-handler test, not an actual WebView invoke round-trip.
 
 **Current result:** Tauri 2.12.5 is the first candidate to test, not an accepted selection. The remaining experiment must prove an actual IPC round-trip, allowlisted project I/O, progress/cancellation events, offline operation and stale-generation rejection before shell selection.
