@@ -100,8 +100,7 @@ jobs:
           path: |
             experiments/shaping-probe/Cargo.lock
             experiments/shaping-probe/corpus.txt
-            experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf
-            experiments/google-fonts/ofl/notoserifhebrew/OFL.txt
+            experiments/google-fonts/ofl/notoserifhebrew/
             artifacts/shaping-probe-raw.json
             artifacts/shaping-probe-manifest.json
           if-no-files-found: warn
