@@ -53,6 +53,8 @@ function main() {
   const child = spawnSync(process.execPath, [
     cliPath,
     '--input', 'very_long_test_text.txt',
+    '--settings', 'default_settings.json',
+    '--timeout-ms', '900000',
     '--report', reportRelative,
     '--summary', summaryRelative,
     '--fail-on', 'none',
@@ -77,6 +79,12 @@ function main() {
   const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
   const historical = JSON.parse(fs.readFileSync(baselinePath, 'utf8')).default_config;
 
+  assert(report.run?.settingsSource === 'default_settings.json',
+    'runner did not explicitly use the pinned default settings file');
+  const pinnedSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+  assert(JSON.stringify(report.run?.settings) === JSON.stringify(pinnedSettings),
+    'effective settings differ from the pinned default_settings.json bytes');
+  assert(report.run?.timeoutMs === 900000, 'full-corpus render timeout was not set to 900000 ms');
   assert(report.run?.gitCommit === expected.sourceCommit, 'report source commit mismatch');
   assert(report.run?.playwrightVersion === expected.playwrightVersion, 'report Playwright mismatch');
   assert(report.run?.browserVersion === expected.chromiumVersion, 'report Chromium mismatch');
