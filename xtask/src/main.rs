@@ -679,7 +679,7 @@ fn normalize_asset_reference(source_path: &str, value: &str) -> Option<String> {
     }
 
     let path_only = value
-        .split(|character| character == '?' || character == '#')
+        .split(['?', '#'])
         .next()
         .unwrap_or("")
         .replace('\\', "/");
