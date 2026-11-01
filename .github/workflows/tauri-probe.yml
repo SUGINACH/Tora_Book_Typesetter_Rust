@@ -1,0 +1,72 @@
+name: Tauri 2 desktop shell and IPC prototype
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/tauri-probe/**'
+      - 'docs/adr/0005-desktop-shell-and-ipc.md'
+      - '.github/workflows/tauri-probe.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/tauri-probe/**'
+      - 'docs/adr/0005-desktop-shell-and-ipc.md'
+      - '.github/workflows/tauri-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tauri-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-desktop:
+    name: Windows Tauri 2 build and IPC tests
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Verify pinned Rust toolchain
+        run: rustc --version
+
+      - name: Formatting
+        run: cargo fmt --manifest-path experiments/tauri-probe/Cargo.toml -- --check
+
+      - name: Build Tauri desktop application (generates isolated lockfile)
+        run: cargo build --manifest-path experiments/tauri-probe/Cargo.toml
+
+      - name: Unit tests for generation gate
+        run: cargo test --manifest-path experiments/tauri-probe/Cargo.toml --locked
+
+      - name: Clippy
+        run: cargo clippy --manifest-path experiments/tauri-probe/Cargo.toml --all-targets --locked -- -D warnings
+
+      - name: Release build
+        run: cargo build --manifest-path experiments/tauri-probe/Cargo.toml --locked --release
+
+      - name: Record exact dependency graph
+        shell: pwsh
+        run: |
+          cargo tree --manifest-path experiments/tauri-probe/Cargo.toml --locked > artifacts-tauri-dependency-tree.txt
+          cargo metadata --manifest-path experiments/tauri-probe/Cargo.toml --locked --format-version 1 > artifacts-tauri-metadata.json
+          if (-not (Select-String -Path artifacts-tauri-dependency-tree.txt -Pattern 'tauri v2.12.5')) { throw 'Tauri version pin missing' }
+          if (-not (Select-String -Path artifacts-tauri-dependency-tree.txt -Pattern 'tauri-build v2.7.4')) { throw 'tauri-build version pin missing' }
+
+      - name: Upload Tauri feasibility artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-2-windows-ipc-probe
+          path: |
+            experiments/tauri-probe/Cargo.lock
+            artifacts-tauri-dependency-tree.txt
+            artifacts-tauri-metadata.json
+            target/release/tauri-probe.exe
+          if-no-files-found: warn
