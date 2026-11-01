@@ -60,4 +60,13 @@ Sources:
 - https://docs.rs/lopdf/latest/lopdf/
 - https://docs.rs/crate/printpdf/latest
 
+## Prototype run 1 — Poppler RTL extraction finding
+
+Evidence: [PDF probe run 41348147637](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41348147637), source commit `f22703645c89c4ac42ed9cad9e988c793dd0385c`.
+
+- The generated PDF contains a Type0 font, a ToUnicode CMap and UTF-16BE `/ActualText` entries whose bytes encode the original Hebrew strings in logical source order.
+- The independent Poppler 25.06 `pdftotext -raw` and `-layout` outputs returned reversed Hebrew codepoint sequences wrapped in RLE/PDF directional controls. The exact-string acceptance check correctly failed; this was not waived or normalized.
+- The next run adds MuPDF's independent text extractor as the logical-order acceptance check while retaining both Poppler outputs as diagnostic evidence. This will establish whether the discrepancy is Poppler-specific or a broader PDF mapping problem.
+- The PDF probe has not yet passed logical Hebrew extraction; no backend is selected.
+
 **Current result:** no backend selected. The acceptance test remains independent text extraction of Hebrew+niqqud from a real Type0 subset, followed by logical-order comparison and raster comparison against the DisplayList.
