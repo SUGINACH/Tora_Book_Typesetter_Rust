@@ -212,16 +212,7 @@ fn scan_source(source: &SourceSpec, records: &mut Vec<FileRecord>) -> io::Result
             .and_then(OsStr::to_str)
             .unwrap_or("unknown")
             .to_string();
-        let status = if source.profile == "requirements-docs" && kind == "documentation" {
-            "spec-only"
-        } else if matches!(
-            kind.as_str(),
-            "settings" | "data" | "asset" | "font" | "fixture" | "corpus"
-        ) {
-            "verified-data"
-        } else {
-            "historical-only"
-        };
+        let status = status_for(&source.profile, &kind);
         let (parser_or_consumer, rust_owner, migration_rule, parity_fixtures) =
             ownership_for(source, &source_path, &kind);
         let (test_ids, acceptance_criteria) = tests_for(source, &kind, &rust_owner);
@@ -834,6 +825,21 @@ fn is_relevant(path: &str) -> bool {
     )
 }
 
+fn status_for(profile: &str, kind: &str) -> &'static str {
+    if profile == "requirements-docs" && kind == "documentation" {
+        "spec-only"
+    } else if kind == "font" {
+        "blocked-license"
+    } else if matches!(
+        kind,
+        "settings" | "data" | "asset" | "fixture" | "corpus"
+    ) {
+        "verified-data"
+    } else {
+        "historical-only"
+    }
+}
+
 fn classify(path: &str) -> String {
     let extension = Path::new(path)
         .extension()
@@ -1111,7 +1117,7 @@ fn sha256(input: &[u8]) -> [u8; 32] {
 mod tests {
     use super::{
         classify, extract_asset_dependencies, hex, json_string, normalize_asset_reference,
-        ownership_for, sha256, SourceSpec,
+        ownership_for, sha256, status_for, SourceSpec,
     };
     use std::path::PathBuf;
 
@@ -1165,6 +1171,14 @@ mod tests {
         );
         assert_eq!(owner, "docs/requirements");
         assert!(migration.contains("spec-only"));
+    }
+
+
+    #[test]
+    fn fonts_remain_blocked_until_license_review() {
+        assert_eq!(status_for("legacy-orange-v23", "font"), "blocked-license");
+        assert_eq!(status_for("legacy-orange-v23", "asset"), "verified-data");
+        assert_eq!(status_for("requirements-docs", "documentation"), "spec-only");
     }
 
     #[test]
