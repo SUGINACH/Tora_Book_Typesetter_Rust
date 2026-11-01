@@ -90,3 +90,12 @@
 - [Rust CI 41363057774](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363057774) ו-[Manifest scan 41363057769](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363057769) על 4d4a5c5 עדיין רצים. יש להתייחס לסריקה זו כקובעת רק לאחר השוואת artifact.
 - [Legacy runner 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין full-corpus in progress; smoke עבר, אין report מלא.
 - שלב א פתוח; משימות 1–2 בלבד סגורות. אין לשנות baseline/tolerances ואין להתחיל שלב ב.
+
+
+## תיקון מבני אחרון — 2026-11-02
+
+- CI 41363057774 זיהה קטע normalizer משוכפל אחרי מודול tests, ולכן commit 4d4a5c5 לא היה תקין. הקטע הוסר ב-[commit 99e4266](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/99e42666f5a6b1fb326b33ac0cab2062e1cea986).
+- אימות מבני של קובץ xtask/src/main.rs לאחר התיקון: 1,848 שורות, הגדרה אחת של resolve_local_asset_path ומודול tests יחיד. זהו אימות טקסטואלי בלבד; קומפילציה טרם אושרה.
+- [Rust CI 41363244229](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363244229) ו-[Manifest 41363244210](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363244210) על commit 99e4266 queued/pending. יש להמתין לתוצאות אלה לפני שימוש ב-manifest החדש.
+- [Legacy runner 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין full-corpus in progress; אין report מלא.
+- שלב א פתוח; משימות 1–2 בלבד סגורות. אין לשנות baselines/tolerances ואין להתחיל שלב ב.

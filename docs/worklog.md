@@ -260,3 +260,13 @@
 - [Rust CI 41363057774](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363057774) ו-[Manifest scan 41363057769](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363057769) הופעלו על 4d4a5c5 ונמצאים בבדיקה. יש להשתמש רק בתוצאות וב-artifact של הריצה העדכנית להכרעה.
 - [Legacy runner 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין ב-full-corpus comparison; smoke עבר. אין עדיין report/artifacts מלאים, ואין לבטל את הריצה.
 - מסקנה: התיקון צמצם false positives משמעותית, אך edge diff הוכיח שחייבים לשמר גם CSS paths עם רווחים ו-module resolution תקני. משימות provenance/manifest/runner נשארות פתוחות; אין לשנות baselines או tolerances ואין להתחיל שלב ב.
+
+
+### תיקון מבני נוסף ל-extractor — 2026-11-02
+
+- בדיקת [CI 41363057774](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363057774) חשפה שבעריכת guard נשאר אחרי מודול הבדיקות קטע קוד משוכפל ולא שלם, ולכן גם commit 4d4a5c5 לא היה תקין. אין להתייחס לכשל זה ככשל לוגי של ה-extractor; זהו כשל מבני בקובץ המקור.
+- ב-[commit 99e4266](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/99e42666f5a6b1fb326b33ac0cab2062e1cea986) הוסר ה-tail המשוכפל. בדיקת מקור לאחר התיקון מראה 1,848 שורות, הגדרה אחת של resolve_local_asset_path ומודול tests אחד. ה-guard התקין, CSS URL עם רווחים, resolver ל-import extensionless ושתי בדיקות היחידה נשמרו.
+- [Rust CI 41363244229](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363244229) ו-[Manifest scan 41363244210](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363244210) הופעלו על 99e4266; בעת עדכון זה הם queued/pending. אין עדיין אישור קומפילציה או artifact סריקה.
+- הריצות 41363221442/41363221527 על 2d2bede הוחלפו בריצות commit 99e4266; אין להשתמש בהן כראיית קבלה.
+- Legacy runner 41361263075 עדיין פעיל ב-full-corpus; smoke עבר ואין עדיין report/artifacts מלאים.
+- שלב א נשאר פתוח. אין להתחיל שלב ב עד CI ירוק, manifest diff מתוקן ו-full-corpus report מול baseline.
