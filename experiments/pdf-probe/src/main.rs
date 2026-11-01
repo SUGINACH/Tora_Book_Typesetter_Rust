@@ -1,7 +1,8 @@
 use printpdf::text::Codepoint;
+use std::collections::BTreeMap;
 use printpdf::{
-    Mm, Op, ParsedFont, PdfDocument, PdfFontHandle, PdfPage, PdfSaveOptions, Pt, TextItem,
-    TextMatrix,
+    DictItem, Mm, Op, ParsedFont, PdfDocument, PdfFontHandle, PdfPage, PdfSaveOptions, Pt,
+    TextItem, TextMatrix,
 };
 use std::collections::BTreeSet;
 use std::env;
@@ -86,8 +87,22 @@ fn run() -> Result<(), String> {
             mapping.insert((glyph.gid, glyph.cid.clone()));
         }
 
-        // Glyphs are positioned in HarfRust visual order, but emitted to the PDF
-        // content stream in logical cluster order for text extraction.
+        // ActualText preserves the logical Unicode sequence while glyphs are
+        // positioned independently for correct visual rendering and mark placement.
+        ops.push(Op::BeginMarkedContentWithProperties {
+            tag: "Span".to_string(),
+            properties: DictItem::Dict {
+                map: BTreeMap::from([(
+                    "ActualText".to_string(),
+                    DictItem::String {
+                        data: utf16be(text),
+                        literal: false,
+                    },
+                )]),
+            },
+        });
+        // Glyphs are emitted in logical cluster order; their absolute positions
+        // retain HarfRust's visual shaping order.
         glyphs.sort_by_key(|glyph| (glyph.cluster, glyph.original_index));
         for glyph in &glyphs {
             ops.push(Op::SetTextMatrix {
@@ -101,6 +116,7 @@ fn run() -> Result<(), String> {
                 }])],
             });
         }
+        ops.push(Op::EndMarkedContent);
 
         report.push_str(&format!(
             "    {{\"text\":{},\"direction\":{},\"script\":{},\"glyphs\":[",
@@ -293,6 +309,14 @@ fn assign_cluster_text(text: &str, glyphs: &mut [Glyph]) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+fn utf16be(value: &str) -> Vec<u8> {
+    let mut bytes = vec![0xfe, 0xff];
+    for unit in value.encode_utf16() {
+        bytes.extend_from_slice(&unit.to_be_bytes());
+    }
+    bytes
 }
 
 fn json_string(value: &str) -> String {
