@@ -277,11 +277,7 @@ fn parse_pair(value: &str) -> Result<(i32, i32), String> {
     Ok((first, second))
 }
 
-fn assign_cluster_text(
-    text: &str,
-    font: &ParsedFont,
-    glyphs: &mut [Glyph],
-) -> Result<(), String> {
+fn assign_cluster_text(text: &str, font: &ParsedFont, glyphs: &mut [Glyph]) -> Result<(), String> {
     assign_cluster_text_by_glyph(text, glyphs, |character| {
         font.lookup_glyph_index(character as u32)
     })
@@ -340,9 +336,7 @@ where
             }
         }
 
-        if assignments.len() == source_indices.len()
-            && assignments.len() == glyph_indices.len()
-        {
+        if assignments.len() == source_indices.len() && assignments.len() == glyph_indices.len() {
             for (glyph_index, source_index) in assignments {
                 glyphs[glyph_index].logical_index = source_index;
                 glyphs[glyph_index].cid = characters[source_index].to_string();
