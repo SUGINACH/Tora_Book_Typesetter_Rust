@@ -432,7 +432,10 @@ mod tests {
         };
         assert!(assign_cluster_text_by_glyph("שִׁאב", &mut glyphs, map).is_ok());
         glyphs.sort_by_key(|item| (item.logical_index, item.original_index));
-        let extracted: String = glyphs.iter().map(|item| item.cid.as_str()).collect();
+        let extracted = glyphs.iter().fold(String::new(), |mut output, item| {
+            output.push_str(&item.cid);
+            output
+        });
         assert_eq!(extracted, "שִׁאב");
     }
 
