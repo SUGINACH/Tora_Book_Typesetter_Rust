@@ -38,7 +38,7 @@ def main() -> None:
         line for line in args.corpus.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
     pdf_bytes = args.pdf.read_bytes()
-    if not re.search(rb"/Subtype\\s*/Type0", pdf_bytes) or not re.search(rb"/ToUnicode\\b", pdf_bytes):
+    if not re.search(rb"/Subtype\s*/Type0", pdf_bytes) or not re.search(rb"/ToUnicode\b", pdf_bytes):
         raise SystemExit("PDF does not contain a Type0 font and ToUnicode CMap")
     if not raw_report.get("glyphToUnicodeMappings"):
         raise SystemExit("no glyph-to-Unicode mappings were written")
@@ -48,17 +48,30 @@ def main() -> None:
         raise SystemExit(f"printpdf save warnings: {raw_report.get('saveWarnings')}")
 
     extracted_path = args.output.parent / "pdf-probe-extracted.txt"
+    layout_extracted_path = args.output.parent / "pdf-probe-layout-extracted.txt"
     fonts_path = args.output.parent / "pdf-probe-fonts.txt"
     info_path = args.output.parent / "pdf-probe-info.txt"
     subprocess.run(["pdftotext", "-raw", str(args.pdf), str(extracted_path)], check=True)
+    subprocess.run(["pdftotext", "-layout", str(args.pdf), str(layout_extracted_path)], check=True)
     extracted = extracted_path.read_text(encoding="utf-8")
+    layout_extracted = layout_extracted_path.read_text(encoding="utf-8")
     normalized = [line.strip() for line in extracted.replace("\f", "").splitlines() if line.strip()]
+    layout_normalized = [
+        line.strip() for line in layout_extracted.replace("\f", "").splitlines() if line.strip()
+    ]
     if normalized != expected_lines:
         raise SystemExit(
-            "PDF text extraction mismatch.\nExpected: "
+            "PDF raw text extraction mismatch.\nExpected: "
             + repr(expected_lines)
             + "\nActual: "
             + repr(normalized)
+        )
+    if layout_normalized != expected_lines:
+        raise SystemExit(
+            "PDF layout text extraction mismatch.\nExpected: "
+            + repr(expected_lines)
+            + "\nActual: "
+            + repr(layout_normalized)
         )
 
     fonts = run(["pdffonts", str(args.pdf)])
