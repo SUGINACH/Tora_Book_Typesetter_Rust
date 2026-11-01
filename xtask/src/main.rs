@@ -721,6 +721,13 @@ fn extract_javascript_dependencies(
         match &tokens[index] {
             JsToken::Identifier(identifier) => {
                 let next_is_open_call = tokens.get(index + 1) == Some(&JsToken::Punct('('));
+                if identifier == "import" {
+                    if let Some(JsToken::String(value)) = tokens.get(index + 1) {
+                        if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                            output.insert(normalized);
+                        }
+                    }
+                }
                 if matches!(identifier.as_str(), "fetch" | "require" | "import")
                     && next_is_open_call
                 {
@@ -1669,11 +1676,12 @@ mod tests {
         let javascript = br#"
             // "comment-only.svg"
             const prose = "this sentence mentions sample.json";
-            const markup = \`<svg><image href="icons/real.svg"></image></svg>\`;
+            const markup = `<svg><image href="icons/real.svg"></image></svg>`;
             const PRIORITY_FONT_FILES = ["Alpha-Black.woff2", "Book-Regular.woff2"];
             const assetsToLoad = [{ file: "ornaments.json", type: "ornaments" }];
             fetch("fonts/fonts.json");
             fetch("fonts/" + fontFile);
+            import "./side-effect.css";
             import module from "./module.js";
             const helper = require("./helper.cjs");
             const worker = new URL("./worker.mjs", import.meta.url);
@@ -1685,6 +1693,7 @@ mod tests {
             "local:Book-Regular.woff2",
             "local:ornaments.json",
             "local:fonts/fonts.json",
+            "local:side-effect.css",
             "local:module.js",
             "local:helper.cjs",
             "local:worker.mjs",
