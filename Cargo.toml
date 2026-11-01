@@ -1,0 +1,20 @@
+# tora-typesetter workspace
+[workspace]
+resolver = "2"
+members = [
+    "crates/model",
+    "crates/geometry",
+    "crates/engine-core",
+    "xtask",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+rust-version = "1.85"
+
+[profile.release]
+overflow-checks = true
+lto = "thin"
+codegen-units = 1
