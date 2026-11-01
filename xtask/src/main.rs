@@ -1845,53 +1845,6 @@ mod tests {
         assert_eq!(json_string("a\tb"), "\"a\\tb\"");
     }
 }
-) && value.contains('{'))
-        || value.contains('}')
-        || value.contains(" + ")
-        || !is_path_candidate(value)
-    {
-        return None;
-    }
-
-    let path_only = value
-        .split(['?', '#'])
-        .next()
-        .unwrap_or("")
-        .replace('\\', "/");
-    if path_only.is_empty() || path_only.ends_with('/') {
-        return None;
-    }
-
-    let mut components = Vec::<String>::new();
-    if !path_only.starts_with('/') {
-        if let Some(parent) = Path::new(source_path).parent() {
-            for component in parent.to_string_lossy().split('/') {
-                if !component.is_empty() && component != "." {
-                    components.push(component.to_string());
-                }
-            }
-        }
-    }
-    for component in path_only.trim_start_matches('/').split('/') {
-        match component {
-            "" | "." => {}
-            ".." => {
-                if components.last().is_some_and(|last| last != "..") {
-                    components.pop();
-                } else {
-                    components.push("..".to_string());
-                }
-            }
-            value => components.push(value.to_string()),
-        }
-    }
-    if components.is_empty() {
-        None
-    } else {
-        Some(format!("local:{}", components.join("/")))
-    }
-}
-
 fn resolve_local_asset_path(path: &str, known_paths: &BTreeSet<String>) -> Option<String> {
     if known_paths.contains(path) {
         return Some(path.to_string());
