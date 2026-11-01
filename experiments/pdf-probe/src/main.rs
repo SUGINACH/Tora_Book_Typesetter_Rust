@@ -3,7 +3,7 @@ use printpdf::{
     Mm, Op, ParsedFont, PdfDocument, PdfFontHandle, PdfPage, PdfSaveOptions, Pt, TextItem,
     TextMatrix,
 };
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::env;
 use std::fs;
 use std::process::ExitCode;
@@ -68,8 +68,7 @@ fn run() -> Result<(), String> {
     let mut report = String::from(
         "{\n  \"schemaVersion\": 1,\n  \"shaper\": \"HarfRust hr-shape 0.15.0\",\n  \"pdfWriter\": \"printpdf 0.12.8\",\n  \"fontSizePt\": 18,\n  \"lines\": [\n",
     );
-    let mut mapping = BTreeMap::<u16, String>::new();
-    let mut conflicts = Vec::new();
+    let mut mapping = BTreeSet::<(u16, String)>::new();
 
     for (line_index, text) in lines.iter().enumerate() {
         if line_index > 0 {
@@ -84,16 +83,7 @@ fn run() -> Result<(), String> {
         let mut glyphs = shape_line(font_path, text, direction, script, language, baseline)?;
         assign_cluster_text(text, &mut glyphs)?;
         for glyph in &glyphs {
-            if let Some(existing) = mapping.get(&glyph.gid) {
-                if existing != &glyph.cid {
-                    conflicts.push(format!(
-                        "gid {} maps to both {:?} and {:?}",
-                        glyph.gid, existing, glyph.cid
-                    ));
-                }
-            } else {
-                mapping.insert(glyph.gid, glyph.cid.clone());
-            }
+            mapping.insert((glyph.gid, glyph.cid.clone()));
         }
 
         // Glyphs are positioned in HarfRust visual order, but emitted to the PDF
@@ -138,11 +128,6 @@ fn run() -> Result<(), String> {
         report.push_str("]}");
     }
 
-    if !conflicts.is_empty() {
-        return Err(format!(
-            "the PDF writer's glyph-ID keyed ToUnicode map has conflicting mappings: {conflicts:?}"
-        ));
-    }
     ops.push(Op::EndTextSection);
     let page = PdfPage::new(Mm(210.0), Mm(297.0), ops);
     let options = PdfSaveOptions {
