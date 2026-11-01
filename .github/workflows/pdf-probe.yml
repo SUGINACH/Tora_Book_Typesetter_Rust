@@ -1,0 +1,126 @@
+name: PDF Type0 and ToUnicode prototype
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/pdf-probe/**'
+      - 'docs/adr/0004-pdf-type0-tounicode.md'
+      - '.github/workflows/pdf-probe.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/pdf-probe/**'
+      - 'docs/adr/0004-pdf-type0-tounicode.md'
+      - '.github/workflows/pdf-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pdf-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  type0-tounicode:
+    name: HarfRust glyphs / printpdf Type0
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Rust target
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout exact HarfRust source
+        uses: actions/checkout@v4
+        with:
+          repository: harfbuzz/harfrust
+          ref: 71d965130ea93905f81b8f03a03d7ecc794fbc47
+          path: experiments/harfrust
+          persist-credentials: false
+
+      - name: Checkout exact Google Fonts font and OFL license
+        uses: actions/checkout@v4
+        with:
+          repository: google/fonts
+          ref: 6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec
+          path: experiments/google-fonts
+          persist-credentials: false
+
+      - name: Install independent PDF inspection tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes poppler-utils
+
+      - name: Verify immutable source and font inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C experiments/harfrust rev-parse HEAD)" = "71d965130ea93905f81b8f03a03d7ecc794fbc47"
+          test "$(git -C experiments/google-fonts rev-parse HEAD)" = "6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec"
+          test -s "experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf"
+          test -s "experiments/google-fonts/ofl/notoserifhebrew/OFL.txt"
+
+      - name: Formatting
+        run: cargo fmt --manifest-path experiments/pdf-probe/Cargo.toml -- --check
+
+      - name: First shaped-glyph PDF build (generates isolated lockfile)
+        run: |
+          mkdir -p artifacts
+          cargo run --manifest-path experiments/pdf-probe/Cargo.toml -- \
+            "experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf" \
+            experiments/pdf-probe/corpus.txt \
+            artifacts/pdf-probe-first.pdf \
+            artifacts/pdf-probe-first.json
+
+      - name: Locked repeat build and deterministic glyph-manifest comparison
+        run: |
+          cargo run --manifest-path experiments/pdf-probe/Cargo.toml --locked -- \
+            "experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf" \
+            experiments/pdf-probe/corpus.txt \
+            artifacts/pdf-probe-second.pdf \
+            artifacts/pdf-probe-second.json
+          diff -u artifacts/pdf-probe-first.json artifacts/pdf-probe-second.json
+          cp artifacts/pdf-probe-first.pdf artifacts/pdf-probe.pdf
+          cp artifacts/pdf-probe-first.json artifacts/pdf-probe-raw.json
+
+      - name: Independent PDF extraction and font inspection
+        run: |
+          pdftotext -raw artifacts/pdf-probe.pdf artifacts/pdf-probe-extracted.txt
+          pdffonts artifacts/pdf-probe.pdf > artifacts/pdf-probe-fonts.txt
+          pdfinfo artifacts/pdf-probe.pdf > artifacts/pdf-probe-info.txt
+
+      - name: Clippy and tests for the isolated PDF probe
+        run: |
+          cargo clippy --manifest-path experiments/pdf-probe/Cargo.toml --all-targets --locked -- -D warnings
+          cargo test --manifest-path experiments/pdf-probe/Cargo.toml --locked
+
+      - name: Finalize and verify Type0/ToUnicode fingerprints
+        run: |
+          python3 experiments/pdf-probe/finalize.py \
+            --pdf artifacts/pdf-probe.pdf \
+            --report artifacts/pdf-probe-raw.json \
+            --font "experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf" \
+            --license experiments/google-fonts/ofl/notoserifhebrew/OFL.txt \
+            --corpus experiments/pdf-probe/corpus.txt \
+            --output artifacts/pdf-probe-manifest.json
+
+      - name: Upload Type0/ToUnicode prototype
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harfrust-printpdf-type0-tounicode-probe
+          path: |
+            experiments/pdf-probe/Cargo.lock
+            experiments/pdf-probe/corpus.txt
+            experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf
+            experiments/google-fonts/ofl/notoserifhebrew/OFL.txt
+            artifacts/pdf-probe.pdf
+            artifacts/pdf-probe-raw.json
+            artifacts/pdf-probe-extracted.txt
+            artifacts/pdf-probe-fonts.txt
+            artifacts/pdf-probe-info.txt
+            artifacts/pdf-probe-manifest.json
+          if-no-files-found: warn
