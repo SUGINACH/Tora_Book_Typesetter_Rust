@@ -49,6 +49,7 @@ def main() -> None:
 
     extracted_path = args.output.parent / "pdf-probe-extracted.txt"
     layout_extracted_path = args.output.parent / "pdf-probe-layout-extracted.txt"
+    mupdf_extracted_path = args.output.parent / "pdf-probe-mupdf-extracted.txt"
     fonts_path = args.output.parent / "pdf-probe-fonts.txt"
     info_path = args.output.parent / "pdf-probe-info.txt"
     subprocess.run(["pdftotext", "-raw", str(args.pdf), str(extracted_path)], check=True)
@@ -59,19 +60,26 @@ def main() -> None:
     layout_normalized = [
         line.strip() for line in layout_extracted.replace("\f", "").splitlines() if line.strip()
     ]
-    if normalized != expected_lines:
+    # Keep Poppler's raw/layout results as diagnostics. Its RTL bidi
+    # post-processing can emit visual-order codepoints wrapped in RLE/PDF
+    # controls even when /ActualText contains the original logical Unicode.
+    # MuPDF is the independent acceptance extractor for this focused probe.
+    subprocess.run(
+        ["mutool", "draw", "-F", "txt", "-o", str(mupdf_extracted_path), str(args.pdf)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    mupdf_extracted = mupdf_extracted_path.read_text(encoding="utf-8")
+    mupdf_normalized = [
+        line.strip() for line in mupdf_extracted.replace("\\f", "").splitlines() if line.strip()
+    ]
+    if mupdf_normalized != expected_lines:
         raise SystemExit(
-            "PDF raw text extraction mismatch.\nExpected: "
+            "MuPDF logical text extraction mismatch.\\nExpected: "
             + repr(expected_lines)
-            + "\nActual: "
-            + repr(normalized)
-        )
-    if layout_normalized != expected_lines:
-        raise SystemExit(
-            "PDF layout text extraction mismatch.\nExpected: "
-            + repr(expected_lines)
-            + "\nActual: "
-            + repr(layout_normalized)
+            + "\\nActual: "
+            + repr(mupdf_normalized)
         )
 
     fonts = run(["pdffonts", str(args.pdf)])
@@ -112,11 +120,17 @@ def main() -> None:
         },
         "results": {
             "pdfSha256": sha256(args.pdf),
-            "extractedTextSha256": sha256(extracted_path),
-            "layoutExtractedTextSha256": sha256(layout_extracted_path),
+            "popplerRawExtractedTextSha256": sha256(extracted_path),
+            "popplerLayoutExtractedTextSha256": sha256(layout_extracted_path),
+            "mupdfExtractedTextSha256": sha256(mupdf_extracted_path),
             "glyphToUnicodeMappingCount": raw_report.get("glyphToUnicodeMappings"),
             "logicalTextExtractionExact": True,
-            "rawAndLayoutExtractionExact": True,
+            "mupdfLogicalTextExtractionExact": True,
+            "popplerRawExtractionMatchesLogical": normalized == expected_lines,
+            "popplerLayoutExtractionMatchesLogical": layout_normalized == expected_lines,
+            "popplerRawExtractedText": normalized,
+            "popplerLayoutExtractedText": layout_normalized,
+            "mupdfExtractedText": mupdf_normalized,
             "type0FontPresent": True,
             "toUnicodeCMapPresent": True,
             "pdffonts": fonts,
