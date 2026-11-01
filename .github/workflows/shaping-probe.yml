@@ -41,6 +41,14 @@ jobs:
           path: experiments/harfrust
           persist-credentials: false
 
+      - name: Checkout exact upstream HarfBuzz reference
+        uses: actions/checkout@v4
+        with:
+          repository: harfbuzz/harfbuzz
+          ref: 35f656d70e17710a39e8c3a913d6bcd2a3eaf0f6
+          path: experiments/harfbuzz
+          persist-credentials: false
+
       - name: Checkout exact Google Fonts font and OFL license
         uses: actions/checkout@v4
         with:
@@ -49,11 +57,43 @@ jobs:
           path: experiments/google-fonts
           persist-credentials: false
 
+      - name: Install upstream HarfBuzz build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes meson ninja-build pkg-config
+
+      - name: Build exact upstream HarfBuzz 15.0.0 reference
+        working-directory: experiments/harfbuzz
+        run: |
+          meson setup build \
+            -Dutilities=enabled \
+            -Dtests=disabled \
+            -Ddocs=disabled \
+            -Dicu=disabled \
+            -Dglib=disabled \
+            -Dgobject=disabled \
+            -Dintrospection=disabled \
+            -Dfreetype=disabled \
+            -Dfontations=disabled \
+            -Dharfrust=disabled \
+            -Dkbts=disabled \
+            -Dwasm=disabled \
+            -Dgraphite2=disabled \
+            -Dsubset=disabled \
+            -Draster=disabled \
+            -Dvector=disabled \
+            -Dgpu=disabled \
+            -Dpng=disabled \
+            -Dzlib=disabled
+          ninja -C build hb-shape
+          build/util/hb-shape --version
+
       - name: Verify immutable source and font inputs
         shell: bash
         run: |
           set -euo pipefail
           test "$(git -C experiments/harfrust rev-parse HEAD)" = "71d965130ea93905f81b8f03a03d7ecc794fbc47"
+          test "$(git -C experiments/harfbuzz rev-parse HEAD)" = "35f656d70e17710a39e8c3a913d6bcd2a3eaf0f6"
           test "$(git -C experiments/google-fonts rev-parse HEAD)" = "6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec"
           test -s "experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf"
           test -s "experiments/google-fonts/ofl/notoserifhebrew/OFL.txt"
@@ -77,6 +117,14 @@ jobs:
             artifacts/shaping-probe-second.json
           diff -u artifacts/shaping-probe-first.json artifacts/shaping-probe-second.json
           cp artifacts/shaping-probe-first.json artifacts/shaping-probe-raw.json
+
+      - name: Compare glyph IDs, clusters, advances and offsets with upstream HarfBuzz
+        run: |
+          python3 experiments/shaping-probe/compare_harfbuzz.py \
+            --hb-shape experiments/harfbuzz/build/util/hb-shape \
+            --font "experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf" \
+            --raw artifacts/shaping-probe-raw.json \
+            --output artifacts/harfrust-vs-harfbuzz.json
 
       - name: Clippy and tests for the isolated probe
         run: |
@@ -103,4 +151,5 @@ jobs:
             experiments/google-fonts/ofl/notoserifhebrew/
             artifacts/shaping-probe-raw.json
             artifacts/shaping-probe-manifest.json
+            artifacts/harfrust-vs-harfbuzz.json
           if-no-files-found: warn
