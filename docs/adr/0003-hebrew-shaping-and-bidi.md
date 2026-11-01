@@ -37,15 +37,19 @@ The selected stack must preserve Hebrew marks and clusters, provide stable sourc
 
 ## Research snapshot — 2026-11-01
 
-- `rustybuzz 0.20.1` is documented as a pure-Rust HarfBuzz shaping port and depends on `ttf-parser 0.25`; its API exposes glyph IDs, positions, script, language, direction and shaping features. However, the current RustSec advisory database marks `rustybuzz` unmaintained (RUSTSEC-2026-0206). It is therefore a research candidate, not an approved dependency.
-- The `rustybuzz` project documentation also records limits: no integration with FreeType/CoreText/Uniscribe/DirectWrite, no ICU/GLib integration, no Graphite2 support, and some OpenType/AAT features are unsupported. These limits need explicit compatibility tests.
-- `unicode-bidi 0.3.18` implements UAX #9 in safe Rust. Its documented model resolves bidi levels and reorders line ranges after line wrapping; that distinction matters because the engine must shape logical runs and then reorder visual fragments at the correct stage.
-- `tectonic-rustybuzz 0.20.2` is a possible fork candidate, but its maintenance status, source divergence, security posture and parity with the upstream shaping API must be audited before use.
+- `harfrust 0.15.0` is an actively released pure-Rust port matching HarfBuzz v15.0.0 (released 2026-10-21) with MSRV 1.85. It uses `read-fonts 0.46.0`, exposes glyph buffers/positions and shaping traces, and publishes the `hr-shape` utility for inspecting glyph IDs, advances, offsets, clusters and flags. It is the leading prototype candidate, not an approved dependency.
+- HarfRust's own documentation lists important limits: no FreeType/CoreText/Uniscribe/DirectWrite font-loading integration, no ICU/GLib integration, and no Graphite support. Those constraints are acceptable only if the engine owns a pinned font registry and our required fonts/features pass the Hebrew corpus.
+- `unicode-bidi 0.3.18` implements UAX #9 in safe Rust. Its documented model resolves bidi levels and reorders line ranges after line wrapping; the engine must shape logical runs and reorder visual fragments at the correct stage.
+- `rustybuzz 0.20.1` is a pure-Rust HarfBuzz port but is currently flagged unmaintained (RUSTSEC-2026-0206). Do not select it unless the advisory is resolved or a maintained fork is audited.
+- `tectonic-rustybuzz 0.20.2` remains a comparison/fallback candidate only; its maintenance status, source divergence, security posture and parity with upstream must be checked.
 
 Sources:
-- https://docs.rs/rustybuzz/latest/rustybuzz/
-- https://github.com/harfbuzz/rustybuzz/blob/main/Cargo.toml
+- https://docs.rs/harfrust/0.15.0/harfrust/
+- https://github.com/harfbuzz/harfrust/blob/main/CHANGELOG.md
+- https://docs.rs/hr-shape/0.15.0/hr_shape/
 - https://docs.rs/unicode-bidi/latest/unicode_bidi/
+- https://docs.rs/rustybuzz/latest/rustybuzz/
+- https://rustsec.org/advisories/RUSTSEC-2026-0206.html
 - https://docs.rs/crate/tectonic-rustybuzz/latest
 - https://github.com/taiki-e/rustsec-advisory-db (advisory database; inspect the exact RUSTSEC-2026-0206 record before any dependency selection)
 
