@@ -1693,7 +1693,10 @@ mod tests {
             "tests/lib/harness.js".to_string(),
             "tests/lib/harness.mjs".to_string(),
         ]);
-        assert_eq!(resolve_local_asset_path("tests/lib/harness", &ambiguous), None);
+        assert_eq!(
+            resolve_local_asset_path("tests/lib/harness", &ambiguous),
+            None
+        );
     }
 
     #[test]
