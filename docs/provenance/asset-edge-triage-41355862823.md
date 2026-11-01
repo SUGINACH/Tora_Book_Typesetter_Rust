@@ -2,8 +2,9 @@
 
 תאריך: 2026-11-02  
 מאגר יעד: `SUGINACH/Tora_Book_Typesetter_Rust`  
-סריקה: [Manifest scan 41355862823](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823)  
-Artifact: [legacy-compatibility-manifest.zip](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823/artifacts/13103227452)  
+סריקה ראשונית: [41355862823](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823)  
+אימות חוזר: [41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733), conclusion=success  
+Artifacts: [13103227452](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823/artifacts/13103227452) · [13105540442](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733/artifacts/13105540442)  
 קוד הסורק שנבדק: `xtask/src/main.rs` ב-commit `dd4d33e172f816bdf2fdbb8e70ab53195821a2e2`.
 
 ## 1. היקף ונתונים
@@ -67,6 +68,11 @@ Artifact: [legacy-compatibility-manifest.zip](https://github.com/SUGINACH/Tora_B
 - לדחות path candidates שהם סיומת בלבד, directory-only, shell command או fragment של markup.
 - להוסיף unit tests עבור הדוגמאות לעיל, לצד positive tests ל-font basename, CSS `url(...)`, HTML `src/href`, ES module imports ו-`new URL`.
 - לא לשנות את `resolve_local_asset_path` או את profile isolation כדי להעלים unresolved אמיתיים.
+
+
+## 8. אימות חוזר של המניפסט
+
+[Manifest scan 41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733) הסתיים ב-success. ה-artifact החוזר (13105540442) מכיל manifest באורך 70,097,869 bytes וב-SHA-256 `304cd6fe197726cf21a8fe2a7ba1e4b38d50e9aef2ae6da8a7fbe3ec5f8c8c47`, זהה byte-for-byte ל-manifest מהסריקה 41355862823. לכן כל הספירות והדוגמאות לעיל מאומתות גם בריצה החוזרת; ה-rerun מאשר דטרמיניזם של הפלט, אך אינו פותר את בעיית הדיוק של extractor ואינו מסווג את ה-edges.
 
 ## 7. מצב
 
