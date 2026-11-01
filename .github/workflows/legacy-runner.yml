@@ -5,13 +5,13 @@ on:
     branches: [main]
     paths:
       - 'tools/legacy-runner/**'
-      - 'docs/provenance/**'
+      - 'docs/provenance/legacy-source-pins.json'
       - '.github/workflows/legacy-runner.yml'
   pull_request:
     branches: [main]
     paths:
       - 'tools/legacy-runner/**'
-      - 'docs/provenance/**'
+      - 'docs/provenance/legacy-source-pins.json'
       - '.github/workflows/legacy-runner.yml'
   workflow_dispatch:
 
