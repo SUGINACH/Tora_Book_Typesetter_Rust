@@ -4,7 +4,7 @@ This isolated prototype tests a maintained HarfBuzz-compatible Rust shaper witho
 
 ## Exact source pins
 
-- HarfRust repository: `harfbuzz/harfrust`, tag commit `71d965f3c4f7e83fb6c14c408bdc50fb1fb6c0c7`, version 0.15.0.
+- HarfRust repository: `harfbuzz/harfrust`, tag commit `71d965130ea93905f81b8f03a03d7ecc794fbc47`, version 0.15.0.
 - Bidi algorithm: `unicode-bidi = 0.3.18`.
 - Font: Google Fonts `NotoSerifHebrew[wdth,wght].ttf` at commit `6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec`; OFL license file is checked out beside it.
 - The probe is a separate Cargo workspace and does not add HarfRust or unicode-bidi to the production Cargo workspace.
