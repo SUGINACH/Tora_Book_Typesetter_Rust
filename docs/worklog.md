@@ -216,3 +216,35 @@
 - ה-manifest החוזר הוא 70,097,869 bytes, SHA-256 `304cd6fe197726cf21a8fe2a7ba1e4b38d50e9aef2ae6da8a7fbe3ec5f8c8c47`, זהה byte-for-byte ל-artifact 13103227452 מהסריקה הקודמת.
 - מכאן שהסריקה דטרמיניסטית, אך 413 unresolved edges אינם נפתרים. דו״ח triage עודכן עם הראיה החוזרת. הסיבה המבנית ל-false positives עדיין מחייבת תיקון extractor; אין לסגור משימות provenance/scanner.
 - ריצה נוספת 41360675212 הופעלה בעקבות עדכון מסמכי provenance ונשארה פעילה בזמן הבדיקה; אינה נדרשת כדי לאמת את ה-byte-identical result שכבר הושג.
+
+
+## עדכון ביצוע — 2026-11-02, תיקון extractor והרחבת חלון full-corpus
+
+### תיקון Legacy runner timeout
+
+- [Legacy runner 41356048158](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41356048158) הגיע ל-full-corpus אחרי smoke מוצלח, אך GitHub ביטל את ה-job לאחר 60 דקות בדיוק. זו הייתה מגבלת timeout-minutes: 60 ב-workflow, לא ביטול עקב push.
+- שיניתי את .github/workflows/legacy-runner.yml ל-timeout-minutes: 360 (המקסימום ל-GitHub-hosted runner) ב-commit 4cb14433782d159d9f2fd24c6511af3a6370af8d.
+- [Legacy runner 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075), שהופעל על commit זה, עבר שוב את ה-checkout, התקנת Node/dependencies/Chromium ואת smoke; full-corpus comparison עדיין in progress בזמן כתיבת העדכון. אין עדיין report או artifact מלא. אין לבטל את הריצה.
+
+### תיקון ראשוני ל-JavaScript asset extractor
+
+- הוחלפה סריקת כל quoted strings ב-JavaScript ב-tokenizer לקסיקלי מוגבל: הערות מדולגות, מחרוזות ו-template literals נשמרים כיחידות נפרדות, ונתיבי נכסים מזוהים רק בהקשרים מוגדרים.
+- נתמכים static fetch(...), require(...), import (כולל side-effect import), from, new URL(...), ושדות object מפורשים file/src/href/poster/url/path/asset/fontFile.
+- מערכי שמות סטטיים שמוגדרים בשמות כמו PRIORITY_FONT_FILES נשמרים, כדי לא לאבד font basenames שמשמשים ליצירת URLs דינמיים.
+- HTML attributes ו-CSS url(...) נבדקים בתוך string/template content; dynamic template expressions אינם מסווגים כנתיבים סטטיים.
+- is_path_candidate ו-normalize_asset_reference דוחים extension-only fragments ו-directory-only values כגון .json, scripts/.css, fonts/ ו-assets/.
+- נוספו unit tests ל-imports, require, new URL, fetch, asset object fields, font inventories, comments, template markup וערכים שנדחים.
+- קוד: [xtask/src/main.rs](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/blob/main/xtask/src/main.rs), commits 92b09e410d98473502be531992a35f9d7100709d ו-028319268d56eb2492ed36a16d861f02c2bcfcc7 (rustfmt בלבד ב-commit השני).
+
+### אימות קוד
+
+- [Rust CI 41361439397](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361439397) הסתיים ב-success על commit 028319268d56eb2492ed36a16d861f02c2bcfcc7.
+- כל חמשת ה-jobs עברו: Quality Ubuntu/macOS/Windows, Fixed-point scale reproducibility ו-negative unwrap quality gate.
+- בשלוש הפלטפורמות עברו Formatting, Clippy, unit/integration tests, doc tests, release build ו-repeat clean build + workspace metadata comparison. לכן בדיקות ה-unit החדשות ל-extractor עברו בכל שלוש הפלטפורמות.
+- [Manifest scan 41361439336](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361439336) הופעל על אותו commit ונשאר in progress בזמן העדכון. יש לבדוק את artifact ואת edge diff לאחר סיום; אין להסיק מראש כמה edges הוסרו או נשארו.
+
+### מצב קבלה
+
+- הוכח: Rust CI רב-פלטפורמי ירוק על קוד extractor החדש; timeout של full-corpus הוגדל; smoke runner עובר בריצה החדשה.
+- ממתין: manifest scan עדכני, edge diff, סיווג unresolved אמיתיים/false positives, ו-full-corpus report מול baseline.
+- אין לשנות baselines או tolerances, אין לסמן unresolved כ-resolved באופן גורף, ואין להתחיל שלב ב. V21 ו-V23 נשארים פרופילים נפרדים.
