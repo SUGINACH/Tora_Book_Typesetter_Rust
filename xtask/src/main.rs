@@ -30,6 +30,8 @@ struct FileRecord {
     parity_fixtures: Vec<String>,
     rust_owner: String,
     migration_rule: String,
+    test_ids: Vec<String>,
+    acceptance_criteria: String,
     verification_level: String,
     notes: String,
 }
@@ -218,6 +220,8 @@ fn scan_source(source: &SourceSpec, records: &mut Vec<FileRecord>) -> io::Result
         };
         let (parser_or_consumer, rust_owner, migration_rule, parity_fixtures) =
             ownership_for(source, &source_path, &kind);
+        let (test_ids, acceptance_criteria) =
+            tests_for(source, &kind, &rust_owner);
         let notes = match kind.as_str() {
             "font" => "Byte identity scanned; glyph coverage, font tables and redistribution license are not yet verified. Ownership is provisional.",
             "documentation" => "Documentation source; not proof of executable behavior. Converted to requirements/ADRs only after review.",
@@ -240,6 +244,8 @@ fn scan_source(source: &SourceSpec, records: &mut Vec<FileRecord>) -> io::Result
             parity_fixtures,
             rust_owner,
             migration_rule,
+            test_ids,
+            acceptance_criteria,
             verification_level: "scanned-hash-only".to_string(),
             notes: notes.to_string(),
         });
@@ -381,6 +387,92 @@ fn ownership_for(
         Vec::new()
     };
     (parser, owner, migration, fixtures)
+}
+
+fn tests_for(source: &SourceSpec, kind: &str, owner: &str) -> (Vec<String>, String) {
+    if source.profile == "requirements-docs" {
+        return (
+            vec!["SPEC-TO-ADR".to_string()],
+            "Every accepted requirement links to a feature/test or ADR; prose alone never proves executable behavior.".to_string(),
+        );
+    }
+    if matches!(kind, "fixture" | "corpus") {
+        return (
+            vec![
+                "SRC-PIN-HASH".to_string(),
+                "CORPUS-BYTE-IDENTITY".to_string(),
+                "PROFILE-REPLAY".to_string(),
+                "DETERMINISM-REPEAT".to_string(),
+            ],
+            "Pinned input byte length and SHA-256 must match; replay only with this profile's own settings/fonts; repeated canonical output hashes must be identical.".to_string(),
+        );
+    }
+    match owner {
+        "engine-core" | "engine-core::decorations" => (
+            vec![
+                "SRC-PIN-HASH".to_string(),
+                "PROFILE-REPLAY".to_string(),
+                "SEMANTIC-CONSERVATION".to_string(),
+                "DECISION-LEDGER-PARITY".to_string(),
+                "DETERMINISM-REPEAT".to_string(),
+            ],
+            "Zero unexplained missing/duplicated/reordered source spans; one valid decision record per required layout block; identical repeated output.".to_string(),
+        ),
+        "settings" => (
+            vec![
+                "SRC-PIN-HASH".to_string(),
+                "SETTINGS-ROUNDTRIP".to_string(),
+            ],
+            "Unknown settings keys survive lossless round-trip; defaults are resolved only inside the owning profile; no silent cross-profile fallback.".to_string(),
+        ),
+        "font-environment" => (
+            vec!["SRC-PIN-HASH".to_string(), "FONT-PREFLIGHT".to_string()],
+            "Every required face loads and required glyph coverage is reported; failed faces are zero; redistribution license is reviewed separately.".to_string(),
+        ),
+        "asset-registry" => (
+            vec![
+                "SRC-PIN-HASH".to_string(),
+                "ASSET-REFERENCE-CLOSURE".to_string(),
+            ],
+            "Every local reference resolves to a pinned asset; no missing dependency, path traversal or unapproved external URL.".to_string(),
+        ),
+        "legacy-renderer-adapter" => (
+            vec![
+                "SRC-PIN-HASH".to_string(),
+                "LEGACY-DOM-GEOMETRY".to_string(),
+                "DETERMINISM-REPEAT".to_string(),
+            ],
+            "Page/column/block bounds are measured with explicit units and tolerances; zero clipping/overflow; browser output never feeds Rust layout decisions.".to_string(),
+        ),
+        "xtask" | "audit" => (
+            vec!["SRC-PIN-HASH".to_string(), "LEGACY-DOM-GEOMETRY".to_string()],
+            "Pinned runner/audit source hash matches; offline run records zero external requests and emits a complete report.".to_string(),
+        ),
+        "app-core" => (
+            vec![
+                "SRC-PIN-HASH".to_string(),
+                "SETTINGS-ROUNDTRIP".to_string(),
+                "PROFILE-REPLAY".to_string(),
+            ],
+            "Application jobs carry immutable profile/config/input identities; unknown settings are not dropped and cancellation cannot publish stale output.".to_string(),
+        ),
+        "compat-test-harness" => (
+            vec![
+                "SRC-PIN-HASH".to_string(),
+                "PROFILE-REPLAY".to_string(),
+                "DETERMINISM-REPEAT".to_string(),
+            ],
+            "The fixture executes under its exact source profile and environment; repeat output signatures match.".to_string(),
+        ),
+        "build-system" => (
+            vec!["SRC-PIN-HASH".to_string()],
+            "Only the pinned legacy runner dependencies are installed; lockfile and toolchain identities are checked.".to_string(),
+        ),
+        _ => (
+            vec!["SRC-PIN-HASH".to_string()],
+            "Source identity is pinned; semantic ownership and migration remain historical-only until reviewed.".to_string(),
+        ),
+    }
 }
 
 fn collect_files(root: &Path, directory: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
@@ -555,6 +647,20 @@ fn render_manifest(sources: &[SourceSpec], records: &[FileRecord]) -> String {
         output.push_str("],\n");
         push_field(&mut output, "rustOwner", &record.rust_owner, true);
         push_field(&mut output, "migrationRule", &record.migration_rule, true);
+        output.push_str("      \"testIds\": [");
+        for (test_index, test_id) in record.test_ids.iter().enumerate() {
+            if test_index > 0 {
+                output.push_str(", ");
+            }
+            output.push_str(&json_string(test_id));
+        }
+        output.push_str("],\\n");
+        push_field(
+            &mut output,
+            "acceptanceCriteria",
+            &record.acceptance_criteria,
+            true,
+        );
         push_field(
             &mut output,
             "verificationLevel",
