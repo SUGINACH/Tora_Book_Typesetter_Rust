@@ -263,7 +263,7 @@
       "commit": "878535e12eb4aa7e3c4a72e0e79687082d8a6d3b",
       "branchLabel": "V22",
       "input": {
-        "path": "long_test_text.txt",
+        "path": "very_long_test_text.txt",
         "gitBlobSha1": "48be1d3d90cc31ce2ed660b1cbcacbf7eb320ffc",
         "sha256": "624f70cf78fd09ceb1342bc75ccec11c6dc99fc30bf341c99aafa4e1520f6e64",
         "bytes": 2719578
