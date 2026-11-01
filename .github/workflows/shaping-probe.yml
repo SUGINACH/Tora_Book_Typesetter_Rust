@@ -85,7 +85,8 @@ jobs:
             -Dgpu=disabled \
             -Dpng=disabled \
             -Dzlib=disabled
-          ninja -C build hb-shape
+          ninja -C build
+          test -x build/util/hb-shape
           build/util/hb-shape --version
 
       - name: Verify immutable source and font inputs
