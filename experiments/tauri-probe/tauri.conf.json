@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Tora Typesetter IPC Probe",
+  "version": "0.1.0",
+  "identifier": "org.suginach.tora.typesetter.ipcprobe",
+  "build": {
+    "frontendDist": "web"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Tora Typesetter IPC Probe",
+        "width": 900,
+        "height": 650,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    }
+  },
+  "bundle": {
+    "active": false
+  }
+}
