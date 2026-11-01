@@ -28,6 +28,7 @@ struct FileRecord {
     status: String,
     parser_or_consumer: String,
     asset_dependencies: Vec<String>,
+    resolved_asset_dependencies: Vec<String>,
     unresolved_asset_dependencies: Vec<String>,
     asset_dependency_status: String,
     parity_fixtures: Vec<String>,
@@ -239,6 +240,7 @@ fn scan_source(source: &SourceSpec, records: &mut Vec<FileRecord>) -> io::Result
             status: status.to_string(),
             parser_or_consumer,
             asset_dependencies,
+            resolved_asset_dependencies: Vec::new(),
             unresolved_asset_dependencies: Vec::new(),
             asset_dependency_status: "pending-validation".to_string(),
             parity_fixtures,
@@ -543,6 +545,13 @@ fn apply_runner_evidence_rows(records: &mut [FileRecord], evidence: &str) -> Res
 }
 
 fn extract_asset_dependencies(source_path: &str, kind: &str, bytes: &[u8]) -> Vec<String> {
+    let lower_path = source_path.to_ascii_lowercase();
+    if lower_path.starts_with("reports/")
+        || lower_path.starts_with("debug/")
+        || lower_path.contains("rendered-document.html")
+    {
+        return Vec::new();
+    }
     let is_svg_asset = kind == "asset"
         && Path::new(source_path)
             .extension()
@@ -737,6 +746,14 @@ fn normalize_asset_reference(source_path: &str, value: &str) -> Option<String> {
     {
         return Some(format!("external:{value}"));
     }
+    if value.contains("\${")
+        || value.contains('}')
+        || value.contains(" + ")
+        || (value.chars().any(char::is_whitespace) && !value.contains('/'))
+        || !is_path_candidate(value)
+    {
+        return None;
+    }
 
     let path_only = value
         .split(['?', '#'])
@@ -777,6 +794,34 @@ fn normalize_asset_reference(source_path: &str, value: &str) -> Option<String> {
     }
 }
 
+fn resolve_local_asset_path(path: &str, known_paths: &BTreeSet<String>) -> Option<String> {
+    if known_paths.contains(path) {
+        return Some(path.to_string());
+    }
+    // Font catalogs store basenames while the application loads them from
+    // fonts/<file>. Resolve only unique matches within the same profile.
+    if !path.contains('/') {
+        let directories = [
+            "fonts",
+            "assets",
+            "images",
+            "decorations",
+            "presets",
+            "backgrounds",
+            "ornaments",
+        ];
+        let matches: Vec<String> = directories
+            .iter()
+            .map(|directory| format!("{directory}/{path}"))
+            .filter(|candidate| known_paths.contains(candidate))
+            .collect();
+        if matches.len() == 1 {
+            return matches.into_iter().next();
+        }
+    }
+    None
+}
+
 fn validate_asset_dependencies(records: &mut [FileRecord]) {
     let mut paths_by_profile = BTreeMap::<String, BTreeSet<String>>::new();
     for record in records.iter() {
@@ -790,13 +835,19 @@ fn validate_asset_dependencies(records: &mut [FileRecord]) {
             record.asset_dependency_status = "profile-path-index-missing".to_string();
             continue;
         };
-        record.unresolved_asset_dependencies = record
-            .asset_dependencies
-            .iter()
-            .filter_map(|dependency| dependency.strip_prefix("local:"))
-            .filter(|path| !known_paths.contains(*path))
-            .map(|path| format!("local:{path}"))
-            .collect();
+        let mut resolved = BTreeSet::new();
+        let mut unresolved = BTreeSet::new();
+        for dependency in &record.asset_dependencies {
+            if let Some(path) = dependency.strip_prefix("local:") {
+                if let Some(resolved_path) = resolve_local_asset_path(path, known_paths) {
+                    resolved.insert(format!("local:{resolved_path}"));
+                } else {
+                    unresolved.insert(dependency.clone());
+                }
+            }
+        }
+        record.resolved_asset_dependencies = resolved.into_iter().collect();
+        record.unresolved_asset_dependencies = unresolved.into_iter().collect();
         let has_external = record
             .asset_dependencies
             .iter()
@@ -997,6 +1048,16 @@ fn render_manifest(sources: &[SourceSpec], records: &[FileRecord]) -> String {
         );
         output.push_str("      \"assetDependencies\": [");
         for (dependency_index, dependency) in record.asset_dependencies.iter().enumerate() {
+            if dependency_index > 0 {
+                output.push_str(", ");
+            }
+            output.push_str(&json_string(dependency));
+        }
+        output.push_str("],\n");
+        output.push_str("      \"resolvedAssetDependencies\": [");
+        for (dependency_index, dependency) in
+            record.resolved_asset_dependencies.iter().enumerate()
+        {
             if dependency_index > 0 {
                 output.push_str(", ");
             }
@@ -1300,6 +1361,7 @@ mod tests {
             status: "historical-only".to_string(),
             parser_or_consumer: "legacy-layout-engine".to_string(),
             asset_dependencies: Vec::new(),
+            resolved_asset_dependencies: Vec::new(),
             unresolved_asset_dependencies: Vec::new(),
             asset_dependency_status: "no-references-detected".to_string(),
             parity_fixtures: Vec::new(),
