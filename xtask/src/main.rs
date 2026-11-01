@@ -629,9 +629,7 @@ fn tokenize_javascript(text: &str) -> Vec<JsToken> {
         }
         if current == b'/' && bytes.get(index + 1) == Some(&b'*') {
             index += 2;
-            while index + 1 < bytes.len()
-                && !(bytes[index] == b'*' && bytes[index + 1] == b'/')
-            {
+            while index + 1 < bytes.len() && !(bytes[index] == b'*' && bytes[index + 1] == b'/') {
                 index += 1;
             }
             index = (index + 2).min(bytes.len());
@@ -654,9 +652,7 @@ fn tokenize_javascript(text: &str) -> Vec<JsToken> {
                 }
                 index += 1;
             }
-            let value = text[start..index]
-                .replace("\\/", "/")
-                .replace("\\\\", "\\");
+            let value = text[start..index].replace("\\/", "/").replace("\\\\", "\\");
             tokens.push(JsToken::String(value));
             if index < bytes.len() {
                 index += 1;
@@ -709,11 +705,7 @@ fn tokenize_javascript(text: &str) -> Vec<JsToken> {
     tokens
 }
 
-fn extract_javascript_dependencies(
-    text: &str,
-    output: &mut BTreeSet<String>,
-    source_path: &str,
-) {
+fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, source_path: &str) {
     let tokens = tokenize_javascript(text);
     let mut index = 0usize;
 
@@ -775,13 +767,27 @@ fn extract_javascript_dependencies(
                 // inventories (for example PRIORITY_FONT_FILES). These preserve
                 // real font basenames used to construct runtime URLs.
                 if matches!(identifier.as_str(), "const" | "let" | "var") {
-                    if let (Some(JsToken::Identifier(name)), Some(JsToken::Punct('=')), Some(JsToken::Punct('['))) =
-                        (tokens.get(index + 1), tokens.get(index + 2), tokens.get(index + 3))
-                    {
+                    if let (
+                        Some(JsToken::Identifier(name)),
+                        Some(JsToken::Punct('=')),
+                        Some(JsToken::Punct('[')),
+                    ) = (
+                        tokens.get(index + 1),
+                        tokens.get(index + 2),
+                        tokens.get(index + 3),
+                    ) {
                         let upper = name.to_ascii_uppercase();
-                        if ["FONT", "FILE", "ASSET", "IMAGE", "ORNAMENT", "DECORATION", "PRESET"]
-                            .iter()
-                            .any(|marker| upper.contains(marker))
+                        if [
+                            "FONT",
+                            "FILE",
+                            "ASSET",
+                            "IMAGE",
+                            "ORNAMENT",
+                            "DECORATION",
+                            "PRESET",
+                        ]
+                        .iter()
+                        .any(|marker| upper.contains(marker))
                         {
                             let mut cursor = index + 4;
                             let mut depth = 1usize;
@@ -942,8 +948,8 @@ fn is_path_candidate(value: &str) -> bool {
         return false;
     }
     let known_extension = [
-        ".css", ".js", ".mjs", ".cjs", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp",
-        ".ico", ".woff", ".woff2", ".ttf", ".otf", ".gif", ".avif",
+        ".css", ".js", ".mjs", ".cjs", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".ico",
+        ".woff", ".woff2", ".ttf", ".otf", ".gif", ".avif",
     ]
     .iter()
     .any(|extension| {
@@ -1703,11 +1709,7 @@ mod tests {
                 "missing expected dependency {expected:?} in {dependencies:?}"
             );
         }
-        for rejected in [
-            "local:comment-only.svg",
-            "local:sample.json",
-            "local:fonts",
-        ] {
+        for rejected in ["local:comment-only.svg", "local:sample.json", "local:fonts"] {
             assert!(
                 !dependencies.iter().any(|dependency| dependency == rejected),
                 "unexpected dependency {rejected:?} in {dependencies:?}"
