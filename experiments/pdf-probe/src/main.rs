@@ -276,6 +276,11 @@ fn parse_pair(value: &str) -> Result<(i32, i32), String> {
 }
 
 fn assign_cluster_text(text: &str, glyphs: &mut [Glyph]) -> Result<(), String> {
+    // hr-shape --show-unicode reports source clusters as Unicode scalar indices.
+    // A cluster may reorder combining marks or contain a ligature; assigning
+    // one source scalar to each glyph would therefore invent an incorrect order.
+    // Map the complete logical source cluster to its first glyph CID and leave
+    // the remaining glyph CIDs empty. ToUnicode supports multi-scalar mappings.
     let characters: Vec<char> = text.chars().collect();
     let mut clusters = BTreeSet::new();
     for glyph in glyphs.iter() {
@@ -296,15 +301,12 @@ fn assign_cluster_text(text: &str, glyphs: &mut [Glyph]) -> Result<(), String> {
             .enumerate()
             .filter_map(|(glyph_index, glyph)| (glyph.cluster == *cluster).then_some(glyph_index))
             .collect();
-        if indices.len() == source.chars().count() {
-            for (glyph_index, character) in indices.iter().zip(source.chars()) {
-                glyphs[*glyph_index].cid = character.to_string();
-            }
-        } else if let Some(first) = indices.first() {
-            glyphs[*first].cid = source;
-            for glyph_index in indices.iter().skip(1) {
-                glyphs[*glyph_index].cid.clear();
-            }
+        let Some(first) = indices.first() else {
+            return Err(format!("cluster {cluster} has no glyph"));
+        };
+        glyphs[*first].cid = source;
+        for glyph_index in indices.iter().skip(1) {
+            glyphs[*glyph_index].cid.clear();
         }
     }
     Ok(())
@@ -335,4 +337,41 @@ fn json_string(value: &str) -> String {
     }
     output.push('"');
     output
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{assign_cluster_text, Glyph};
+
+    fn glyph(cluster: usize) -> Glyph {
+        Glyph {
+            original_index: 0,
+            gid: 1,
+            cluster,
+            x_advance: 0,
+            y_advance: 0,
+            x_offset: 0,
+            y_offset: 0,
+            x_pt: 0.0,
+            y_pt: 0.0,
+            cid: String::new(),
+        }
+    }
+
+    #[test]
+    fn combining_mark_cluster_maps_the_complete_logical_source_sequence_once() {
+        let mut glyphs = vec![glyph(0), glyph(0), glyph(0), glyph(3), glyph(4)];
+        assert!(assign_cluster_text("שִׁאב", &mut glyphs).is_ok());
+        assert_eq!(glyphs[0].cid, "שִׁ");
+        assert!(glyphs[1].cid.is_empty());
+        assert!(glyphs[2].cid.is_empty());
+        assert_eq!(glyphs[3].cid, "א");
+        assert_eq!(glyphs[4].cid, "ב");
+    }
+
+    #[test]
+    fn out_of_range_cluster_is_rejected() {
+        let mut glyphs = vec![glyph(2)];
+        assert!(assign_cluster_text("א", &mut glyphs).is_err());
+    }
 }
