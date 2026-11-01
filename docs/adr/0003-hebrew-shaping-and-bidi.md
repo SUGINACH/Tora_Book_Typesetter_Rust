@@ -53,4 +53,4 @@ Sources:
 - https://docs.rs/crate/tectonic-rustybuzz/latest
 - https://github.com/taiki-e/rustsec-advisory-db (advisory database; inspect the exact RUSTSEC-2026-0206 record before any dependency selection)
 
-**Current result:** no crate/version selected. The next experiment must run Hebrew+niqqud and mixed-direction fixtures through at least two viable shaping stacks and inspect cluster/source mapping, not just visual screenshots.
+**Current result:** no crate/version selected. The first HarfRust probe has been executed and a native HarfBuzz comparison has been added for pure Hebrew samples. Mixed-direction text is currently analyzed by UAX #9 but is not yet segmented into shaping runs; source-span mapping and a second independent shaping stack remain open acceptance requirements.
