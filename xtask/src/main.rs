@@ -484,10 +484,16 @@ fn tests_for(source: &SourceSpec, kind: &str, owner: &str) -> (Vec<String>, Stri
 
 
 fn extract_asset_dependencies(source_path: &str, kind: &str, bytes: &[u8]) -> Vec<String> {
+    let is_svg_asset = kind == "asset"
+        && Path::new(source_path)
+            .extension()
+            .and_then(OsStr::to_str)
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("svg"));
     if !matches!(
         kind,
         "javascript" | "dom-contract" | "style" | "settings" | "data"
-    ) {
+    ) && !is_svg_asset
+    {
         return Vec::new();
     }
     let text = String::from_utf8_lossy(bytes);
@@ -806,7 +812,14 @@ fn is_relevant(path: &str) -> bool {
             | "jpg"
             | "jpeg"
             | "webp"
+            | "gif"
+            | "avif"
+            | "bmp"
             | "ico"
+            | "xml"
+            | "webmanifest"
+            | "jsonc"
+            | "eot"
             | "woff"
             | "woff2"
             | "ttf"
@@ -907,7 +920,30 @@ fn render_manifest(sources: &[SourceSpec], records: &[FileRecord]) -> String {
             &record.parser_or_consumer,
             true,
         );
-        output.push_str("      \"assetDependencies\": [],\n");
+        output.push_str("      \"assetDependencies\": [");
+        for (dependency_index, dependency) in record.asset_dependencies.iter().enumerate() {
+            if dependency_index > 0 {
+                output.push_str(", ");
+            }
+            output.push_str(&json_string(dependency));
+        }
+        output.push_str("],\n");
+        output.push_str("      \"unresolvedAssetDependencies\": [");
+        for (dependency_index, dependency) in
+            record.unresolved_asset_dependencies.iter().enumerate()
+        {
+            if dependency_index > 0 {
+                output.push_str(", ");
+            }
+            output.push_str(&json_string(dependency));
+        }
+        output.push_str("],\n");
+        push_field(
+            &mut output,
+            "assetDependencyStatus",
+            &record.asset_dependency_status,
+            true,
+        );
         output.push_str("      \"parityFixtures\": [");
         for (fixture_index, fixture) in record.parity_fixtures.iter().enumerate() {
             if fixture_index > 0 {
