@@ -60,9 +60,9 @@ fn run() -> Result<(), String> {
     while let Some(argument) = args.next() {
         match argument.as_str() {
             "--source" => {
-                let value = args
-                    .next()
-                    .ok_or_else(|| "--source requires REPOSITORY@COMMIT@PROFILE=PATH".to_string())?;
+                let value = args.next().ok_or_else(|| {
+                    "--source requires REPOSITORY@COMMIT@PROFILE=PATH".to_string()
+                })?;
                 sources.push(parse_source(&value)?);
             }
             "--out" => {
@@ -96,7 +96,8 @@ fn run() -> Result<(), String> {
         scan_source(source, &mut records).map_err(|error| {
             format!(
                 "failed scanning {} at {}: {error}",
-                source.repository, source.root.display()
+                source.repository,
+                source.root.display()
             )
         })?;
     }
@@ -151,9 +152,9 @@ fn print_help() {
 }
 
 fn parse_source(value: &str) -> Result<SourceSpec, String> {
-    let (identity, root) = value
-        .split_once('=')
-        .ok_or_else(|| format!("invalid --source {value:?}; expected REPOSITORY@COMMIT@PROFILE=PATH"))?;
+    let (identity, root) = value.split_once('=').ok_or_else(|| {
+        format!("invalid --source {value:?}; expected REPOSITORY@COMMIT@PROFILE=PATH")
+    })?;
     let mut parts = identity.split('@');
     let repository = parts.next().unwrap_or_default().trim();
     let commit = parts.next().unwrap_or_default().trim();
@@ -162,7 +163,9 @@ fn parse_source(value: &str) -> Result<SourceSpec, String> {
         || repository.is_empty()
         || !repository.contains('/')
         || commit.len() != 40
-        || !commit.chars().all(|character| character.is_ascii_hexdigit())
+        || !commit
+            .chars()
+            .all(|character| character.is_ascii_hexdigit())
         || profile.is_empty()
         || root.trim().is_empty()
     {
@@ -242,7 +245,13 @@ fn collect_files(root: &Path, directory: &Path, files: &mut Vec<PathBuf>) -> io:
             let name = name.to_string_lossy();
             if matches!(
                 name.as_ref(),
-                ".git" | "node_modules" | "target" | ".cache" | "coverage" | "playwright-report" | "test-results"
+                ".git"
+                    | "node_modules"
+                    | "target"
+                    | ".cache"
+                    | "coverage"
+                    | "playwright-report"
+                    | "test-results"
             ) {
                 continue;
             }
@@ -250,7 +259,9 @@ fn collect_files(root: &Path, directory: &Path, files: &mut Vec<PathBuf>) -> io:
         } else if file_type.is_file() {
             let relative = path
                 .strip_prefix(root)
-                .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "path escaped source root"))?
+                .map_err(|_| {
+                    io::Error::new(io::ErrorKind::InvalidData, "path escaped source root")
+                })?
                 .to_string_lossy()
                 .replace('\\', "/");
             if is_relevant(&relative) {
@@ -269,9 +280,28 @@ fn is_relevant(path: &str) -> bool {
         .to_ascii_lowercase();
     matches!(
         extension.as_str(),
-        "js" | "mjs" | "cjs" | "html" | "htm" | "css" | "json" | "svg" | "png" | "jpg"
-            | "jpeg" | "webp" | "ico" | "woff" | "woff2" | "ttf" | "otf" | "txt" | "md"
-            | "pdf" | "yml" | "yaml" | "toml"
+        "js" | "mjs"
+            | "cjs"
+            | "html"
+            | "htm"
+            | "css"
+            | "json"
+            | "svg"
+            | "png"
+            | "jpg"
+            | "jpeg"
+            | "webp"
+            | "ico"
+            | "woff"
+            | "woff2"
+            | "ttf"
+            | "otf"
+            | "txt"
+            | "md"
+            | "pdf"
+            | "yml"
+            | "yaml"
+            | "toml"
     )
 }
 
@@ -284,7 +314,10 @@ fn classify(path: &str) -> String {
     let lower = path.to_ascii_lowercase();
     if matches!(extension.as_str(), "woff" | "woff2" | "ttf" | "otf") {
         "font".to_string()
-    } else if matches!(extension.as_str(), "svg" | "png" | "jpg" | "jpeg" | "webp" | "ico") {
+    } else if matches!(
+        extension.as_str(),
+        "svg" | "png" | "jpg" | "jpeg" | "webp" | "ico"
+    ) {
         "asset".to_string()
     } else if matches!(extension.as_str(), "js" | "mjs" | "cjs") {
         "javascript".to_string()
@@ -317,7 +350,9 @@ fn classify(path: &str) -> String {
 
 fn render_manifest(sources: &[SourceSpec], records: &[FileRecord]) -> String {
     let mut output = String::new();
-    output.push_str("{\n  \"schemaVersion\": 1,\n  \"generatedBy\": \"xtask compat-scan\",\n  \"sources\": [\n");
+    output.push_str(
+        "{\n  \"schemaVersion\": 1,\n  \"generatedBy\": \"xtask compat-scan\",\n  \"sources\": [\n",
+    );
     for (index, source) in sources.iter().enumerate() {
         if index > 0 {
             output.push_str(",\n");
@@ -342,7 +377,12 @@ fn render_manifest(sources: &[SourceSpec], records: &[FileRecord]) -> String {
         push_field(&mut output, "commit", &record.commit, true);
         push_field(&mut output, "sourcePath", &record.source_path, true);
         push_field(&mut output, "sourceSha256", &record.source_sha256, true);
-        push_field(&mut output, "externalIdentifier", &record.external_identifier, true);
+        push_field(
+            &mut output,
+            "externalIdentifier",
+            &record.external_identifier,
+            true,
+        );
         push_field(&mut output, "legacyName", &record.legacy_name, true);
         push_field(&mut output, "owningProfile", &record.owning_profile, true);
         push_field(&mut output, "status", &record.status, true);
@@ -350,8 +390,18 @@ fn render_manifest(sources: &[SourceSpec], records: &[FileRecord]) -> String {
         output.push_str("      \"assetDependencies\": [],\n");
         output.push_str("      \"parityFixtures\": [],\n");
         output.push_str("      \"rustOwner\": null,\n");
-        push_field(&mut output, "migrationRule", "unassigned; task 8 review required", true);
-        push_field(&mut output, "verificationLevel", &record.verification_level, true);
+        push_field(
+            &mut output,
+            "migrationRule",
+            "unassigned; task 8 review required",
+            true,
+        );
+        push_field(
+            &mut output,
+            "verificationLevel",
+            &record.verification_level,
+            true,
+        );
         push_field(&mut output, "notes", &record.notes, false);
         output.push_str("    }");
     }
