@@ -1235,6 +1235,29 @@ mod tests {
     }
 
     #[test]
+    fn v21_and_v23_profiles_keep_distinct_fixture_identities() {
+        let gold = SourceSpec {
+            repository: "SUGINACH/Tora_Book_Typesetter_Gold".to_string(),
+            commit: "a444d34ccad30fd5ed0d6fd3873adbe9c23cb7e0".to_string(),
+            profile: "legacy-gold-v21".to_string(),
+            root: PathBuf::from("legacy/gold"),
+        };
+        let orange = SourceSpec {
+            repository: "SUGINACH/Tora_Book_Typesetter_Orange".to_string(),
+            commit: "0b0ee279464a3db14672cd3f4051275aba5985da".to_string(),
+            profile: "legacy-orange-v23".to_string(),
+            root: PathBuf::from("legacy/orange"),
+        };
+        let (_, _, _, gold_fixtures) = ownership_for(&gold, "typesetter.js", "javascript");
+        let (_, _, _, orange_fixtures) = ownership_for(&orange, "typesetter.js", "javascript");
+        assert_ne!(gold.profile, orange.profile);
+        assert_ne!(gold.commit, orange.commit);
+        assert_ne!(gold_fixtures, orange_fixtures);
+        assert!(gold_fixtures[0].contains("Tora_Book_Typesetter_Gold"));
+        assert!(orange_fixtures[0].contains("Tora_Book_Typesetter_Orange"));
+    }
+
+    #[test]
     fn requirements_documents_are_not_classified_as_executable_code() {
         let source = SourceSpec {
             repository: "SUGINACH/Typesetter_doc".to_string(),
