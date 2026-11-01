@@ -1240,7 +1240,7 @@ mod tests {
             "documentation",
         );
         assert_eq!(owner, "docs/requirements");
-            assert!(migration.contains("spec-only"));
+        assert!(migration.contains("spec-only"));
     }
 
     #[test]
