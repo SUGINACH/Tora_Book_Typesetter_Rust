@@ -257,7 +257,7 @@ fn ownership_for(
         "legacy-green-v23" | "legacy-gold-v21" | "legacy-imud-v20x" => {
             "text_files_for_typesetter_tests/very_long_test_text.txt"
         }
-        "legacy-yellow-v10" => "long_test_text.txt",
+        "legacy-yellow-v10" => "very_long_test_text.txt",
         _ => "source_code/V_current_snapshot.txt",
     };
     let profile_fixture = format!(
