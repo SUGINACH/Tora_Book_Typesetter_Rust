@@ -147,6 +147,12 @@ jobs:
               if record["verificationEvidence"]:
                   assert record["verificationLevel"] != "scanned-hash-only", f"record {index} evidence level was not advanced"
               assert (record["repository"], record["commit"]) in actual_sources, f"record {index} is outside the pinned source set"
+              if record["status"] == "verified-executable":
+                  assert record["verificationEvidence"], f"record {index} claims execution without runner evidence"
+          font_records = [record for record in records if record["kind"] == "font"]
+          assert font_records and all(record["status"] == "blocked-license" for record in font_records), "font records must remain blocked pending license review"
+          spec_records = [record for record in records if record["owningProfile"] == "requirements-docs"]
+          assert spec_records and all(record["status"] == "spec-only" for record in spec_records), "requirements-only records must remain spec-only"
           print(f"Manifest schema and provenance validation passed: {len(actual_sources)} sources, {len(records)} records.")
           PY
           cp artifacts/legacy-compatibility-manifest-first.json artifacts/legacy-compatibility-manifest.json
