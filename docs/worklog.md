@@ -64,3 +64,40 @@
 - PDF Type0/ToUnicode: prototype מתקדם עם printpdf ו-ActualText; ריצה 41347908683 עדיין בבדיקה. אין לאשר backend לפני חילוץ עצמאי של כל הקורפוס והשוואה מדויקת.
 - ADRs נשארים proposed עד לסגירת המדידות והחלופות.
 
+
+
+## עדכון ביצוע — 2026-11-01, 21:02
+
+### משימות 1–2: סגורות
+
+ה-commit `18b73bd267ef8b4c8e5afe416dd86ffcd20f4f40` עבר את [Rust CI 41347908551](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41347908551) בכל שלוש מערכות ההפעלה. כל gates של formatting, lint, tests, doc tests, release build, build חוזר ו-metadata consistency עברו. ה-probe השלילי נכשל בכוונה על `unwrap` וה-job אימת זאת בהצלחה.
+
+### Provenance, ownership ו-manifest
+
+- שישה מאגרי מקור מוצמדים ל-commit מלא; חמשת הקבצים שסופקו בשיחה (`style.css`, `decorations.js`, `typesetter.js`, `index.html`, `app.js`) נבדקו מחדש מהקבצים הממופים. אורכם ו-SHA-256 שלהם תואמים בדיוק לרשומות `unattributedUserAttachments`; אין להסיק מהם branch/repository מקור.
+- מטריצת מקור האמת מפרידה בין Orange V23, Green V23, Gold V21, Yellow V10 ו-IMUD; נוסף test guard שמונע ערבוב זהויות fixture בין V21 ל-V23.
+- `xtask` מפיק manifest קנוני פעמיים. נוספו בדיקות התאמה מדויקת ל-runner evidence, שדות schema, hash, בעלות, test IDs, רישוי fonts ומסמכי spec. ריצה אחת נכשלה משום שקובץ TSV הכיל את התווים המילוליים `\\t` במקום tab אמיתי; הקובץ תוקן, ונוספה הפעלה אוטומטית מחדש כשקובץ ה-evidence משתנה.
+- [סריקת manifest הנוכחית](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41349723140) עדיין רצה.
+
+### Legacy runner והקורפוס
+
+- ה-smoke הקודם עבר: [41344525335](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41344525335).
+- ה-runner המלא נועל במפורש את `very_long_test_text.txt`, `default_settings.json`, CSS הגופנים וה-baseline; ה-timeout הוגדל ל-900,000ms וה-report מאמת שה-settings הפעילים הם הקובץ המוצמד.
+- [full-corpus run 41349079957](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41349079957) עדיין רץ. אין עדיין מסקנה לגבי התאמה ל-baseline.
+
+### ניסויי ADR
+
+- **Fixed-point:** נוסף מודל `Fraction` מדויק עם 27,627 בדיקות דטרמיניסטיות: px↔pt, percentages, font units, signed addition, overflow boundaries ו-tie policy. תוצאות נשמרות ב-`experiments/fixed-point-scale-results.json`. אלה עדיין בדיקות מודל Python, לא מימוש Rust; בחירת scale נשארת פתוחה. [CI אחרון](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41349895727) רץ.
+- **Shaping/Bidi:** HarfRust 0.15.0 מול HarfBuzz 15.0.0 השיג התאמה מדויקת ב-5/5 דוגמאות shaping עבריות טהורות. זה עדיין לא מוכיח segmentation של mixed-direction runs או source-span mapping מלא. [Run 41348678930](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41348678930).
+- **Tauri:** Windows formatting, debug/release builds, Clippy ובדיקות generation gate עברו; נוספו ולידציות ל-profile ID, job ID, generation ו-SHA-256. עדיין לא נבדק invoke round-trip אמיתי דרך WebView, וגם לא save/load, file dialogs ו-progress events. [Run 41348380250](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41348380250).
+- **PDF:** Poppler ו-MuPDF חשפו חילוץ עברי לא תקין בניסוי הראשון. ה-PDF probe שונה כך ש-`BDC/EMC` מקיפים text objects, וה-glyphs מותאמים חזרה לתווי המקור דרך cmap כדי להחזיר סדר Unicode לוגי בלי לשנות מיקום glyph. נוספו בדיקות לסדר marks ול-ligature fallback. [Run 41349766772](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41349766772) עדיין רץ; אין אישור backend.
+
+### שערי קבלה שנותרו לשלב א
+
+1. לקבל full-corpus report ולהשוות metrics ל-baseline בלי לנרמל הבדלים.
+2. לקבל manifest כפול זהה, JSON תקין, ושש רשומות המקור תואמות ל-pins.
+3. להשלים fixed-point CI ולהשאיר פתוחות בדיקות Rust-level שעדיין אינן חלק מהשלב.
+4. לקבל חילוץ PDF לוגי מדויק ב-MuPDF/Poppler; אם לא עובר, לתקן או לפסול את ה-backend.
+5. לוודא שה-Tauri ו-shaping ADRs משקפים את מגבלות הניסוי, ולא להכריז על בחירת production לפני השלמתן.
+
+אין מעבר לשלב ב עד שכל שערי שלב א נסגרים בראיות.
