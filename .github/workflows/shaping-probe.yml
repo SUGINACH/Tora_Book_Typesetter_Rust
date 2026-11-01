@@ -135,6 +135,7 @@ jobs:
         run: |
           python3 experiments/shaping-probe/finalize.py \
             --raw artifacts/shaping-probe-raw.json \
+            --comparison artifacts/harfrust-vs-harfbuzz.json \
             --font "experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf" \
             --license experiments/google-fonts/ofl/notoserifhebrew/OFL.txt \
             --corpus experiments/shaping-probe/corpus.txt \
