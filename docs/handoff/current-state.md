@@ -26,6 +26,8 @@
 - [Legacy runner 41356048158](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41356048158), על target commit `8ccd6611c19a87abf5e7934c9eb6b92eb992362a`: checkout, התקנת Node/dependencies/Chromium ו-offline smoke עברו; Orange V23 full-book corpus מול baseline עדיין in progress. ה-workflow נבדק ומוגדר עם concurrency group ייחודית לכל commit ו-`cancel-in-progress: false`; אין לבטל אותו. אין עדיין report מלא או artifacts.
 - [Legacy full-corpus run קודם 41349079957](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41349079957) בוטל בעבר ואינו ראיית baseline replay מלאה.
 - תיקון rustfmt לא שינה לוגיקת scanner, נתוני מקור, אלגוריתמי עימוד או baselines.
+- בוצע forensic audit ל-artifact הקודם: 413 unresolved edges ב-64 records, 270 ערכים ייחודיים. 118 הם extension-only, 62 inline markup fragments, 7 directory tokens (false-positive candidates); 9 environment executable paths ו-27 test commands/modules; 173 file-like/font edges עדיין דורשים אימות. הדו״ח [asset-edge-triage-41355862823.md](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/blob/main/docs/provenance/asset-edge-triage-41355862823.md) מצביע על חולשה ב-`extract_quoted_strings`: סריקת כל מחרוזות JS ללא lexer/הקשר תחבירי. אין להסיק שכל 413 edges שגויים או חסרים.
+- הוחלט לא לשנות את manifest או לסמן edges כ-resolved באופן גורף. יש לתקן extractor עם positive/negative fixtures, לשמר את ה-manifest הקודם כ-baseline, ולהשוות edge diff בריצה חדשה.
 
 ## ראיות ADR
 
@@ -50,9 +52,9 @@
 
 ## סדר הפעולות הבא
 
-1. לבדוק את סיום [Manifest scan 41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733), להוריד את ה-artifact ולבצע audit על כל unresolved edges. אין לסגור provenance או manifest לפני triage.
+1. לבדוק את סיום [Manifest scan 41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733), להוריד את ה-artifact ולהשוותו ל-triage הקודם. לאחר מכן לתקן את JS asset extractor עם lexer/תחביר מוגדר ו-fixtures; אין לסגור provenance או manifest לפני edge diff וסיווג unresolved אמיתיים.
 2. להמשיך לעקוב אחרי [Legacy runner 41356048158](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41356048158) עד סיום full-book corpus; לבדוק report, DOM, geometry, ledger ו-provenance artifacts מול baseline המוצמד. אין לשנות baseline/tolerance ואין לבטל את הריצה.
-3. לבדוק את [Rust CI 41360514316](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360514316) שנוצר על HEAD התיעודי; אין להניח שהוא עבר עד לקבלת conclusion=success.
+3. לבדוק את Rust CI האחרון שנוצר על HEAD הנוכחי של main; עדכון מסמכים מפעיל CI מחדש, ולכן יש לאמת את ה-run שמצביע בדיוק ל-HEAD העדכני ולא להסתמך על run קודם.
 4. להשלים provenance, source-of-truth matrix, scanner, manifest ו-parity matrix רק אחרי ראיות עדכניות ו-triage.
 5. להשלים ניסויי fixed-point, shaping/bidi, Tauri ו-PDF ולתעד במפורש מה עבר ומה עדיין חסר.
 6. משימות 1–2 בלבד סגורות; שלב א נשאר פתוח. אין להתחיל משימה 11 לפני שכל שערי שלב א נסגרו במפורש.
