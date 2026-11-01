@@ -2,14 +2,18 @@
 
 The compatibility manifest is a deterministic inventory of source records. It is not an implementation claim and does not copy source code into the Rust engine.
 
+The top-level object contains `schemaVersion`, `generatedBy`, a sorted/pinned `sources` array (repository, commit, owningProfile), and the canonical `records` array. Each record's JSON key names below are the actual serialized field names emitted by `xtask compat-scan`.
+
 ## Record fields
 
 | Field | Meaning |
 |---|---|
 | `compatId` | Stable identifier derived from profile, source path and record kind |
 | `externalIdentifier` | Human-readable source/profile identifier |
-| `sourceProfile` | Isolated legacy profile identity |
-| `sourceCommit` | Exact immutable Git commit used for the record |
+| `repository` | Exact source repository in `owner/name` form |
+| `commit` | Exact immutable Git commit used for the record |
+| `owningProfile` | Isolated legacy profile identity |
+| `legacyName` | Original basename of the source file |
 | `sourcePath` | Repository-relative path |
 | `sourceSha256` | SHA-256 of the exact source bytes |
 | `kind` | File/record classification (engine, DOM, style, settings, data, font, asset, fixture, corpus, documentation, etc.) |
@@ -24,6 +28,7 @@ The compatibility manifest is a deterministic inventory of source records. It is
 | `testIds` | Stable identifiers of required tests |
 | `acceptanceCriteria` | Observable conditions required before a record can be accepted |
 | `verificationLevel` | Strongest evidence actually completed for this record |
+| `verificationEvidence` | Exact runner URL, runner commit and evidence role supporting a non-hash verification level |
 | `notes` | Limitations, conflicts and manual-review requirements |
 
 ## Status semantics
