@@ -46,4 +46,16 @@ Sources:
 - https://docs.rs/lopdf/latest/lopdf/
 - https://docs.rs/prismpdf-fonts/latest/pdf_fonts/
 
+- `lightweight-pdf 0.3.0` is a recent MIT-licensed Rust project whose writer emits `/Subtype /Type0`, a `/CIDFontType2` descendant, `Identity-H`, `CIDToGIDMap /Identity` and a `ToUnicode` CMap. Its tests invoke `pdftotext` and verify extraction for German special characters.
+- Important limitation: the project explicitly says it is **not a typesetting system**. Its `CidFont.to_unicode` field is a list of `(CID, Unicode scalar)` pairs, which does not by itself prove correct mapping for ligatures or shaped clusters that correspond to multiple Unicode scalars. Its font subsystem uses `skrifa` and direct character-to-glyph lookup; that is not evidence of Hebrew GPOS mark positioning or bidi shaping.
+- The library is therefore a valuable Type0/ToUnicode implementation reference and possible writer-only experiment, not a candidate for the layout engine. Reusing its writer crate would require a separate API test to feed externally shaped glyph IDs and multi-scalar cluster mappings.
+- `printpdf 0.12.8` documents embedded fonts and subsetting but calls text extraction experimental; it remains unproven for the required Hebrew round-trip.
+- `lopdf 0.46.0` offers low-level PDF objects but leaves the font/CMap correctness burden with this project.
+
+Sources:
+- https://github.com/casoon/lightweight-pdf
+- https://docs.rs/lightweight-pdf/latest/lightweight_pdf/
+- https://docs.rs/lopdf/latest/lopdf/
+- https://docs.rs/crate/printpdf/latest
+
 **Current result:** no backend selected. The acceptance test remains independent text extraction of Hebrew+niqqud from a real Type0 subset, followed by logical-order comparison and raster comparison against the DisplayList.
