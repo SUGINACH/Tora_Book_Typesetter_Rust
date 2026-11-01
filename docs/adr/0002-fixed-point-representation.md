@@ -34,18 +34,33 @@ Inputs: A4 `595.276 × 841.89 pt`, line height `13.2 pt`, 1,000 repeated lines, 
 
 All three have zero final drift in this particular 1,000-line case when the cumulative exact position is rounded with residual carry. This demonstrates that a fine quantum alone does not prevent drift: the accumulation/rounding policy is equally important. `1/65536 pt` exactly represents a legacy `1/64 CSS px` quantum (768 ticks), but this is not yet a production selection.
 
+## Experiment 2 — exact conversion/property model
+
+The experiment now includes a deterministic exact-rational property suite, recorded in `experiments/fixed-point-scale-results.json`:
+
+- 24,579 signed CSS-pixel ↔ point ↔ tick round-trip cases across the three candidate scales.
+- 2,408 percentage-rounding cases.
+- 588 font-unit conversions across UPEM values 1000, 1024, 2048 and 4096, and font sizes 6–72 pt.
+- 41 commutative integer-addition cases within signed-i64 bounds.
+- 7 signed-i64 boundary/overflow cases.
+- Four explicit positive/negative half-way rounding cases.
+
+Total: **27,627 deterministic checks**. The tested 1/64 CSS-pixel grid round-trips with zero error for all three candidate scales. The declared tie policy is nearest, exact ties away from zero.
+
+These are Python `Fraction` model checks, not tests of a compiled Rust `Fixed` implementation. They do not yet prove checked i128 intermediates, CPU cost, real-font metrics, page geometry or 1,000-page corpus behavior. No scale is selected.
+
 ## Reproducibility evidence — 2026-11-01
 
 The exact-rational scale calculation was rerun in GitHub Actions as part of [Rust CI run 41347908551](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41347908551) and passed. The committed JSON result is `experiments/fixed-point-scale-results.json`.
 
-This confirms reproducibility of the comparison only. It does **not** complete the required property tests for signed conversions, percentage/font-unit conversions, tie cases, checked overflow or real font/page geometry. No production scale is selected by this result.
+The scale comparison and exact-rational model checks are reproducible. Rust-level checked arithmetic, i128 intermediate behavior, real font/page geometry and CPU cost remain untested. No production scale is selected by these results.
 
 ## Required follow-up experiment
 
-Build property tests and arithmetic prototypes for:
+Build Rust-level property tests and arithmetic prototypes for:
 - px↔pt, percentages, font units and page-template conversion;
 - negative coordinates, zero, ties, half-way rounding and repeated accumulation;
-- checked add/subtract/multiply/divide and overflow boundaries;
+- checked add/subtract/multiply/divide with i128 intermediates and overflow boundaries;
 - invariance under operation order where the mathematical operation is commutative;
 - maximum supported page dimensions and 1,000-page accumulation;
 - conversion of the pinned Orange smoke geometry and a Hebrew/niqqud font fixture.
