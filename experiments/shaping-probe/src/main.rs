@@ -16,9 +16,7 @@ fn main() -> ExitCode {
 fn run() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
     if args.len() != 4 {
-        return Err(
-            "usage: shaping-probe FONT.ttf CORPUS.txt OUTPUT.json".to_string(),
-        );
+        return Err("usage: shaping-probe FONT.ttf CORPUS.txt OUTPUT.json".to_string());
     }
     let font_path = &args[1];
     let corpus_path = &args[2];
@@ -62,13 +60,17 @@ fn run() -> Result<(), String> {
         }
         levels.push(']');
 
-        let shaping = if sample.chars().any(|character| character.is_ascii_alphabetic()) {
+        let shaping = if sample
+            .chars()
+            .any(|character| character.is_ascii_alphabetic())
+        {
             None
         } else {
             let options = "--direction rtl --script Hebr --language he --verify --show-text --show-unicode --show-extents --show-flags --no-glyph-names";
             Some(
-                hr_shape::shape(font_path, sample, options)
-                    .map_err(|error| format!("HarfRust failed for sample {}: {error}", index + 1))?,
+                hr_shape::shape(font_path, sample, options).map_err(|error| {
+                    format!("HarfRust failed for sample {}: {error}", index + 1)
+                })?,
             )
         };
 
