@@ -716,7 +716,6 @@ mod tests {
         assert_eq!(classify("decorations.js"), "javascript");
     }
 
-
     #[test]
     fn decorations_are_owned_by_the_engine_core() {
         let source = SourceSpec {
@@ -740,8 +739,11 @@ mod tests {
             profile: "requirements-docs".to_string(),
             root: PathBuf::from("legacy/docs"),
         };
-        let (_, owner, migration, _) =
-            ownership_for(&source, "shared/specs/Software_specification.md", "documentation");
+        let (_, owner, migration, _) = ownership_for(
+            &source,
+            "shared/specs/Software_specification.md",
+            "documentation",
+        );
         assert_eq!(owner, "docs/requirements");
         assert!(migration.contains("spec-only"));
     }
