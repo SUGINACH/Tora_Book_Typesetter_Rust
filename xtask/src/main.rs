@@ -220,8 +220,7 @@ fn scan_source(source: &SourceSpec, records: &mut Vec<FileRecord>) -> io::Result
         };
         let (parser_or_consumer, rust_owner, migration_rule, parity_fixtures) =
             ownership_for(source, &source_path, &kind);
-        let (test_ids, acceptance_criteria) =
-            tests_for(source, &kind, &rust_owner);
+        let (test_ids, acceptance_criteria) = tests_for(source, &kind, &rust_owner);
         let notes = match kind.as_str() {
             "font" => "Byte identity scanned; glyph coverage, font tables and redistribution license are not yet verified. Ownership is provisional.",
             "documentation" => "Documentation source; not proof of executable behavior. Converted to requirements/ADRs only after review.",
