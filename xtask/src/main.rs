@@ -499,10 +499,7 @@ fn apply_runner_evidence(records: &mut [FileRecord]) -> Result<(), String> {
     apply_runner_evidence_rows(records, EVIDENCE)
 }
 
-fn apply_runner_evidence_rows(
-    records: &mut [FileRecord],
-    evidence: &str,
-) -> Result<(), String> {
+fn apply_runner_evidence_rows(records: &mut [FileRecord], evidence: &str) -> Result<(), String> {
     let mut applied_rows = 0usize;
     for line in evidence.lines() {
         if line.trim().is_empty() || line.starts_with('#') {
@@ -1089,7 +1086,7 @@ fn json_string(value: &str) -> String {
             '\t' => {
                 output.push('\\');
                 output.push('t');
-            },
+            }
             character if character.is_control() => {
                 output.push_str(&format!("\\u{:04x}", character as u32));
             }
