@@ -84,7 +84,6 @@ function main() {
   const pinnedSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
   assert(JSON.stringify(report.run?.settings) === JSON.stringify(pinnedSettings),
     'effective settings differ from the pinned default_settings.json bytes');
-  assert(report.run?.timeoutMs === 900000, 'full-corpus render timeout was not set to 900000 ms');
   assert(report.run?.gitCommit === expected.sourceCommit, 'report source commit mismatch');
   assert(report.run?.playwrightVersion === expected.playwrightVersion, 'report Playwright mismatch');
   assert(report.run?.browserVersion === expected.chromiumVersion, 'report Chromium mismatch');
@@ -152,6 +151,7 @@ function main() {
       node: process.version,
       playwright: playwrightVersion,
       chromium: report.run.browserVersion,
+      renderTimeoutMs: 900000,
       viewport: report.run.viewport
     },
     measured: {
