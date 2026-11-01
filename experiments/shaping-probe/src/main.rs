@@ -62,7 +62,7 @@ fn run() -> Result<(), String> {
         }
         levels.push(']');
 
-        let shaping = if sample.chars().any(char::is_ascii_alphabetic) {
+        let shaping = if sample.chars().any(|character| character.is_ascii_alphabetic()) {
             None
         } else {
             let options = "--direction rtl --script Hebr --language he --verify --show-text --show-unicode --show-extents --show-flags --no-glyph-names";
