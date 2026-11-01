@@ -475,7 +475,6 @@ fn tests_for(source: &SourceSpec, kind: &str, owner: &str) -> (Vec<String>, Stri
     }
 }
 
-
 fn parse_runner_evidence_line(line: &str) -> Option<[&str; 8]> {
     let mut fields = line.split('\t');
     let parsed = [
@@ -1240,13 +1239,13 @@ mod tests {
             "documentation",
         );
         assert_eq!(owner, "docs/requirements");
-        assert!(migration.contains("spec-only"));
+            assert!(migration.contains("spec-only"));
     }
-
 
     #[test]
     fn runner_evidence_rows_require_exactly_eight_tab_separated_fields() {
-        let valid = "legacy-orange-v23\tcommit\trunner\turl\toffline-smoke-tested\tfile.js\tsha\tloaded";
+        let valid =
+            "legacy-orange-v23\tcommit\trunner\turl\toffline-smoke-tested\tfile.js\tsha\tloaded";
         let fields = parse_runner_evidence_line(valid).expect("valid row should parse");
         assert_eq!(fields[0], "legacy-orange-v23");
         assert_eq!(fields[7], "loaded");
