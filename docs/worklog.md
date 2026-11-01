@@ -139,3 +139,25 @@
 - אין להוסיף HarfRust, printpdf או ספריות ניסוי ל-production workspace לפני ADR והוכחות מלאות.
 - אין להכריז על success על סמך קיום workflow או קובץ; רק conclusion=success ו-artifacts/metrics תואמים נחשבים ראיה.
 - סביבת העבודה המקומית בשיחה הקודמת לא כללה `cargo`/ `rustc`; לכן אימות Rust נעשה ב-GitHub Actions, לא באמצעות טענת build מקומית.
+
+
+## עדכון ביצוע — 2026-11-02, אימות ריצות ההמשך ותיקון rustfmt
+
+### תוצאות מאומתות
+
+- [Rust CI 41355862773](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862773) הסתיים בכשל בשלושת jobs של Quality (macOS, Windows, Ubuntu), כולם בשלב Formatting. יומני macOS מצביעים על סטיית rustfmt אחת ב-xtask/src/main.rs באזור resolved_asset_dependencies: rustfmt דורש את פתיחת בלוק הלולאה בשורה נפרדת. Clippy, tests, doc tests ו-release build דולגו בעקבות עצירת ה-job בשלב Formatting.
+- באותה ריצה, Fixed-point scale experiment reproducibility עבר; גם Verify quality gate rejects unwrap עבר.
+- [Manifest scan 41355862823](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823) עבר במלואו: 6 מקורות מוצמדים, 18,854 רשומות, 35,356 resolved local edges, 413 unresolved local edges ו-5,423 external references. שתי סריקות יצרו קובץ זהה byte-for-byte. Artifact: [legacy-compatibility-manifest](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823/artifacts/13103227452).
+- ה-legacy full-corpus run [41349079957](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41349079957) הסתיים ב-cancelled בשלב השוואת Orange V23 full-book corpus ל-baseline. שלב ה-smoke והעלאת artifacts הושלמו, אך אין תוצאת full-corpus תקפה.
+
+### תיקון
+
+- תוקנה סטיית rustfmt היחידה שנצפתה ב-xtask/src/main.rs; לא שונו לוגיקת הסריקה, סיווג dependencies, נתוני מקור או baselines.
+- תיקון זה הוא תיקון formatting בלבד. אין לסמן משימות 3–9 כסגורות על בסיסו; נדרשים CI ירוק ועדכון הראיות של full-corpus.
+
+### פעולות המשך
+
+1. להריץ Rust CI מחדש על ה-commit שמכיל את תיקון formatting ואת עדכון מסמכי המעקב; לוודא שכל שלושת ה-platform jobs עוברים את כל השלבים, ולא רק Formatting.
+2. להפעיל מחדש את legacy full-corpus workflow על אותו commit, בלי cancel-in-progress ובלי שינוי baseline/tolerance; לשמור report, DOM, geometry, ledger ו-provenance artifacts.
+3. לבדוק את כל 413 unresolved local edges לפי רשומות/פרופילים, ולסווג false positives לעומת תלות חסרה אמיתית. אין להמיר אותם ל-resolved ללא הוכחה.
+4. משימות 1–2 נשארות סגורות; שלב א נשאר פתוח. אין להתחיל שלב ב.
