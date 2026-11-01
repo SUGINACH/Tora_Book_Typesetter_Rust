@@ -11,6 +11,7 @@ use std::process::ExitCode;
 #[derive(Debug, Clone)]
 struct Glyph {
     original_index: usize,
+    logical_index: usize,
     gid: u16,
     cluster: usize,
     x_advance: i32,
@@ -75,7 +76,7 @@ fn run() -> Result<(), String> {
                 ("rtl", "Hebr", "he", 205.0_f32 - (line_index as f32 * 45.0))
             };
         let mut glyphs = shape_line(font_path, text, direction, script, language, baseline)?;
-        assign_cluster_text(text, &mut glyphs)?;
+        assign_cluster_text(text, &parsed_font, &mut glyphs)?;
         for glyph in &glyphs {
             mapping.insert((glyph.gid, glyph.cid.clone()));
         }
@@ -101,7 +102,7 @@ fn run() -> Result<(), String> {
         });
         // Glyphs are emitted in logical cluster order; their absolute positions
         // retain HarfRust's visual shaping order.
-        glyphs.sort_by_key(|glyph| (glyph.cluster, glyph.original_index));
+        glyphs.sort_by_key(|glyph| (glyph.logical_index, glyph.original_index));
         for glyph in &glyphs {
             ops.push(Op::SetTextMatrix {
                 matrix: TextMatrix::Raw([1.0, 0.0, 0.0, 1.0, glyph.x_pt, glyph.y_pt]),
@@ -128,9 +129,10 @@ fn run() -> Result<(), String> {
                 report.push(',');
             }
             report.push_str(&format!(
-                "{{\"gid\":{},\"cluster\":{},\"xAdvance\":{},\"yAdvance\":{},\"xOffset\":{},\"yOffset\":{},\"xPt\":{:.4},\"yPt\":{:.4},\"cid\":{}}}",
+                "{{\"gid\":{},\"cluster\":{},\"logicalIndex\":{},\"xAdvance\":{},\"yAdvance\":{},\"xOffset\":{},\"yOffset\":{},\"xPt\":{:.4},\"yPt\":{:.4},\"cid\":{}}}",
                 glyph.gid,
                 glyph.cluster,
+                glyph.logical_index,
                 glyph.x_advance,
                 glyph.y_advance,
                 glyph.x_offset,
@@ -213,6 +215,7 @@ fn shape_line(
         pen_y += i64::from(y_advance);
         glyphs.push(Glyph {
             original_index,
+            logical_index: cluster,
             gid,
             cluster,
             x_advance,
@@ -274,12 +277,28 @@ fn parse_pair(value: &str) -> Result<(i32, i32), String> {
     Ok((first, second))
 }
 
-fn assign_cluster_text(text: &str, glyphs: &mut [Glyph]) -> Result<(), String> {
-    // hr-shape --show-unicode reports source clusters as Unicode scalar indices.
-    // A cluster may reorder combining marks or contain a ligature; assigning
-    // one source scalar to each glyph would therefore invent an incorrect order.
-    // Map the complete logical source cluster to its first glyph CID and leave
-    // the remaining glyph CIDs empty. ToUnicode supports multi-scalar mappings.
+fn assign_cluster_text(
+    text: &str,
+    font: &ParsedFont,
+    glyphs: &mut [Glyph],
+) -> Result<(), String> {
+    assign_cluster_text_by_glyph(text, glyphs, |character| {
+        font.lookup_glyph_index(character as u32)
+    })
+}
+
+fn assign_cluster_text_by_glyph<F>(
+    text: &str,
+    glyphs: &mut [Glyph],
+    mut glyph_for_character: F,
+) -> Result<(), String>
+where
+    F: FnMut(char) -> Option<u16>,
+{
+    // HarfRust reports clusters as Unicode-scalar indices. Within a cluster,
+    // GPOS may reorder combining marks. Match each shaped GID back to its source
+    // scalar through the font cmap, then serialize text in logical scalar order;
+    // absolute glyph positions preserve the shaped visual geometry.
     let characters: Vec<char> = text.chars().collect();
     let mut clusters = BTreeSet::new();
     for glyph in glyphs.iter() {
@@ -294,18 +313,52 @@ fn assign_cluster_text(text: &str, glyphs: &mut [Glyph]) -> Result<(), String> {
             ));
         }
         let end = ordered.get(index + 1).copied().unwrap_or(characters.len());
-        let source: String = characters[*cluster..end].iter().collect();
-        let indices: Vec<usize> = glyphs
+        if end <= *cluster || end > characters.len() {
+            return Err(format!("invalid source range for cluster {cluster}: {end}"));
+        }
+        let source_indices: Vec<usize> = (*cluster..end).collect();
+        let mut unmatched: BTreeSet<usize> = source_indices.iter().copied().collect();
+        let glyph_indices: Vec<usize> = glyphs
             .iter()
             .enumerate()
             .filter_map(|(glyph_index, glyph)| (glyph.cluster == *cluster).then_some(glyph_index))
             .collect();
-        let Some(first) = indices.first() else {
+        if glyph_indices.is_empty() {
             return Err(format!("cluster {cluster} has no glyph"));
-        };
-        glyphs[*first].cid = source;
-        for glyph_index in indices.iter().skip(1) {
-            glyphs[*glyph_index].cid.clear();
+        }
+
+        let mut assignments = Vec::new();
+        for glyph_index in &glyph_indices {
+            let gid = glyphs[*glyph_index].gid;
+            let matched = source_indices.iter().copied().find(|source_index| {
+                unmatched.contains(source_index)
+                    && glyph_for_character(characters[*source_index]) == Some(gid)
+            });
+            if let Some(source_index) = matched {
+                unmatched.remove(&source_index);
+                assignments.push((*glyph_index, source_index));
+            }
+        }
+
+        if assignments.len() == source_indices.len()
+            && assignments.len() == glyph_indices.len()
+        {
+            for (glyph_index, source_index) in assignments {
+                glyphs[glyph_index].logical_index = source_index;
+                glyphs[glyph_index].cid = characters[source_index].to_string();
+            }
+        } else {
+            // Ligatures, contextual substitutions and missing cmap matches do
+            // not have a one-glyph/one-scalar inverse. Preserve the whole logical
+            // cluster on one CID rather than guessing a character per glyph.
+            let source: String = characters[*cluster..end].iter().collect();
+            let first = glyph_indices[0];
+            glyphs[first].logical_index = *cluster;
+            glyphs[first].cid = source;
+            for glyph_index in glyph_indices.iter().skip(1) {
+                glyphs[*glyph_index].logical_index = *cluster;
+                glyphs[*glyph_index].cid.clear();
+            }
         }
     }
     Ok(())
@@ -340,12 +393,13 @@ fn json_string(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{assign_cluster_text, Glyph};
+    use super::{assign_cluster_text_by_glyph, Glyph};
 
-    fn glyph(cluster: usize) -> Glyph {
+    fn glyph(cluster: usize, gid: u16) -> Glyph {
         Glyph {
             original_index: 0,
-            gid: 1,
+            logical_index: cluster,
+            gid,
             cluster,
             x_advance: 0,
             y_advance: 0,
@@ -358,19 +412,40 @@ mod tests {
     }
 
     #[test]
-    fn combining_mark_cluster_maps_the_complete_logical_source_sequence_once() {
-        let mut glyphs = vec![glyph(0), glyph(0), glyph(0), glyph(3), glyph(4)];
-        assert!(assign_cluster_text("שִׁאב", &mut glyphs).is_ok());
-        assert_eq!(glyphs[0].cid, "שִׁ");
-        assert!(glyphs[1].cid.is_empty());
-        assert!(glyphs[2].cid.is_empty());
-        assert_eq!(glyphs[3].cid, "א");
-        assert_eq!(glyphs[4].cid, "ב");
+    fn combining_marks_are_serialized_in_logical_source_order() {
+        // The shaper order is shin, hiriq, shin-dot; source order is
+        // shin, shin-dot, hiriq. Absolute positions are unchanged.
+        let mut glyphs = vec![
+            glyph(0, 10),
+            glyph(0, 12),
+            glyph(0, 11),
+            glyph(3, 13),
+            glyph(4, 14),
+        ];
+        let map = |character| match character {
+            'ש' => Some(10),
+            'ׁ' => Some(11),
+            'ִ' => Some(12),
+            'א' => Some(13),
+            'ב' => Some(14),
+            _ => None,
+        };
+        assert!(assign_cluster_text_by_glyph("שִׁאב", &mut glyphs, map).is_ok());
+        glyphs.sort_by_key(|item| (item.logical_index, item.original_index));
+        let extracted: String = glyphs.iter().map(|item| item.cid.as_str()).collect();
+        assert_eq!(extracted, "שִׁאב");
+    }
+
+    #[test]
+    fn ligature_cluster_maps_to_the_complete_source_sequence() {
+        let mut glyphs = vec![glyph(0, 99)];
+        assert!(assign_cluster_text_by_glyph("fi", &mut glyphs, |_| None).is_ok());
+        assert_eq!(glyphs[0].cid, "fi");
     }
 
     #[test]
     fn out_of_range_cluster_is_rejected() {
-        let mut glyphs = vec![glyph(2)];
-        assert!(assign_cluster_text("א", &mut glyphs).is_err());
+        let mut glyphs = vec![glyph(2, 99)];
+        assert!(assign_cluster_text_by_glyph("א", &mut glyphs, |_| None).is_err());
     }
 }
