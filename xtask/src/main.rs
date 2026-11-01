@@ -370,11 +370,12 @@ fn ownership_for(
                 .to_string(),
         )
     };
-    let fixtures = if matches!(kind, "fixture" | "corpus") {
+    let fixtures = if matches!(kind, "fixture" | "corpus")
+        || owner == "engine-core"
+        || owner == "engine-core::decorations"
+    {
         vec![profile_fixture]
-    } else if owner == "engine-core" || owner == "engine-core::decorations" {
-        vec![profile_fixture]
-    } else if owner == "xtask" {
+    } else if owner == "xtask" || owner == "audit" {
         vec!["tools/legacy-runner/README.md".to_string()]
     } else {
         Vec::new()
