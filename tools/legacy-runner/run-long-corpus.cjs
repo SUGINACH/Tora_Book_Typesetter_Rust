@@ -104,11 +104,13 @@ function main() {
     'decision ledger does not match DOM blocks');
   assert(report.geometry?.textConservationAudit?.available === true,
     'text conservation audit unavailable');
-  assert(report.geometry.textConservationAudit.missingSourceParagraphCount === 0 &&
-    report.geometry.textConservationAudit.textMismatchCount === 0 &&
-    report.geometry.textConservationAudit.headingMissingCount === 0 &&
-    report.geometry.textConservationAudit.headingMismatchCount === 0,
-    'text conservation reported missing/mismatched source content');
+  const textAudit = report.geometry.textConservationAudit;
+  assert(textAudit.missingSourceParagraphCount === 0 &&
+    textAudit.textMismatchCount === 0 &&
+    textAudit.renderedIdsWithoutSourceCount === 0 &&
+    textAudit.headingAudit?.missingCount === 0 &&
+    textAudit.headingAudit?.mismatchCount === 0,
+    'text conservation reported missing/mismatched paragraphs or headings');
   assert(report.runtime?.pageErrors?.length === 0, 'browser page errors were reported');
 
   const actual = {
