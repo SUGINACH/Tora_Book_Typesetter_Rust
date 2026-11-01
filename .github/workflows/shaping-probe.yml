@@ -1,0 +1,107 @@
+name: Hebrew shaping and bidi prototype
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/shaping-probe/**'
+      - 'docs/adr/0003-hebrew-shaping-and-bidi.md'
+      - '.github/workflows/shaping-probe.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/shaping-probe/**'
+      - 'docs/adr/0003-hebrew-shaping-and-bidi.md'
+      - '.github/workflows/shaping-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shaping-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hebrew-shaping:
+    name: HarfRust 0.15.0 / unicode-bidi 0.3.18
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Rust target
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout exact HarfRust source
+        uses: actions/checkout@v4
+        with:
+          repository: harfbuzz/harfrust
+          ref: 71d965f3c4f7e83fb6c14c408bdc50fb1fb6c0c7
+          path: experiments/harfrust
+          persist-credentials: false
+
+      - name: Checkout exact Google Fonts font and OFL license
+        uses: actions/checkout@v4
+        with:
+          repository: google/fonts
+          ref: 6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec
+          path: experiments/google-fonts
+          persist-credentials: false
+
+      - name: Verify immutable source and font inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C experiments/harfrust rev-parse HEAD)" = "71d965f3c4f7e83fb6c14c408bdc50fb1fb6c0c7"
+          test "$(git -C experiments/google-fonts rev-parse HEAD)" = "6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec"
+          test -s "experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf"
+          test -s "experiments/google-fonts/ofl/notoserifhebrew/OFL.txt"
+
+      - name: Formatting
+        run: cargo fmt --manifest-path experiments/shaping-probe/Cargo.toml -- --check
+
+      - name: First shaping and bidi run (generates isolated lockfile)
+        run: |
+          mkdir -p artifacts
+          cargo run --manifest-path experiments/shaping-probe/Cargo.toml -- \
+            "experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf" \
+            experiments/shaping-probe/corpus.txt \
+            artifacts/shaping-probe-first.json
+
+      - name: Locked repeat run and deterministic comparison
+        run: |
+          cargo run --manifest-path experiments/shaping-probe/Cargo.toml --locked -- \
+            "experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf" \
+            experiments/shaping-probe/corpus.txt \
+            artifacts/shaping-probe-second.json
+          diff -u artifacts/shaping-probe-first.json artifacts/shaping-probe-second.json
+          cp artifacts/shaping-probe-first.json artifacts/shaping-probe-raw.json
+
+      - name: Clippy and tests for the isolated probe
+        run: |
+          cargo clippy --manifest-path experiments/shaping-probe/Cargo.toml --all-targets --locked -- -D warnings
+          cargo test --manifest-path experiments/shaping-probe/Cargo.toml --locked
+
+      - name: Finalize font/corpus/toolchain fingerprints
+        run: |
+          python3 experiments/shaping-probe/finalize.py \
+            --raw artifacts/shaping-probe-raw.json \
+            --font "experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf" \
+            --license experiments/google-fonts/ofl/notoserifhebrew/OFL.txt \
+            --corpus experiments/shaping-probe/corpus.txt \
+            --output artifacts/shaping-probe-manifest.json
+
+      - name: Upload shaping and bidi experiment
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harfrust-hebrew-shaping-probe
+          path: |
+            experiments/shaping-probe/Cargo.lock
+            experiments/shaping-probe/corpus.txt
+            experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf
+            experiments/google-fonts/ofl/notoserifhebrew/OFL.txt
+            artifacts/shaping-probe-raw.json
+            artifacts/shaping-probe-manifest.json
+          if-no-files-found: warn
