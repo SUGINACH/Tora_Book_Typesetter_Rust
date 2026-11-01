@@ -1,5 +1,5 @@
 {
-  "experiment": "fixed-point-quantum-and-rounding-drift",
+  "experiment": "fixed-point-quantum-rounding-and-conversion-properties",
   "inputs": {
     "a4WidthPt": "148819/250",
     "a4HeightPt": "84189/100",
@@ -51,5 +51,25 @@
       "maxPositivePhysicalRangePt": "9223372036854775807/65536"
     }
   ],
-  "conclusion": "Scale alone does not guarantee drift-free layout. Independent rounding of every line accumulates error; retain rational residual/carry or round only canonical cumulative positions. 1/65536 pt exactly represents 1/64 CSS px and gives a much finer print-native quantum, but a production choice still requires overflow/property tests and real font metrics."
+  "propertyChecks": {
+    "counts": {
+      "cssPxToPtAndBack": 24579,
+      "percentageRounding": 2408,
+      "fontUnitConversion": 588,
+      "commutativeIntegerAddition": 41,
+      "overflowBoundary": 7
+    },
+    "totalChecks": 27627,
+    "tiePolicy": "nearest; exact half-way cases away from zero",
+    "maxCssPxRoundTripError": "0",
+    "cssPixelQuantumRepresentableExactly": true,
+    "fontUnitsUseExactRationalIntermediate": true,
+    "overflowPolicy": "checked signed i64 boundary; no wrapping or saturation",
+    "limitations": [
+      "These are exact-arithmetic model properties, not compiled Rust Fixed implementation tests.",
+      "No real font's full glyph metrics or page corpus is benchmarked here.",
+      "CPU cost and i128 intermediate implementation still require Rust-level measurement."
+    ]
+  },
+  "conclusion": "Scale alone does not guarantee drift-free layout. Independent rounding of every line accumulates error; retain rational residual/carry or round only canonical cumulative positions. 1/65536 pt exactly represents 1/64 CSS px and gives a much finer print-native quantum, but a production choice still requires Rust-level overflow/property tests and real font metrics."
 }
