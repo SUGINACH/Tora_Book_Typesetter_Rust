@@ -1,6 +1,6 @@
 # קובץ מעבר — Tora Book Typesetter Rust
 
-עודכן: 2026-11-02  
+עודכן: 2026-11-02 (לאחר CI ירוק וריצות manifest/full-corpus פעילות)  
 מאגר: [SUGINACH/Tora_Book_Typesetter_Rust](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust)  
 ענף: `main`  
 נקודת בסיס לפני עדכון המעבר: `6a2afeaf49a764bcdb79af63739a3dca524833bb`
@@ -19,15 +19,13 @@
 
 ## מצב Git ובדיקות אחרונות
 
-- commit אחרון לפני תיקון formatting ועדכון מסמכי המעקב: `6a2afeaf49a764bcdb79af63739a3dca524833bb`.
-- תיקון rustfmt הועלה ב-commit `dd4d33e172f816bdf2fdbb8e70ab53195821a2e2`; מסמכי המעקב עודכנו ב-commits `2e450f5357459c0480b78e4bb7a3e42878329e54`, `cc957b165fb3d329e0a8eb1c54b87780fe1b9113` ו-`9a149de91bb0ed1b9c1679ba0c76160c92ab3af1`. תיקון formatting טרם אומת ב-CI חדש.
-- [Rust CI 41355862773](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862773) הסתיים בכשל Formatting בשלוש הפלטפורמות. log של macOS מצביע על סטיית rustfmt יחידה בלולאת `resolved_asset_dependencies` ב-`xtask/src/main.rs`; יתר שלבי Quality דולגו.
-- [Manifest scan 41355862823](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823) עבר: 6 sources, 18,854 records, 35,356 resolved local edges, 413 unresolved local edges, 5,423 external references; שתי סריקות byte-identical. [Artifact](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823/artifacts/13103227452).
-- הכשל ב-`e2b8a1d...` נגרם מבלוק `if` לא סגור ב-`normalize_asset_reference`. תוקן ב-`e8aac03...`.
-- לאחר מכן rustfmt הצביע על שתי סטיות ב-`xtask/src/main.rs`; תוקנו ב-`6a2afea...`.
-- [Manifest scan קודם 41349723140](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41349723140) עבר, אך קדם להרחבת סריקת asset dependencies. לכן הוא אינו סוגר את ה-manifest הנוכחי.
-- [Full-corpus legacy run 41349079957](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41349079957) בוטל; אין baseline replay מלא מאושר.
-- בקובץ workflow תוקנה מדיניות concurrency: כל ריצה תזוהה לפי commit ו-`cancel-in-progress: false`, כדי ש-push מאוחר לא יבטל full-corpus replay.
+- תיקון rustfmt נמצא ב-commit `dd4d33e172f816bdf2fdbb8e70ab53195821a2e2`; מסמכי המעקב עודכנו לאחר מכן.
+- [Rust CI 41360259748](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360259748) עבר על commit `3c8387f894c3c5bbd429ee98f88f42c9b78364d3`, event מסוג push, conclusion=`success`. כל חמשת ה-jobs עברו: שלושת Quality jobs (Ubuntu/macOS/Windows), fixed-point reproducibility ו-negative unwrap quality gate. בכל שלוש הפלטפורמות עברו Formatting, Clippy, unit/integration tests, doc tests, release build ו-repeat clean build + metadata comparison.
+- [Manifest scan 41355862823](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823) עבר בעבר: 6 sources, 18,854 records, 35,356 resolved local edges, 413 unresolved local edges, 5,423 external references; שתי סריקות byte-identical. [Artifact](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823/artifacts/13103227452). 413 unresolved edges עדיין לא סווגו סופית.
+- [Manifest scan חדש 41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733), על commit `dd4d33e172f816bdf2fdbb8e70ab53195821a2e2`: כל ששת ה-checkouts ואימות commits עברו; יצירת manifest כפולה עדיין in progress בזמן עדכון זה. אין עדיין artifact או מסקנה חדשה.
+- [Legacy runner 41356048158](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41356048158), על target commit `8ccd6611c19a87abf5e7934c9eb6b92eb992362a`: checkout, התקנת Node/dependencies/Chromium ו-offline smoke עברו; Orange V23 full-book corpus מול baseline עדיין in progress. ה-workflow נבדק ומוגדר עם concurrency group ייחודית לכל commit ו-`cancel-in-progress: false`; אין לבטל אותו. אין עדיין report מלא או artifacts.
+- [Legacy full-corpus run קודם 41349079957](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41349079957) בוטל בעבר ואינו ראיית baseline replay מלאה.
+- תיקון rustfmt לא שינה לוגיקת scanner, נתוני מקור, אלגוריתמי עימוד או baselines.
 
 ## ראיות ADR
 
@@ -52,12 +50,12 @@
 
 ## סדר הפעולות הבא
 
-1. לבדוק את Rust CI 41355862773 ואת manifest scan 41355862823. אם נכשלו, לפתוח logs ולתקן לפני כל פיתוח חדש.
-2. לוודא שה-legacy runner הופעל מחדש בעקבות שינוי concurrency; אם לא, להפעיל workflow ידנית. אין לבטל את full-corpus run.
-3. לבדוק את Orange V23 full-corpus report מול baseline המוצמד, בלי שינוי tolerance או baseline כדי להשיג pass.
-4. לסגור provenance, source-of-truth matrix, scanner, manifest ו-parity matrix רק אחרי ראיות עדכניות.
+1. לבדוק את סיום [Manifest scan 41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733), להוריד את ה-artifact ולבצע audit על כל unresolved edges. אין לסגור provenance או manifest לפני triage.
+2. להמשיך לעקוב אחרי [Legacy runner 41356048158](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41356048158) עד סיום full-book corpus; לבדוק report, DOM, geometry, ledger ו-provenance artifacts מול baseline המוצמד. אין לשנות baseline/tolerance ואין לבטל את הריצה.
+3. לבדוק את Rust CI החדש שנוצר בעקבות עדכון מסמכי המעקב; אין להניח שהוא עבר עד לקבלת conclusion=success.
+4. להשלים provenance, source-of-truth matrix, scanner, manifest ו-parity matrix רק אחרי ראיות עדכניות ו-triage.
 5. להשלים ניסויי fixed-point, shaping/bidi, Tauri ו-PDF ולתעד במפורש מה עבר ומה עדיין חסר.
-6. רק אחרי שכל משימות שלב א נסגרו, להתחיל משימה 11.
+6. משימות 1–2 בלבד סגורות; שלב א נשאר פתוח. אין להתחיל משימה 11 לפני שכל שערי שלב א נסגרו במפורש.
 
 ## קבצים שחובה לעדכן בכל הודעת עבודה
 
