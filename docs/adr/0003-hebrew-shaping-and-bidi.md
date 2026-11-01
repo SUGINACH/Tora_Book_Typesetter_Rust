@@ -13,11 +13,12 @@ Correct Hebrew layout requires bidi itemization, script/style runs, shaping, mar
 
 | Candidate stack | Components to evaluate | Primary risk |
 |---|---|---|
-| A | rustybuzz + unicode-bidi + ttf-parser | Integration of bidi levels, font tables, variation/features and cluster/source mapping |
+| A | HarfRust 0.15.0 + unicode-bidi 0.3.18 + read-fonts 0.46.0 | Hebrew mark positioning, cluster/source mapping, bidi-run segmentation and font-feature coverage |
 | B | HarfBuzz through a native binding + ICU bidi | Native packaging, platform consistency and build reproducibility |
 | C | swash + unicode-bidi + font parser | Coverage of required OpenType features and compatibility with exact font inventory |
+| D | rustybuzz 0.20.1 + unicode-bidi + ttf-parser | RustSec flags the crate as unmaintained; comparison only unless the advisory is resolved |
 
-These are candidates only; this ADR does not select a crate or version.
+HarfRust is now the leading prototype candidate after a pinned native-HarfBuzz comparison; no production crate or version is selected.
 
 ## Required Hebrew corpus
 
@@ -60,3 +61,13 @@ Sources:
 - This is component-level shaping parity, not full shaping integration. Mixed-direction text is analyzed by UAX #9 but is not yet segmented into script/direction shaping runs before shaping.
 - The experiment does not yet prove full source-span/cluster round-trip, mark positioning in PDF output, a second independent Rust shaping implementation, or the complete profile font inventory.
 - HarfRust remains the leading prototype candidate only; no crate/version is selected for production.
+
+
+## Native HarfBuzz comparison — 2026-11-01
+
+Evidence: [shaping/Bidi run 41348678930](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41348678930).
+
+- HarfRust 0.15.0 output was compared with native HarfBuzz 15.0.0 for five pure-Hebrew samples; all five serialized glyph-line outputs matched exactly.
+- The run pinned both source commits, font binary and OFL license, corpus, Rust toolchain and environment; repeat-run identity and HarfRust verification were also checked.
+- This is component-level parity only. It does not cover mixed-direction run segmentation, line-level visual reordering, complete source-span mapping, all production font aliases, missing-glyph policy or PDF mark positioning.
+- Decision remains **proposed**. Do not add HarfRust or `unicode-bidi` to the production workspace until the remaining acceptance corpus and cross-platform tests are complete.

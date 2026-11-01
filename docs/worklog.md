@@ -101,3 +101,41 @@
 5. לוודא שה-Tauri ו-shaping ADRs משקפים את מגבלות הניסוי, ולא להכריז על בחירת production לפני השלמתן.
 
 אין מעבר לשלב ב עד שכל שערי שלב א נסגרים בראיות.
+
+
+## עדכון המשכיות — 2026-11-02
+
+### מצב Git ו-CI
+
+- ענף: `main`; commit אחרון לפני עדכון מסמכים זה: `6a2afeaf49a764bcdb79af63739a3dca524833bb`.
+- תיקון קריטי: `xtask/src/main.rs::normalize_asset_reference` הכיל guard לסינון מחרוזות דינמיות ללא `return None` וסוגר בלוק. הדבר גרם ל-`unclosed delimiter` ולכשל הן ב-Rust CI והן ב-manifest scan. תוקן ב-commit `e8aac03f4486a112bebf3a21fca954264e29c8e4`.
+- לאחר תיקון התחביר, CI חשף שתי סטיות rustfmt ב-`xtask/src/main.rs`; הן תוקנו ב-commit `6a2afeaf49a764bcdb79af63739a3dca524833bb`.
+- [Rust CI 41355862773](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862773) נפתח אחרי תיקוני syntax ו-rustfmt; היה בתהליך בעת עדכון זה.
+- [Manifest scan 41355862823](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823) נפתח על אותו commit; היה pending/in progress בעת עדכון זה.
+- הכשל הקודם [Rust CI 41350464541](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41350464541) נבע מתחביר לא סגור; [manifest 41350465293](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41350465293) נכשל באותו compile. אין להסתיר ריצות כושלות אלה; הן תועדו ותוקנו.
+- שונתה מדיניות concurrency של ה-Legacy runner: כל ריצה מזוהה לפי commit, ו-`cancel-in-progress: false`. מטרת השינוי היא לאפשר ל-full-corpus replay להסתיים גם כאשר נדחפים commits נוספים. ה-workflow ירוץ מחדש על commit זה.
+
+### ראיות טכנולוגיות מעודכנות
+
+- **Fixed-point:** ניסוי Fraction מדויק עם 27,627 בדיקות דטרמיניסטיות עבר ב-[CI 41349895727](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41349895727). זהו מודל ניסויי, לא מימוש Rust ולא בחירת scale סופית.
+- **Shaping/Bidi:** HarfRust 0.15.0 + `unicode-bidi 0.3.18` עברו; השוואה מול HarfBuzz 15.0.0 התאימה בדיוק ב-5/5 דוגמאות עבריות טהורות ב-[run 41348678930](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41348678930). Mixed-direction run segmentation ו-source-span round-trip עדיין חסרים.
+- **Tauri:** [run 41348380250](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41348380250) עבר build/Clippy/tests ב-Windows. אין עדיין WebView invoke round-trip מלא, שמירה/טעינה, file dialogs ו-progress events.
+- **PDF:** [run 41350088448](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41350088448) עבר: printpdf יצר PDF עם Type0, ToUnicode ו-font subset; 30 mappings; שתי יצירות PDF נתנו manifest זהה; MuPDF החזיר בדיוק את שלוש שורות הקורפוס. Poppler raw/layout נשמרו בדוח, אך אינם תואמים לסדר הלוגי בשל bidi post-processing. זה probe ממוקד בן עמוד אחד, לא ספר מלא ולא בחירת backend.
+- **Legacy full corpus:** [run 41349079957](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41349079957) הסתיים ב-`cancelled`; אין תוצאת baseline replay מלאה. יש להריץ מחדש אחרי שינוי concurrency ולשמור את הדוח וה-manifest.
+
+### משימת ההמשך המדויקת
+
+1. לבדוק תחילה את [Rust CI 41355862773](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862773) ואת [manifest scan 41355862823](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823).
+2. אם אחד נכשל: להוריד job logs, לבודד את השגיאה, לתקן, לעדכן worklog/checklist/handoff ולדחוף rerun. אין להמשיך לתכונה חדשה לפני שה-gates הרלוונטיים ירוקים.
+3. לוודא שה-legacy workflow החדש אכן מופעל על commit זה; אם לא, להפעילו ידנית. אין לבטל את full-corpus run.
+4. להשוות את תוצאות Orange full corpus ל-baseline המוצמד בלי לנרמל הבדלים. אם יש הבדל, לתעד את כל המדדים והסיבות האפשריות; אין לשנות baseline כדי להשיג pass.
+5. להמשיך לסגור משימות 3–10 לפי הסדר. בכל הודעת המשך לבצע יחידת עבודה שלמה אחת, לעדכן worklog, checklist ו-handoff.
+6. אין להתחיל שלב ב לפני סגירה מפורשת ומגובה ראיות של שלב א.
+
+### כללי עבודה שאסור לשנות
+
+- `V21` ו-`V23` הם פרופילים/ענפים נפרדים; אין למזג ביניהם קוד, fixtures או baselines.
+- מאגרי המקור הישנים הם לקריאה בלבד.
+- אין להוסיף HarfRust, printpdf או ספריות ניסוי ל-production workspace לפני ADR והוכחות מלאות.
+- אין להכריז על success על סמך קיום workflow או קובץ; רק conclusion=success ו-artifacts/metrics תואמים נחשבים ראיה.
+- סביבת העבודה המקומית בשיחה הקודמת לא כללה `cargo`/ `rustc`; לכן אימות Rust נעשה ב-GitHub Actions, לא באמצעות טענת build מקומית.

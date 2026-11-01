@@ -66,7 +66,23 @@ Evidence: [PDF probe run 41348147637](https://github.com/SUGINACH/Tora_Book_Type
 
 - The generated PDF contains a Type0 font, a ToUnicode CMap and UTF-16BE `/ActualText` entries whose bytes encode the original Hebrew strings in logical source order.
 - The independent Poppler 25.06 `pdftotext -raw` and `-layout` outputs returned reversed Hebrew codepoint sequences wrapped in RLE/PDF directional controls. The exact-string acceptance check correctly failed; this was not waived or normalized.
-- The next run adds MuPDF's independent text extractor as the logical-order acceptance check while retaining both Poppler outputs as diagnostic evidence. This will establish whether the discrepancy is Poppler-specific or a broader PDF mapping problem.
-- The PDF probe has not yet passed logical Hebrew extraction; no backend is selected.
+- The follow-up run added MuPDF's independent text extractor as the logical-order acceptance check while retaining both Poppler outputs as diagnostic evidence.
+- [Prototype run 2 — 41350088448](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41350088448) passed. It emitted a Type0 font, ToUnicode CMap and embedded/subset CID TrueType font; 30 glyph-to-Unicode mappings were recorded. Two PDF builds produced identical glyph manifests. MuPDF extracted all three Hebrew/Latin corpus lines exactly in logical order.
+- Poppler raw/layout extraction still differs from the logical strings because of its RTL bidi post-processing. The report preserves both outputs and hashes; this is not silently normalized or called a pass.
+- The probe is one page and three lines. It does not establish full-book text extraction, PDFium/Acrobat selection geometry, bookmarks, links, accessibility, PDF/A or large-document performance.
 
-**Current result:** no backend selected. The acceptance test remains independent text extraction of Hebrew+niqqud from a real Type0 subset, followed by logical-order comparison and raster comparison against the DisplayList.
+**Current result:** `printpdf 0.12.8` is a viable **prototype candidate**, not an approved production backend. Keep ADR proposed until a larger Hebrew corpus, multi-page extraction, raster/DisplayList geometry and cross-platform/viewer checks pass.
+
+
+## Prototype run 2 — MuPDF logical extraction
+
+Evidence: [PDF Type0/ToUnicode run 41350088448](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41350088448).
+
+- Pinned HarfRust 0.15.0 shaped glyph IDs and positions; printpdf 0.12.8 accepted explicit glyph IDs and cluster Unicode mappings.
+- PDF inspection confirmed Type0, ToUnicode and an embedded/subset CID TrueType font with Identity-H.
+- 30 glyph-to-Unicode mappings were emitted. The build was repeated with the generated lockfile and the glyph manifest matched exactly.
+- MuPDF's independent extraction matched all three logical source lines exactly, including Hebrew/niqqud and mixed Latin content.
+- Poppler raw/layout outputs are diagnostic only and are recorded as nonmatching; do not report universal extractor parity.
+- The artifact contains the PDF, extraction outputs, font table report, PDF metadata, rendered PNG and manifest.
+
+This result validates a narrow writer prototype. It does not close task 66, does not establish a production PDF backend and does not justify importing printpdf into the production workspace.

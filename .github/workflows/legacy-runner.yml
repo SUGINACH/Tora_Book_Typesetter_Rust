@@ -19,8 +19,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: legacy-runner-${{ github.ref }}
-  cancel-in-progress: true
+  # A full-corpus replay can run for many minutes. Keep each immutable commit
+  # in its own group so later pushes cannot cancel the evidence-producing run.
+  group: legacy-runner-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   legacy-orange-smoke:
