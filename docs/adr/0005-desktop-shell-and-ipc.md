@@ -26,3 +26,17 @@ Build the same small immutable `LayoutJob` through each feasible shell/host. The
 ## Acceptance
 
 Choose only after a working Windows prototype demonstrates safe typed IPC, offline operation, project save/load, cancellation and no renderer-dependent layout decisions. Record exact toolchain, shell and dependency versions.
+
+## Research snapshot — 2026-11-01
+
+- The Tauri 2 line is actively released; the official ecosystem release page lists Tauri 2.12.3 dated 2026-10-10, while docs.rs currently exposes `tauri 2.12.5` (released 2026-10-21).
+- Tauri 2.12 raised its MSRV to Rust 1.90. The target workspace pins Rust 1.99.1, so the declared MSRV is compatible, but Windows/WebView2 packaging and native build dependencies still require a real Windows CI prototype.
+- Tauri 3.0.0-alpha.5 exists (2026-10-14); it is not a production candidate while alpha.
+- A shell experiment must keep the engine core independent: Tauri may present SVG/PDF/HTML artifacts and submit typed immutable jobs, but must not measure text or decide page/column breaks.
+
+Sources:
+- https://tauri.app/release/
+- https://docs.rs/tauri/latest/tauri/
+- https://tauri.app/blog/tauri-2.12/
+
+**Current result:** Tauri 2.12.5 is the first candidate to test, not an accepted selection. The experiment must build a minimal Windows application with typed IPC, offline assets, file-dialog allowlists, progress and cancellation.
