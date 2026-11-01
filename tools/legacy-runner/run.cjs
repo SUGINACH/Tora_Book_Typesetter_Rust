@@ -12,6 +12,7 @@ const rustCommit = process.env.RUST_TARGET_COMMIT || process.env.GITHUB_SHA || n
 const expected = {
   sourceCommit: '0b0ee279464a3db14672cd3f4051275aba5985da',
   playwrightVersion: '1.55.0',
+  chromiumVersion: '140.0.7339.16',
   cliSha256: '0eeb4d0af360ae4f2264abfbca904c91e0ea189e72870bd3ac6981ebd0839594',
   fixtureSha256: '1aec6688976243118051068752d72acc85b8830fdc0a0be96bd133c2b018276c',
   fontsCssSha256: 'eec01e2b2a65ab67ad959625dd7b3640dceeb09a5cee8b7677787a1e89acd229'
@@ -80,8 +81,8 @@ function main() {
 
   assert(report.run?.gitCommit === expected.sourceCommit, 'report does not identify the pinned legacy source commit');
   assert(report.run?.playwrightVersion === expected.playwrightVersion, 'report Playwright version differs from the pin');
-  assert(typeof report.run?.browserVersion === 'string' && report.run.browserVersion.length > 0,
-    'report is missing the actual Chromium version');
+  assert(report.run?.browserVersion === expected.chromiumVersion,
+    'Chromium version mismatch: expected ' + expected.chromiumVersion + ', got ' + report.run?.browserVersion);
   assert(Array.isArray(report.run?.externalRequests) && report.run.externalRequests.length === 0,
     'browser attempted external network requests');
   assert(report.run?.fontsCssSha256 === expected.fontsCssSha256, 'report font CSS fingerprint differs from the pin');
@@ -93,7 +94,13 @@ function main() {
     'decision ledger count does not match the rendered DOM');
   assert(report.geometry?.textConservationAudit?.available === true,
     'source-to-rendered text conservation audit is unavailable');
-  assert(report.geometry?.fontsStatus != null, 'font status diagnostics are missing');
+  assert(report.geometry?.fontsStatus === 'loaded', 'font status is not loaded');
+  const fontPreflight = report.geometry?.fontPreflight;
+  assert(Number.isInteger(fontPreflight?.faceCount) && fontPreflight.faceCount > 0,
+    'font preflight did not enumerate any font faces');
+  assert(fontPreflight.loaded === fontPreflight.faceCount && fontPreflight.failed === 0 &&
+    Array.isArray(fontPreflight.failures) && fontPreflight.failures.length === 0,
+    'not all enumerated font faces loaded successfully');
   assert(report.runtime?.pageErrors?.length === 0, 'browser page errors were reported');
 
   const artifactDir = path.join(root, 'artifacts');
@@ -123,6 +130,7 @@ function main() {
       issueSummary: report.audit?.summary || null,
       decisionRecordCount: report.geometry.layoutDecisionRecords.length,
       decisionLedgerMatchesDom: report.geometry.layoutDecisionRecordAudit.recordCountMatchesDom,
+      fontPreflight,
       textConservation: report.geometry.textConservationAudit,
       externalRequestCount: report.run.externalRequests.length,
       deterministicRepeat: report.run.determinismCheck.identical,
