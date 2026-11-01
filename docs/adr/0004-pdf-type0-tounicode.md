@@ -37,7 +37,9 @@ Reject any backend that requires converting all text to outlines or cannot prove
 
 ## Research snapshot — 2026-11-01
 
-- `printpdf 0.12.8` documents embedded fonts, Unicode text output, automatic font subsetting, and advanced text operations. Its own documentation labels text extraction as experimental. This is useful functionality but does not by itself prove correct Type0/CID mapping and ToUnicode behavior for Hebrew niqqud and shaped glyph clusters.
+- `printpdf 0.12.8` documents embedded fonts, Unicode text output, automatic font subsetting and advanced text operations. More importantly, its `TextItem::GlyphIds` accepts explicit glyph IDs and per-glyph horizontal offsets, while `Codepoint.cid` carries an arbitrary Unicode string used by its ToUnicode CMap generator. The source implementation maps each glyph/CID to a vector of Unicode codepoints, so it can represent a ligature or shaped cluster mapping to multiple scalars.
+- The printpdf repository's `font_embedding` tests explicitly inspect the embedded font, widths and ToUnicode mappings; its `glyph_run_merge` tests exercise explicit positioned glyph IDs. This is stronger evidence than the crate's high-level `TextItem::Text` API alone.
+- Limitation: `Codepoint.offset` is horizontal; vertical mark positioning must be represented through absolute text matrices or a proven glyph-position operation. The implementation must also preserve glyph/CID identity through subsetting, especially for CID-keyed CFF. The crate documentation still labels its generic text extraction feature experimental.
 - `lopdf 0.46.0` is a lower-level PDF object manipulation library. It can support a custom writer, but a correct Type0 font dictionary, CIDFont, widths, CIDToGIDMap, ToUnicode CMap and subset remapping would remain our responsibility.
 - A dedicated font/PDF crate exposes ToUnicode parsing and subsetting capabilities, but its suitability for PDF *writing* and the exact Type0 mapping still needs a direct prototype.
 
