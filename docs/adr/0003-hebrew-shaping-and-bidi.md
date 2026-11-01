@@ -34,3 +34,19 @@ For each stack record glyph IDs, advances, offsets, cluster map, bidi runs, line
 ## Acceptance
 
 The selected stack must preserve Hebrew marks and clusters, provide stable source mapping, report font/fallback identity, run on supported Windows/Linux/macOS targets and reproduce canonical shaped-run hashes under the pinned environment.
+
+## Research snapshot — 2026-11-01
+
+- `rustybuzz 0.20.1` is documented as a pure-Rust HarfBuzz shaping port and depends on `ttf-parser 0.25`; its API exposes glyph IDs, positions, script, language, direction and shaping features. However, the current RustSec advisory database marks `rustybuzz` unmaintained (RUSTSEC-2026-0206). It is therefore a research candidate, not an approved dependency.
+- The `rustybuzz` project documentation also records limits: no integration with FreeType/CoreText/Uniscribe/DirectWrite, no ICU/GLib integration, no Graphite2 support, and some OpenType/AAT features are unsupported. These limits need explicit compatibility tests.
+- `unicode-bidi 0.3.18` implements UAX #9 in safe Rust. Its documented model resolves bidi levels and reorders line ranges after line wrapping; that distinction matters because the engine must shape logical runs and then reorder visual fragments at the correct stage.
+- `tectonic-rustybuzz 0.20.2` is a possible fork candidate, but its maintenance status, source divergence, security posture and parity with the upstream shaping API must be audited before use.
+
+Sources:
+- https://docs.rs/rustybuzz/latest/rustybuzz/
+- https://github.com/harfbuzz/rustybuzz/blob/main/Cargo.toml
+- https://docs.rs/unicode-bidi/latest/unicode_bidi/
+- https://docs.rs/crate/tectonic-rustybuzz/latest
+- https://github.com/taiki-e/rustsec-advisory-db (advisory database; inspect the exact RUSTSEC-2026-0206 record before any dependency selection)
+
+**Current result:** no crate/version selected. The next experiment must run Hebrew+niqqud and mixed-direction fixtures through at least two viable shaping stacks and inspect cluster/source mapping, not just visual screenshots.
