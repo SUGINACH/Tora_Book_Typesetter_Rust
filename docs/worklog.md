@@ -190,3 +190,21 @@
 1. להמתין לסיום 41356048158 ו-41360202733 ולבדוק את כל ה-artifacts וה-reports, בלי לעצור את הריצות.
 2. לנתח את 413 unresolved local edges לפי source, profile, reference type ו-resolution reason; לתעד כל קטגוריה ורשומה בעייתית.
 3. לעדכן את מטריצת parity וה-checklist רק לאחר שהראיות תומכות בסגירה מפורשת.
+
+
+## עדכון ביצוע — 2026-11-02, forensic triage ל-413 unresolved edges
+
+### בדיקת artifact והקוד
+
+- הורד ונבדק ה-artifact של [Manifest scan 41355862823](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41355862823/artifacts/13103227452): 18,854 records, 413 unresolved local edges, 270 ערכי edge ייחודיים ב-64 רשומות מקור.
+- חלוקה לפי מקור: IMUD 271, Orange V23 61, Yellow V10 48, Green V23 23, Gold V21 10. לא מערבבים את פרופילי V21 ו-V23.
+- נמצאו false-positive candidates ברורים: 118 ערכי extension-only כגון `.json`/ `.svg`, 62 קטעי inline markup/SVG/HTML, 7 directory tokens. בנוסף: 9 נתיבי executable סביבתיים, 27 פקודות/מודולי בדיקה, ו-173 נתיבים דמויי קבצים (כולל 50 font edges) שדורשים אימות מול source inventory ו-runtime consumer.
+- בדיקת `xtask/src/main.rs` העלתה סיבה מבנית: `extract_quoted_strings` סורק את כל מחרוזות JavaScript ללא lexer או הקשר תחבירי, ו-`is_path_candidate` מקבל סיומות bare. לכן אין לפרש 413 unresolved edges כ-413 נכסים חסרים.
+- נוצר דו״ח מפורט: [asset-edge-triage-41355862823.md](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/blob/main/docs/provenance/asset-edge-triage-41355862823.md). זה audit ראשוני בלבד; לא שיניתי scanner, manifest, baseline או סיווג edge.
+
+### החלטת המשך
+
+- לשמר את ה-manifest הקיים כראיית baseline.
+- לתכנן תיקון extractor שמבוסס על תחבירי import/require/new URL ו-schema ייעודי ל-font catalogs; לא לסרוק כל quoted string ולא להסתמך על regex נוסף בלבד.
+- להוסיף fixtures של false-positive ושל positive references לפני שינוי scanner, ואז להשוות manifest חדש byte-for-byte ולבצע edge diff.
+- אין לסגור provenance/manifest עד שה-rerun 41360202733 יסתיים, ה-artifact החדש ייבדק, וכל unresolved שנותר יסווג עם owner והסבר.
