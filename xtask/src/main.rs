@@ -482,7 +482,6 @@ fn tests_for(source: &SourceSpec, kind: &str, owner: &str) -> (Vec<String>, Stri
     }
 }
 
-
 fn extract_asset_dependencies(source_path: &str, kind: &str, bytes: &[u8]) -> Vec<String> {
     let is_svg_asset = kind == "asset"
         && Path::new(source_path)
@@ -651,15 +650,17 @@ fn is_path_candidate(value: &str) -> bool {
         .iter()
         .any(|prefix| lower.contains(prefix))
         || [
-            ".css", ".js", ".mjs", ".cjs", ".json", ".svg", ".png", ".jpg", ".jpeg",
-            ".webp", ".ico", ".woff", ".woff2", ".ttf", ".otf", ".gif", ".avif",
+            ".css", ".js", ".mjs", ".cjs", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp",
+            ".ico", ".woff", ".woff2", ".ttf", ".otf", ".gif", ".avif",
         ]
         .iter()
         .any(|extension| lower.ends_with(extension))
 }
 
 fn normalize_asset_reference(source_path: &str, value: &str) -> Option<String> {
-    let value = value.trim().trim_matches(|character| character == '"' || character == '\'');
+    let value = value
+        .trim()
+        .trim_matches(|character| character == '"' || character == '\'');
     if value.is_empty()
         || value.starts_with('#')
         || value.starts_with("data:")
@@ -840,10 +841,7 @@ fn classify(path: &str) -> String {
         .unwrap_or("")
         .to_ascii_lowercase();
     let lower = path.to_ascii_lowercase();
-    if matches!(
-        extension.as_str(),
-        "woff" | "woff2" | "ttf" | "otf" | "eot"
-    ) {
+    if matches!(extension.as_str(), "woff" | "woff2" | "ttf" | "otf" | "eot") {
         "font".to_string()
     } else if matches!(
         extension.as_str(),
@@ -1169,7 +1167,6 @@ mod tests {
         assert!(migration.contains("spec-only"));
     }
 
-
     #[test]
     fn css_asset_references_are_normalized_and_external_urls_are_retained() {
         let css = br#"
@@ -1210,10 +1207,7 @@ mod tests {
             normalize_asset_reference("css/site.css", "../fonts/book.woff2?v=2#face"),
             Some("local:fonts/book.woff2".to_string())
         );
-        assert_eq!(
-            normalize_asset_reference("css/site.css", "#gradient"),
-            None
-        );
+        assert_eq!(normalize_asset_reference("css/site.css", "#gradient"), None);
     }
 
     #[test]
