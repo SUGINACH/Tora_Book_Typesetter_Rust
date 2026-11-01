@@ -115,7 +115,7 @@ jobs:
             --source SUGINACH/IMUD_TORANI@6dd79d0ba224c169b0d19778ba181fc90edc8319@legacy-imud-v20x=legacy/imud \
             --source SUGINACH/Typesetter_doc@534b8f4e0ba9f5cb8abe9e3ad888904a217910cd@requirements-docs=legacy/docs \
             --out artifacts/legacy-compatibility-manifest-second.json
-          cmp artifacts/legacy-compatibility-manifest-first.json artifacts/legacy-compatibility-manifest-second.json
+          diff -u artifacts/legacy-compatibility-manifest-first.json artifacts/legacy-compatibility-manifest-second.json
           cp artifacts/legacy-compatibility-manifest-first.json artifacts/legacy-compatibility-manifest.json
           echo "Canonical manifest is byte-identical across two scans."
 
