@@ -194,11 +194,12 @@ fn scan_source(source: &SourceSpec, records: &mut Vec<FileRecord>) -> io::Result
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "path escaped source root"))?
             .to_string_lossy()
             .replace('\\', "/");
-        let kind = if source.profile == "requirements-docs" && source_path.starts_with("source_code/") {
-            "source-snapshot".to_string()
-        } else {
-            classify(&source_path)
-        };
+        let kind =
+            if source.profile == "requirements-docs" && source_path.starts_with("source_code/") {
+                "source-snapshot".to_string()
+            } else {
+                classify(&source_path)
+            };
         let hash = hex(&sha256(&bytes));
         let legacy_name = path
             .file_name()
@@ -260,10 +261,7 @@ fn ownership_for(
         "legacy-yellow-v10" => "very_long_test_text.txt",
         _ => "source_code/V_current_snapshot.txt",
     };
-    let profile_fixture = format!(
-        "{}@{}:{}",
-        source.repository, source.commit, fixture_path
-    );
+    let profile_fixture = format!("{}@{}:{}", source.repository, source.commit, fixture_path);
     let (parser, owner, migration) = if source.profile == "requirements-docs" {
         (
             "requirements-and-research".to_string(),
@@ -286,13 +284,15 @@ fn ownership_for(
         (
             "legacy-independent-geometry-audit".to_string(),
             "audit".to_string(),
-            "reimplement as an independent audit; do not use audit measurements as layout inputs".to_string(),
+            "reimplement as an independent audit; do not use audit measurements as layout inputs"
+                .to_string(),
         )
     } else if lower.ends_with("geometry-audit-cli.js") {
         (
             "legacy-offline-renderer-runner".to_string(),
             "xtask".to_string(),
-            "retain as read-only pinned oracle; do not link legacy JavaScript into Rust crates".to_string(),
+            "retain as read-only pinned oracle; do not link legacy JavaScript into Rust crates"
+                .to_string(),
         )
     } else if lower == "app.js" || lower.ends_with("/app.js") {
         (
@@ -321,7 +321,8 @@ fn ownership_for(
         (
             "legacy-profile-settings-loader".to_string(),
             "settings".to_string(),
-            "preserve losslessly and resolve defaults only within the selected legacy profile".to_string(),
+            "preserve losslessly and resolve defaults only within the selected legacy profile"
+                .to_string(),
         )
     } else if kind == "font" {
         (
@@ -333,7 +334,8 @@ fn ownership_for(
         (
             "legacy-asset-loader".to_string(),
             "asset-registry".to_string(),
-            "validate and hash assets; retain offline and profile-specific dependencies".to_string(),
+            "validate and hash assets; retain offline and profile-specific dependencies"
+                .to_string(),
         )
     } else if kind == "fixture" || kind == "corpus" {
         (
@@ -345,7 +347,8 @@ fn ownership_for(
         (
             "documentation-and-history".to_string(),
             "docs/history".to_string(),
-            "historical-only; cite as context and require executable evidence for behavior claims".to_string(),
+            "historical-only; cite as context and require executable evidence for behavior claims"
+                .to_string(),
         )
     } else if kind == "test-infrastructure" {
         (
@@ -363,7 +366,8 @@ fn ownership_for(
         (
             "legacy-source-inventory".to_string(),
             "legacy-source-reference".to_string(),
-            "historical-only until a concrete feature owner and parity fixture are approved".to_string(),
+            "historical-only until a concrete feature owner and parity fixture are approved"
+                .to_string(),
         )
     };
     let fixtures = if matches!(kind, "fixture" | "corpus") {
@@ -549,12 +553,7 @@ fn render_manifest(sources: &[SourceSpec], records: &[FileRecord]) -> String {
         }
         output.push_str("],\n");
         push_field(&mut output, "rustOwner", &record.rust_owner, true);
-        push_field(
-            &mut output,
-            "migrationRule",
-            &record.migration_rule,
-            true,
-        );
+        push_field(&mut output, "migrationRule", &record.migration_rule, true);
         push_field(
             &mut output,
             "verificationLevel",
