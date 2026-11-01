@@ -252,7 +252,18 @@ fn ownership_for(
     kind: &str,
 ) -> (String, String, String, Vec<String>) {
     let lower = source_path.to_ascii_lowercase();
-    let profile_fixture = format!("legacy/corpus-manifest.json#{}", source.profile);
+    let fixture_path = match source.profile.as_str() {
+        "legacy-orange-v23" => "tests/fixtures/geometry-audit-smoke.txt",
+        "legacy-green-v23" | "legacy-gold-v21" | "legacy-imud-v20x" => {
+            "text_files_for_typesetter_tests/very_long_test_text.txt"
+        }
+        "legacy-yellow-v10" => "long_test_text.txt",
+        _ => "source_code/V_current_snapshot.txt",
+    };
+    let profile_fixture = format!(
+        "{}@{}:{}",
+        source.repository, source.commit, fixture_path
+    );
     let (parser, owner, migration) = if source.profile == "requirements-docs" {
         (
             "requirements-and-research".to_string(),
