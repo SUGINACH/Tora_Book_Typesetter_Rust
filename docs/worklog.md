@@ -208,3 +208,11 @@
 - לתכנן תיקון extractor שמבוסס על תחבירי import/require/new URL ו-schema ייעודי ל-font catalogs; לא לסרוק כל quoted string ולא להסתמך על regex נוסף בלבד.
 - להוסיף fixtures של false-positive ושל positive references לפני שינוי scanner, ואז להשוות manifest חדש byte-for-byte ולבצע edge diff.
 - אין לסגור provenance/manifest עד שה-rerun 41360202733 יסתיים, ה-artifact החדש ייבדק, וכל unresolved שנותר יסווג עם owner והסבר.
+
+
+### אימות חוזר של manifest — 2026-11-02
+
+- [Manifest scan 41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733) הסתיים ב-success והעלה artifact [13105540442](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733/artifacts/13105540442).
+- ה-manifest החוזר הוא 70,097,869 bytes, SHA-256 `304cd6fe197726cf21a8fe2a7ba1e4b38d50e9aef2ae6da8a7fbe3ec5f8c8c47`, זהה byte-for-byte ל-artifact 13103227452 מהסריקה הקודמת.
+- מכאן שהסריקה דטרמיניסטית, אך 413 unresolved edges אינם נפתרים. דו״ח triage עודכן עם הראיה החוזרת. הסיבה המבנית ל-false positives עדיין מחייבת תיקון extractor; אין לסגור משימות provenance/scanner.
+- ריצה נוספת 41360675212 הופעלה בעקבות עדכון מסמכי provenance ונשארה פעילה בזמן הבדיקה; אינה נדרשת כדי לאמת את ה-byte-identical result שכבר הושג.
