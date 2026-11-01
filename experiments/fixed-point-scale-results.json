@@ -1,0 +1,55 @@
+{
+  "experiment": "fixed-point-quantum-and-rounding-drift",
+  "inputs": {
+    "a4WidthPt": "148819/250",
+    "a4HeightPt": "84189/100",
+    "lineHeightPt": "66/5",
+    "repeatedLines": 1000,
+    "cssPixelsPerPoint": "4/3"
+  },
+  "candidates": [
+    {
+      "name": "1/64 CSS px",
+      "ticksPerPoint": "256/3",
+      "quantumPt": "3/256",
+      "quantumCssPx": "1/64",
+      "a4WidthTicks": 50797,
+      "a4HeightTicks": 71841,
+      "lineHeightPt": "66/5",
+      "lineHeightTicks": 1126,
+      "independentRoundingDriftAfter1000LinesPt": "-75/16",
+      "independentRoundingDriftAfter1000LinesCssPx": "-25/4",
+      "cumulativeErrorCarryDriftAfter1000LinesPt": "0",
+      "maxPositivePhysicalRangePt": "27670116110564327421/256"
+    },
+    {
+      "name": "1/1024 pt",
+      "ticksPerPoint": "1024",
+      "quantumPt": "1/1024",
+      "quantumCssPx": "1/768",
+      "a4WidthTicks": 609563,
+      "a4HeightTicks": 862095,
+      "lineHeightPt": "66/5",
+      "lineHeightTicks": 13517,
+      "independentRoundingDriftAfter1000LinesPt": "25/128",
+      "independentRoundingDriftAfter1000LinesCssPx": "25/96",
+      "cumulativeErrorCarryDriftAfter1000LinesPt": "0",
+      "maxPositivePhysicalRangePt": "9223372036854775807/1024"
+    },
+    {
+      "name": "1/65536 pt",
+      "ticksPerPoint": "65536",
+      "quantumPt": "1/65536",
+      "quantumCssPx": "1/49152",
+      "a4WidthTicks": 39012008,
+      "a4HeightTicks": 55174103,
+      "lineHeightPt": "66/5",
+      "lineHeightTicks": 865075,
+      "independentRoundingDriftAfter1000LinesPt": "-25/8192",
+      "independentRoundingDriftAfter1000LinesCssPx": "-25/6144",
+      "cumulativeErrorCarryDriftAfter1000LinesPt": "0",
+      "maxPositivePhysicalRangePt": "9223372036854775807/65536"
+    }
+  ],
+  "conclusion": "Scale alone does not guarantee drift-free layout. Independent rounding of every line accumulates error; retain rational residual/carry or round only canonical cumulative positions. 1/65536 pt exactly represents 1/64 CSS px and gives a much finer print-native quantum, but a production choice still requires overflow/property tests and real font metrics."
+}
