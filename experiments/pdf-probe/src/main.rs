@@ -97,7 +97,7 @@ fn run() -> Result<(), String> {
         });
         ops.push(Op::StartTextSection);
         ops.push(Op::SetFont {
-            font: PdfFontHandle::External(font_id),
+            font: PdfFontHandle::External(font_id.clone()),
             size: Pt(18.0),
         });
         // Glyphs are emitted in logical cluster order; their absolute positions
