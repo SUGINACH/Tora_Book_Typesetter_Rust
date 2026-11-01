@@ -57,7 +57,26 @@ The abbreviated SHAs above are display-only. The full 40-character commits and f
 | Determinism | repeated output hashes, stable ordering, no timestamp/path contamination |
 | Verdict | semantic, typographic and geometric outcomes separately; deviations linked to ADR |
 
-## 4. Acceptance rules
+## 4. Stable test identifiers and measurable gates
+
+| Test ID | Applies to | Measurable acceptance criterion |
+|---|---|---|
+| `SRC-PIN-HASH` | Every source record | Full commit and SHA-256 match the manifest exactly; zero unpinned inputs |
+| `CORPUS-BYTE-IDENTITY` | Corpus/fixture records | Input byte length and SHA-256 match; no newline/BOM normalization unless the profile explicitly declares it |
+| `PROFILE-REPLAY` | Executable profile records | Run with the record's own input, settings, font and environment pins; never borrow another profile's baseline |
+| `SEMANTIC-CONSERVATION` | Engine and corpus records | Zero unexplained missing, duplicated, reordered or mismatched source spans; heading/note counts and order exact |
+| `DECISION-LEDGER-PARITY` | Layout-engine records | One valid ledger record per required DOM/layout block; zero missing, excess or malformed records |
+| `DETERMINISM-REPEAT` | Every executable profile | Two runs with identical immutable inputs produce identical canonical page/decision hashes |
+| `FONT-PREFLIGHT` | Font/CSS/settings records | Every required font face loads; zero failed required faces; alias resolution and glyph coverage reported; license separately cleared |
+| `SETTINGS-ROUNDTRIP` | Settings/preset records | Unknown keys preserved losslessly; serialized normalized settings stable; no cross-profile fallback |
+| `ASSET-REFERENCE-CLOSURE` | SVG/CSS/HTML/JSON asset records | Every local dependency resolves to a pinned asset; zero unapproved external requests, path traversal or missing references |
+| `LEGACY-DOM-GEOMETRY` | DOM/CSS/decoration records | Measured page/column/block bounds available; no clipping/overflow; cross-renderer epsilon explicit and unit-bearing |
+| `PDF-UNICODE-EXTRACTION` | PDF export records | Independent extractor returns exact logical Unicode text, Hebrew RTL order, niqqud and punctuation from embedded Type0/ToUnicode fonts |
+| `SPEC-TO-ADR` | Spec-only documentation records | Every accepted requirement links to a feature/test or ADR; documentation alone never marks executable parity passed |
+
+The IDs are stable test contracts. A manifest record may list multiple IDs. Until the implementation exists, the record's verification level must remain below `parity-tested`; listing a test ID is not evidence that it passed.
+
+## 5. Acceptance rules
 
 1. Semantic parity is mandatory for every required compatibility record.
 2. Typographic and geometric parity are evaluated only against the record's owning profile and pinned environment.
@@ -67,7 +86,7 @@ The abbreviated SHAs above are display-only. The full 40-character commits and f
 6. A known conflict is not silently converted into a pass. It receives status `conflict`, an ADR, a named migration rule and a fixture that demonstrates the chosen behavior.
 7. Visual similarity cannot compensate for semantic loss; semantic equality cannot compensate for a documented clipping/overflow defect.
 
-## 5. First measured run — Orange smoke
+## 6. First measured run — Orange smoke
 
 Evidence: [legacy renderer workflow run](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41344525335).
 
@@ -81,7 +100,7 @@ Evidence: [legacy renderer workflow run](https://github.com/SUGINACH/Tora_Book_T
 
 This smoke is a verified runner contract, not a full-book parity baseline. The long corpus baseline is recorded separately with its own input/config/environment fingerprint. The first run's report and summary are preserved as a GitHub Actions artifact.
 
-## 6. Open coverage gaps
+## 7. Open coverage gaps
 
 - Full long-corpus replay under the current pinned Orange environment.
 - A reproducible measured full-document baseline for Green, Gold, Yellow and IMUD.
