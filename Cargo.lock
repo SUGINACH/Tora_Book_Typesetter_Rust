@@ -2,3 +2,22 @@
 # It is not intended for manual editing.
 version = 4
 
+[[package]]
+name = "tora-engine-core"
+version = "0.1.0"
+dependencies = [
+ "tora-geometry",
+ "tora-model",
+]
+
+[[package]]
+name = "tora-geometry"
+version = "0.1.0"
+
+[[package]]
+name = "tora-model"
+version = "0.1.0"
+
+[[package]]
+name = "xtask"
+version = "0.1.0"
