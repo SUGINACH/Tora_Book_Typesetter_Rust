@@ -118,6 +118,79 @@
           "low": 35
         },
         "reason": "expected_baseline.json explicitly says these ornament metrics came from Green documentation and were NOT reproduced in the Orange lab."
+      },
+      "runnerSmoke": {
+        "workflowRun": 41344525335,
+        "workflowUrl": "https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41344525335",
+        "artifactId": 13098513956,
+        "artifactArchiveSha256": "5373ac466f6bcf6685a8c98f650e6a8548667ea666f38d758fa89eb78d1b9f3e",
+        "rustTargetCommit": "e60878d0d4a3c1af74da4f913da36089d5b645b1",
+        "legacyCommit": "0b0ee279464a3db14672cd3f4051275aba5985da",
+        "inputPath": "tests/fixtures/geometry-audit-smoke.txt",
+        "inputSha256": "1aec6688976243118051068752d72acc85b8830fdc0a0be96bd133c2b018276c",
+        "settingsPath": "default_settings.json",
+        "settingsSha256": "5c78a49ca2b205f0a846e6f87a1058b4a61595967b472bda65ac7412f13f5b3f",
+        "environmentIdentity": {
+          "repository": "SUGINACH/Tora_Book_Typesetter_Orange",
+          "commit": "0b0ee279464a3db14672cd3f4051275aba5985da",
+          "profile": "legacy-orange-v23",
+          "inputSha256": "1aec6688976243118051068752d72acc85b8830fdc0a0be96bd133c2b018276c",
+          "settingsSha256": "5c78a49ca2b205f0a846e6f87a1058b4a61595967b472bda65ac7412f13f5b3f",
+          "fontCssSha256": "eec01e2b2a65ab67ad959625dd7b3640dceeb09a5cee8b7677787a1e89acd229",
+          "playwright": "1.55.0",
+          "chromium": "140.0.7339.16",
+          "network": "offline-enforced",
+          "viewport": {
+            "width": 1440,
+            "height": 1000,
+            "deviceScaleFactor": 1
+          }
+        },
+        "environmentFingerprint": "9e6ae0d8bb6fc5a9baf373b971d71a78cb84357a2e816691309e499052e0102b",
+        "result": {
+          "pages": 6,
+          "issues": {
+            "total": 3,
+            "high": 0,
+            "medium": 2,
+            "low": 1,
+            "byKind": {
+              "structural-fallback": 1,
+              "sparse-page": 1,
+              "container-gap": 1
+            }
+          },
+          "decisionLedger": {
+            "records": 2,
+            "domBlocks": 2,
+            "recordCountMatchesDom": true,
+            "missingOrMalformed": 0
+          },
+          "fonts": {
+            "faceCount": 485,
+            "loaded": 485,
+            "failed": 0
+          },
+          "textConservation": {
+            "available": true,
+            "sourceParagraphs": 4,
+            "renderedParagraphs": 4,
+            "missing": 0,
+            "mismatches": 0,
+            "headingMissing": 0,
+            "headingMismatches": 0,
+            "sideNoteMissing": 0,
+            "endNoteMissing": 0
+          },
+          "externalRequests": 0,
+          "deterministicRepeat": true,
+          "browserPageErrors": 0,
+          "browserConsoleErrors": 0,
+          "renderMilliseconds": 2189,
+          "reportSha256": "8867d0d6bd6d281089ec3d26dbe3f8eceb9be3bee78a936d789f0f800fd43b6c",
+          "summarySha256": "f4a94bbaa6d60fb6a6d3878ab36cdaa12b8cfc9f9d162f23cf3d8ec4e69422d5"
+        },
+        "verificationNote": "The first pinned smoke run passed and its artifact was inspected: 485/485 font faces loaded. A subsequent runner commit adds an explicit 485/485 preflight assertion and pins Chromium 140.0.7339.16; that stricter wrapper revision is awaiting its own CI rerun."
       }
     },
     {
