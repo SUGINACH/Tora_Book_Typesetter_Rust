@@ -39,4 +39,14 @@ Sources:
 - https://docs.rs/tauri/latest/tauri/
 - https://tauri.app/blog/tauri-2.12/
 
-**Current result:** Tauri 2.12.5 is the first candidate to test, not an accepted selection. The experiment must build a minimal Windows application with typed IPC, offline assets, file-dialog allowlists, progress and cancellation.
+## Prototype run 1 — Windows build feasibility
+
+Evidence: [Tauri workflow run 41347404787](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41347404787), source commit `795a82abcfddf0015efd3ecb7f4fa0a68486fd96`.
+
+- Windows formatting, deterministic resource icon generation, debug build, unit tests, Clippy, release build and dependency graph capture all passed.
+- The exact graph included `tauri 2.12.5` and `tauri-build 2.7.4`.
+- The probe demonstrated a minimal offline local frontend, typed command signatures and a generation gate that rejects stale/cancelled jobs.
+- Scope limitation: this run did **not** exercise an actual WebView `invoke` round-trip, file dialogs, project save/load, progress events or packaged installer. The bundle is intentionally disabled. It is build feasibility evidence, not acceptance of the desktop architecture.
+- A follow-up adds input validation for profile IDs, job IDs, generations and SHA-256 fingerprints; its Windows CI is pending.
+
+**Current result:** Tauri 2.12.5 is the first candidate to test, not an accepted selection. The remaining experiment must prove an actual IPC round-trip, allowlisted project I/O, progress/cancellation events, offline operation and stale-generation rejection before shell selection.
