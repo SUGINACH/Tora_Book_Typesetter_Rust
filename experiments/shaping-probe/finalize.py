@@ -44,7 +44,7 @@ def main() -> None:
         "experiment": "Hebrew shaping and bidi probe",
         "sourcePins": {
             "harfrustRepository": "https://github.com/harfbuzz/harfrust",
-            "harfrustCommit": "71d965f3c4f7e83fb6c14c408bdc50fb1fb6c0c7",
+            "harfrustCommit": "71d965130ea93905f81b8f03a03d7ecc794fbc47",
             "harfrustVersion": "0.15.0",
             "googleFontsRepository": "https://github.com/google/fonts",
             "googleFontsCommit": "6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec",
