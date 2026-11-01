@@ -2,44 +2,63 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 #[derive(Default)]
 pub struct JobGate {
-    current_generation: AtomicU64,
+    minimum_generation: AtomicU64,
+    last_accepted_generation: AtomicU64,
 }
 
 impl JobGate {
     pub fn accept(&self, generation: u64) -> bool {
-        let mut current = self.current_generation.load(Ordering::SeqCst);
+        if generation < self.minimum_generation.load(Ordering::SeqCst) {
+            return false;
+        }
+        let mut last = self.last_accepted_generation.load(Ordering::SeqCst);
         loop {
-            if generation <= current {
+            if generation <= last {
                 return false;
             }
-            match self.current_generation.compare_exchange(
-                current,
+            match self.last_accepted_generation.compare_exchange(
+                last,
                 generation,
                 Ordering::SeqCst,
                 Ordering::SeqCst,
             ) {
-                Ok(_) => return true,
-                Err(observed) => current = observed,
+                Ok(_) => return generation >= self.minimum_generation.load(Ordering::SeqCst),
+                Err(observed) => last = observed,
             }
         }
     }
 
     pub fn cancel(&self, generation: u64) -> bool {
+        if self.last_accepted_generation.load(Ordering::SeqCst) != generation {
+            return false;
+        }
         let Some(next_generation) = generation.checked_add(1) else {
             return false;
         };
-        self.current_generation
-            .compare_exchange(
-                generation,
+        let mut minimum = self.minimum_generation.load(Ordering::SeqCst);
+        loop {
+            if minimum >= next_generation {
+                return false;
+            }
+            match self.minimum_generation.compare_exchange(
+                minimum,
                 next_generation,
                 Ordering::SeqCst,
                 Ordering::SeqCst,
-            )
-            .is_ok()
+            ) {
+                Ok(_) => return true,
+                Err(observed) => minimum = observed,
+            }
+        }
     }
 
     pub fn current_generation(&self) -> u64 {
-        self.current_generation.load(Ordering::SeqCst)
+        self.last_accepted_generation.load(Ordering::SeqCst)
+    }
+
+    pub fn is_current(&self, generation: u64) -> bool {
+        self.current_generation() == generation
+            && generation >= self.minimum_generation.load(Ordering::SeqCst)
     }
 }
 
@@ -65,6 +84,9 @@ mod tests {
         assert!(!gate.cancel(7));
         assert!(!gate.accept(7));
         assert!(gate.accept(8));
+        assert!(!gate.accept(8));
+        assert!(gate.is_current(8));
+        assert!(!gate.is_current(7));
         assert_eq!(gate.current_generation(), 8);
     }
 }
