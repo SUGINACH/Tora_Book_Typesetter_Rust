@@ -248,3 +248,15 @@
 - הוכח: Rust CI רב-פלטפורמי ירוק על קוד extractor החדש; timeout של full-corpus הוגדל; smoke runner עובר בריצה החדשה.
 - ממתין: manifest scan עדכני, edge diff, סיווג unresolved אמיתיים/false positives, ו-full-corpus report מול baseline.
 - אין לשנות baselines או tolerances, אין לסמן unresolved כ-resolved באופן גורף, ואין להתחיל שלב ב. V21 ו-V23 נשארים פרופילים נפרדים.
+
+
+### Forensic edge diff and extractor correction — 2026-11-02
+
+- [Manifest scan 41361439336](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361439336) הסתיים ב-success והפיק artifact [13105032721](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361439336/artifacts/13105032721). השוויתי אותו ל-[41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733), כולל כל 18,854 מזהי הרשומות: לא נוספו או הוסרו records, ולא השתנו source hashes.
+- בדיפ הראשוני: 86 records שינו edges/status; 486 edges הוסרו ו-2 נוספו. סך ה-asset dependencies ירד מ-41,192 ל-40,708; resolved ירד מ-35,356 ל-35,168; unresolved ירד מ-413 ל-157. אין לראות בירידה הזו לבדה סגירת provenance.
+- בבדיקה ידנית של ה-diff התגלה false negative חדש: normalizer דחה whitespace גם בתוך CSS url("Arial Italic.woff2") חוקי. כתוצאה מכך 174 references של שמות קובצי גופן עם רווחים (35 שמות ייחודיים) נעלמו מה-manifest על פני הפרופילים. בנוסף, imports סטטיים ללא סיומת, כגון require('./lib/harness'), סווגו unresolved אף שקיים קובץ .js יחיד.
+- תיקנתי את שני המקרים ב-[commit 56ab319](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/56ab3190cb2817864533eb5c536f55640f2a5f4d): whitespace מותר רק במסלול CSS url() מפורש; מחרוזות JS כלליות ממשיכות להידחות כשיש whitespace. נוספה גם resolution לסיומות .js/.mjs/.cjs רק כשיש התאמה יחידה באותו profile, ובדיקות unit לשני המקרים.
+- ה-CI של 56ab319 נכשל ב-Formatting בגלל שגיאת תחביר שנוצרה בעריכת guard; הכשל זוהה בלוגים ותוקן ב-[commit 4d4a5c5](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/4d4a5c557289f66353aa5eb482e0b2754cf7553c). אין להסתמך על 56ab319 כתיקון מאומת.
+- [Rust CI 41363057774](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363057774) ו-[Manifest scan 41363057769](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363057769) הופעלו על 4d4a5c5 ונמצאים בבדיקה. יש להשתמש רק בתוצאות וב-artifact של הריצה העדכנית להכרעה.
+- [Legacy runner 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין ב-full-corpus comparison; smoke עבר. אין עדיין report/artifacts מלאים, ואין לבטל את הריצה.
+- מסקנה: התיקון צמצם false positives משמעותית, אך edge diff הוכיח שחייבים לשמר גם CSS paths עם רווחים ו-module resolution תקני. משימות provenance/manifest/runner נשארות פתוחות; אין לשנות baselines או tolerances ואין להתחיל שלב ב.

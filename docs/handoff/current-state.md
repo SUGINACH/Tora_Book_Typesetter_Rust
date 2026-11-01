@@ -80,3 +80,13 @@
 - אין לסמן task כ-done בגלל קוד/מסמך בלבד; נדרשת בדיקת קבלה תואמת.
 - אין להמציא תוצאות בדיקה. אם workflow pending, להשאירו pending ולתת קישור.
 - סביבת המחשב המקומית בשיחה הקודמת לא כללה `cargo`/ `rustc`; אימות Rust נעשה ב-GitHub Actions.
+
+
+## עדכון forensic — 2026-11-02
+
+- [Manifest 41361439336](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361439336) הושלם וה-artifact הושווה ל-41360202733: 18,854 record IDs נשמרו ו-source hashes זהים; 86 records שינו edges/status, 486 edges הוסרו ו-2 נוספו. unresolved ירד מ-413 ל-157. הסריקה אינה מתקבלת כ-final.
+- ה-diff חשף false negatives: 174 references של CSS font filenames עם רווחים (35 שמות ייחודיים) הוסרו, משום ש-normalizer דחה whitespace; וכן imports סטטיים ללא סיומת כגון ./lib/harness לא נפתרו לקובץ .js יחיד.
+- תיקון נוסף: [commit 56ab319](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/56ab3190cb2817864533eb5c536f55640f2a5f4d) הוסיף CSS-only whitespace acceptance ו-resolution שמרני של extensionless JS imports. ה-CI של commit זה נכשל עקב syntax error ב-guard; הוא תוקן ב-[commit 4d4a5c5](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/4d4a5c557289f66353aa5eb482e0b2754cf7553c).
+- [Rust CI 41363057774](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363057774) ו-[Manifest scan 41363057769](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363057769) על 4d4a5c5 עדיין רצים. יש להתייחס לסריקה זו כקובעת רק לאחר השוואת artifact.
+- [Legacy runner 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין full-corpus in progress; smoke עבר, אין report מלא.
+- שלב א פתוח; משימות 1–2 בלבד סגורות. אין לשנות baseline/tolerances ואין להתחיל שלב ב.
