@@ -1,0 +1,11 @@
+[package]
+name = "shaping-probe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+hr-shape = { git = "https://github.com/harfbuzz/harfrust", rev = "71d965f3c4f7e83fb6c14c408bdc50fb1fb6c0c7" }
+unicode-bidi = "=0.3.18"
