@@ -20,6 +20,7 @@ def sha256(path: Path) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--raw", required=True, type=Path)
+    parser.add_argument("--comparison", required=True, type=Path)
     parser.add_argument("--font", required=True, type=Path)
     parser.add_argument("--license", required=True, type=Path)
     parser.add_argument("--corpus", required=True, type=Path)
@@ -27,6 +28,11 @@ def main() -> None:
     args = parser.parse_args()
 
     raw = json.loads(args.raw.read_text(encoding="utf-8"))
+    comparison = json.loads(args.comparison.read_text(encoding="utf-8"))
+    if not comparison.get("allExactMatches"):
+        raise SystemExit("HarfRust glyph output differs from the pinned HarfBuzz 15.0.0 reference")
+    if "15.0.0" not in comparison.get("referenceVersion", ""):
+        raise SystemExit(f"unexpected HarfBuzz reference version: {comparison.get('referenceVersion')!r}")
     if len(raw.get("samples", [])) != 8:
         raise SystemExit("expected exactly eight shaped/bidi samples")
     shaped = [sample for sample in raw["samples"] if sample["shaping"]]
@@ -46,6 +52,9 @@ def main() -> None:
             "harfrustRepository": "https://github.com/harfbuzz/harfrust",
             "harfrustCommit": "71d965130ea93905f81b8f03a03d7ecc794fbc47",
             "harfrustVersion": "0.15.0",
+            "harfbuzzRepository": "https://github.com/harfbuzz/harfbuzz",
+            "harfbuzzCommit": "35f656a1a2bab548ea7f54a6dd3fba2b09680d14",
+            "harfbuzzVersion": "15.0.0",
             "googleFontsRepository": "https://github.com/google/fonts",
             "googleFontsCommit": "6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec",
             "fontPath": "ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf",
@@ -67,6 +76,9 @@ def main() -> None:
             "bidiReorderedSampleCount": len(mixed),
             "allHarfRustCallsSucceeded": True,
             "allHarfRustCallsUsedVerify": True,
+            "nativeHarfBuzzExactMatchCount": comparison.get("exactMatchCount"),
+            "nativeHarfBuzzComparedSampleCount": comparison.get("comparedSampleCount"),
+            "nativeHarfBuzzExactParity": comparison.get("allExactMatches"),
             "limitations": [
                 "Mixed-direction samples are processed by unicode-bidi for levels and visual text, but are not yet segmented into shaping runs.",
                 "The probe does not yet compare glyph output against native HarfBuzz or test a second shaping engine.",
@@ -74,6 +86,7 @@ def main() -> None:
             ],
         },
         "rawReport": raw,
+        "nativeHarfBuzzComparison": comparison,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
