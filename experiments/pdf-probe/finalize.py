@@ -78,7 +78,7 @@ def main() -> None:
         raise SystemExit(
             "MuPDF logical text extraction mismatch.\nExpected: "
             + repr(expected_lines)
-            + "\\nActual: "
+            + "\nActual: "
             + repr(mupdf_normalized)
         )
 
