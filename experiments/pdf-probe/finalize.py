@@ -47,7 +47,6 @@ def main() -> None:
     extracted_path = args.output.parent / "pdf-probe-extracted.txt"
     fonts_path = args.output.parent / "pdf-probe-fonts.txt"
     info_path = args.output.parent / "pdf-probe-info.txt"
-    extracted = run(["pdftotext", "-raw", str(args.pdf), str(extracted_path)]) if False else ""
     subprocess.run(["pdftotext", "-raw", str(args.pdf), str(extracted_path)], check=True)
     extracted = extracted_path.read_text(encoding="utf-8")
     normalized = [line.strip() for line in extracted.replace("\f", "").splitlines() if line.strip()]
@@ -63,10 +62,15 @@ def main() -> None:
     fonts_path.write_text(fonts, encoding="utf-8")
     info = run(["pdfinfo", str(args.pdf)])
     info_path.write_text(info, encoding="utf-8")
-    if "CID TrueType" not in fonts or "Identity-H" not in fonts or "yes" not in fonts:
-        raise SystemExit("pdffonts did not report an embedded Unicode CID TrueType font")
-    if "Pages:           1" not in info and "Pages:          1" not in info:
-        raise SystemExit("PDF page count is not one")
+    font_rows = [line for line in fonts.splitlines() if "CID TrueType" in line]
+    if not any("Identity-H" in line and "yes yes yes" in line for line in font_rows):
+        raise SystemExit("pdffonts did not report an embedded/subset Unicode CID TrueType font")
+    page_count = next(
+        (line.split(":", 1)[1].strip() for line in info.splitlines() if line.startswith("Pages:")),
+        None,
+    )
+    if page_count != "1":
+        raise SystemExit(f"PDF page count is not one: {page_count!r}")
 
     rustc = subprocess.run(
         ["rustc", "--version"], check=True, capture_output=True, text=True
@@ -93,7 +97,7 @@ def main() -> None:
         "results": {
             "pdfSha256": sha256(args.pdf),
             "extractedTextSha256": sha256(extracted_path),
-            "fontFaceCount": raw_report.get("glyphToUnicodeMappings"),
+            "glyphToUnicodeMappingCount": raw_report.get("glyphToUnicodeMappings"),
             "logicalTextExtractionExact": True,
             "type0FontPresent": True,
             "toUnicodeCMapPresent": True,
