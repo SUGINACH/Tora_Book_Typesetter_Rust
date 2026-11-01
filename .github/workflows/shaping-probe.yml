@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: harfbuzz/harfbuzz
-          ref: 35f656d70e17710a39e8c3a913d6bcd2a3eaf0f6
+          ref: 35f656a1a2bab548ea7f54a6dd3fba2b09680d14
           path: experiments/harfbuzz
           persist-credentials: false
 
@@ -93,7 +93,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C experiments/harfrust rev-parse HEAD)" = "71d965130ea93905f81b8f03a03d7ecc794fbc47"
-          test "$(git -C experiments/harfbuzz rev-parse HEAD)" = "35f656d70e17710a39e8c3a913d6bcd2a3eaf0f6"
+          test "$(git -C experiments/harfbuzz rev-parse HEAD)" = "35f656a1a2bab548ea7f54a6dd3fba2b09680d14"
           test "$(git -C experiments/google-fonts rev-parse HEAD)" = "6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec"
           test -s "experiments/google-fonts/ofl/notoserifhebrew/NotoSerifHebrew[wdth,wght].ttf"
           test -s "experiments/google-fonts/ofl/notoserifhebrew/OFL.txt"
