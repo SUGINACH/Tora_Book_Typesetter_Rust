@@ -52,7 +52,7 @@
 
 ## סדר הפעולות הבא
 
-1. להשתמש בתוצאת [Manifest scan 41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733) שכבר עברה וב-artifact byte-identical. לתקן את JS asset extractor עם lexer/תחביר מוגדר ו-fixtures; אין לסגור provenance או manifest לפני edge diff וסיווג unresolved אמיתיים. ריצה נוספת 41360675212 הופעלה בעקבות עדכון docs/provenance ועדיין נפרדת מהראיה שכבר הושלמה.
+1. להשתמש בתוצאת [Manifest scan 41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733) שכבר עברה וב-artifact byte-identical. לתקן את JS asset extractor עם lexer/תחביר מוגדר ו-fixtures; אין לסגור provenance או manifest לפני edge diff וסיווג unresolved אמיתיים. ריצה נוספת 41360675212 בוטלה בעקבות push מאוחר יותר; ריצת manifest חדשה 41360784317 פעילה על commit התיעוד `78775136460080bd49fc4d0b056a6c4ed8f22c6f`. היא אינה מבטלת את הראיה המוצלחת וה-byte-identical של 41360202733.
 2. להמשיך לעקוב אחרי [Legacy runner 41356048158](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41356048158) עד סיום full-book corpus; לבדוק report, DOM, geometry, ledger ו-provenance artifacts מול baseline המוצמד. אין לשנות baseline/tolerance ואין לבטל את הריצה.
 3. לבדוק את Rust CI האחרון שנוצר על HEAD הנוכחי של main; עדכון מסמכים מפעיל CI מחדש, ולכן יש לאמת את ה-run שמצביע בדיוק ל-HEAD העדכני ולא להסתמך על run קודם.
 4. להשלים provenance, source-of-truth matrix, scanner, manifest ו-parity matrix רק אחרי ראיות עדכניות ו-triage.
