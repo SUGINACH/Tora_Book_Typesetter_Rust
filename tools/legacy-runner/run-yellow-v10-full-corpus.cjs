@@ -151,7 +151,7 @@ async function runOnce(browser, baseUrl, text, settings, auditApi, attempt) {
   try {
     await page.goto(baseUrl + '/renderer.html', { waitUntil: 'load', timeout: 60000 });
     await page.waitForFunction(() => typeof window.typesetDocument === 'function' && !!window.__geomAudit,
-      { timeout: 60000 });
+      null, { timeout: 60000 });
 
     const requestedFamilies = familiesFromSettings(settings);
     const fontPreflight = await page.evaluate(async families => {
