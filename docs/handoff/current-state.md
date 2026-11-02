@@ -193,7 +193,7 @@
 
 ## Task 4 test inventory progress — 2026-11-02
 
-- Test harnesses are profile-specific. Orange has six npm test suites; Green has no npm test script; Gold owns V21 scripts/workflows for baseline/quick/determinism; Yellow has tests but no root package.json; IMUD has a separate quick-layout and feature suite.
+- Test harnesses are profile-specific. Orange has seven npm test suites; Green has no npm test script; Gold owns V21 scripts/workflows for baseline/quick/determinism; Yellow has tests but no root package.json; IMUD has a separate quick-layout and feature suite.
 - Orange/Green share eight fixture paths; seven byte-identical, one differs in six header-type settings. Full evidence: `docs/provenance/source-of-truth-matrix.md` §12.
 - Task 4 remains open. Structural path counts do not establish coverage; next acceptance work is to map compatibility requirements to profile-owned tests.
 - Legacy full corpus run 41361263075 status: `in_progress`; last job remained in full-book corpus comparison.
