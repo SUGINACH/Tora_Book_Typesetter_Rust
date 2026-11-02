@@ -115,6 +115,9 @@ jobs:
         working-directory: legacy/green
         run: npx playwright install --with-deps chromium
 
+      - name: Syntax-check Green profile runner
+        run: node --check tools/legacy-runner/run-green-long-corpus.cjs
+
       - name: Capture Green V23 full-corpus baseline or deterministic failure fingerprint
         env:
           LEGACY_SOURCE_COMMIT: e5cde5f194d0d9e9b20fdaa2a742f9bf6e8aec53
