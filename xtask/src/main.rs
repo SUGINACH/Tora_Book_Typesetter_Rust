@@ -374,7 +374,8 @@ fn ownership_for(
         (
             "legacy-asset-loader".to_string(),
             "asset-registry".to_string(),
-            "validate and hash assets; retain offline and profile-specific dependencies".to_string(),
+            "validate and hash assets; retain offline and profile-specific dependencies"
+                .to_string(),
         )
     } else if kind == "fixture" || kind == "corpus" {
         (
@@ -386,7 +387,8 @@ fn ownership_for(
         (
             "documentation-and-history".to_string(),
             "docs/history".to_string(),
-            "historical-only; cite as context and require executable evidence for behavior claims".to_string(),
+            "historical-only; cite as context and require executable evidence for behavior claims"
+                .to_string(),
         )
     } else if kind == "test-infrastructure" {
         (
@@ -404,7 +406,8 @@ fn ownership_for(
         (
             "legacy-source-inventory".to_string(),
             "legacy-source-reference".to_string(),
-            "historical-only until a concrete feature owner and parity fixture are approved".to_string(),
+            "historical-only until a concrete feature owner and parity fixture are approved"
+                .to_string(),
         )
     };
 
@@ -428,8 +431,10 @@ fn ownership_for(
     if (active_status || executable_owner) && kind != "font" {
         fixtures.push(profile_fixture);
     }
-    if matches!(owner.as_str(), "settings" | "asset-registry" | "engine-core::decorations")
-        && matches!(kind, "settings" | "data" | "asset" | "fixture")
+    if matches!(
+        owner.as_str(),
+        "settings" | "asset-registry" | "engine-core::decorations"
+    ) && matches!(kind, "settings" | "data" | "asset" | "fixture")
     {
         fixtures.push(source_fixture);
     }
@@ -438,7 +443,12 @@ fn ownership_for(
     (parser, owner, migration, fixtures)
 }
 
-fn tests_for(source: &SourceSpec, kind: &str, owner: &str, source_path: &str) -> (Vec<String>, String) {
+fn tests_for(
+    source: &SourceSpec,
+    kind: &str,
+    owner: &str,
+    source_path: &str,
+) -> (Vec<String>, String) {
     if source.profile == "requirements-docs" {
         return (
             vec!["SPEC-TO-ADR".to_string()],
@@ -1908,7 +1918,14 @@ fn status_for(profile: &str, kind: &str, source_path: &str) -> &'static str {
         "historical-only"
     } else if matches!(
         kind,
-        "settings" | "data" | "asset" | "fixture" | "corpus" | "style" | "baseline" | "dom-contract"
+        "settings"
+            | "data"
+            | "asset"
+            | "fixture"
+            | "corpus"
+            | "style"
+            | "baseline"
+            | "dom-contract"
     ) {
         "verified-data"
     } else {
@@ -1936,7 +1953,11 @@ fn classify(path: &str) -> String {
         .unwrap_or("")
         .to_ascii_lowercase();
     let lower = path.to_ascii_lowercase();
-    if lower.starts_with("docs/") || lower.starts_with("reports/") || lower.starts_with("debug/") || lower == "reference-analysis.json" {
+    if lower.starts_with("docs/")
+        || lower.starts_with("reports/")
+        || lower.starts_with("debug/")
+        || lower == "reference-analysis.json"
+    {
         "documentation".to_string()
     } else if lower == "package.json" || lower == "package-lock.json" {
         "build-config".to_string()
