@@ -1838,7 +1838,9 @@ mod tests {
         }"#;
         let dependencies = extract_asset_dependencies("package-lock.json", "data", lockfile);
         assert!(!dependencies.iter().any(|value| value == "local:cli.js"));
-        assert!(dependencies.iter().any(|value| value.starts_with("external:")));
+        assert!(dependencies
+            .iter()
+            .any(|value| value.starts_with("external:")));
     }
 
     #[test]
