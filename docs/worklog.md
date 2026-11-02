@@ -323,3 +323,11 @@
 - Manifest [41369525487](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525487) על 218d50a עדיין in_progress; הוא קודם לתיקון fetch ולכן אינו קובע למניפסט הסופי.
 - [Legacy runner 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין in_progress ב-full-corpus comparison; smoke עבר ואין report מלא.
 - Stage A נשאר פתוח. אין לשנות baselines/tolerances, אין לסגור provenance/manifest, ואין להתחיל Stage B.
+
+
+### קבלת CI מלאה לאחר תיקון fetch — 2026-11-02
+
+- [Rust CI 41369673903](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369673903) הסתיים success על ראש המאגר 5f11938 (קוד extractor 73557d4): כל חמשת ה-jobs עברו. Quality Linux/macOS/Windows עברו Formatting, Clippy, 21 unit tests, documentation tests, release build ו-repeat clean build/metadata comparison; fixed-point reproducibility ו-negative unwrap gate עברו.
+- [Manifest scan 41369621509](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369621509) על קוד 73557d4 עדיין in_progress בשלב יצירת manifest canonical פעמיים. אין artifact חדש עדיין; יש להוריד ולהשוות ל-baseline 41360202733 לאחר השלמתו.
+- [Legacy runner 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין ב-full-book corpus comparison אחרי smoke מוצלח; כ-99 דקות מאז תחילת הריצה בזמן בדיקה זו. timeout 360 דקות. אין לבטל ואין לטעון לתוצאת corpus עד קבלת report/artifacts.
+- הקוד האחרון עבר CI מלא, אך manifest/provenance עדיין לא מתקבלים: נדרשים edge diff של 73557d4, הכרעה על 32 archive references ושלושת Gold engine scripts, ו-full corpus report. Stage A פתוח; אין Stage B.
