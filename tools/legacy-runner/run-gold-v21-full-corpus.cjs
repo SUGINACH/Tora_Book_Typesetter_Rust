@@ -227,8 +227,17 @@ function main() {
   const pageErrors = attempts.flatMap(a => a.pageErrors);
   const consoleErrors = attempts.flatMap(a => a.consoleErrors);
   const nativeChapterCount = first.mode?.nativeChapterCount ?? null;
-  const measured = bothRendered && singleWholeCorpusFallback && signaturesIdentical && externalRequests.length === 0 && pageErrors.length === 0 && consoleErrors.length === 0;
-  const status = measured ? 'measured-full-document' : 'blocked-render-error-or-nondeterminism';
+  const fontsLoaded = attempts.every(a => {
+    const f = a.chapter?.fontPreflight;
+    return !!f && Number.isInteger(f.faceCount) && f.faceCount > 0 && f.loaded === f.faceCount && f.failed === 0;
+  });
+  const measured = bothRendered && singleWholeCorpusFallback && fontsLoaded && signaturesIdentical &&
+    externalRequests.length === 0 && pageErrors.length === 0 && consoleErrors.length === 0;
+  const status = measured ? 'measured-full-document'
+    : !fontsLoaded ? 'blocked-font-preflight'
+    : externalRequests.length ? 'blocked-external-requests'
+    : consoleErrors.length ? 'blocked-browser-resource-errors'
+    : 'blocked-render-error-or-nondeterminism';
   const firstSummary = first.summary;
   const firstChapter = first.chapter;
   const manifest = {
@@ -266,7 +275,7 @@ function main() {
       resultHashes: attempts.map(a => a.resultPath && fs.existsSync(a.resultPath) ? sha256File(a.resultPath) : null),
       logHashes: attempts.map(a => sha256File(a.logPath))
     },
-    interpretation: 'The pinned Gold V21 corpus contains no native H2 chapter markers expected by the legacy 79-chapter splitter. The harness copy therefore falls back to one single whole-corpus render, preserving the exact pinned input bytes. This is a full-document measurement only if both attempts render and produce identical signatures; the original legacy source and test scripts remain unchanged.'
+    interpretation: 'The pinned Gold V21 corpus contains no native H2 chapter markers expected by the legacy 79-chapter splitter. The harness copy therefore falls back to one single whole-corpus render, preserving the exact pinned input bytes. A measured baseline requires two identical full-document renders, all enumerated font faces loaded, zero external requests, and zero browser/page errors. Geometry findings remain measured findings, not waivers; the original legacy source and test scripts remain unchanged.'
   };
   const manifestPath = path.join(artifactDir, 'legacy-gold-v21-full-corpus-manifest.json');
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + String.fromCharCode(10), 'utf8');
