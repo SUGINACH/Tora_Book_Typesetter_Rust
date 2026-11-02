@@ -300,3 +300,15 @@
 - [Rust CI 41367871354](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367871354) ו-[Manifest scan 41367871327](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367871327) queued על 4af38d4; אלו הריצות הקובעות לתיקון npm false positives.
 - Manifest 41367799385 על 1a1ce26 עדיין in progress אך הוחלף על ידי הסריקה החדשה לאחר תיקון formatting.
 - Legacy runner 41361263075 עדיין full-corpus in progress; אין report.
+
+
+### המשך תיקון extractor ואימות CI — 2026-11-02
+
+- סריקת manifest [41367871327](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367871327) על commit 4af38d4 הסתיימה בהצלחה. artifact [13108185810](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367871327/artifacts/13108185810) הושווה ל-baseline artifact [13105540442](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733/artifacts/13105540442): 18,854 compatIds זהים ו-0 שינויי sourceSha256. ספירות: assetDependencies 41,192→40,626; resolved 35,356→35,221; unresolved 413→35. edge diff: assetDependencies +1/-567; resolved +18/-153; unresolved +0/-378.
+- פירוט 35 unresolved ב-artifact זה: 32 הפניות לקבצים היסטוריים חסרים תחת archive/v19, archive/v20.1 ו-archive/v21; 3 סקריפטי Gold חסרים engine-diagnostics.js, engine-inputs.js, engine-trace.js. אין לסמן אותם כ-resolved בלי החלטת מקור/בעלים.
+- התברר ש-artifact של 4af38d עדיין אינו מספיק לקבלת extractor: בדיקת יחידה הראתה שהשימוש ב-normalize_module_reference במערכי font inventory משמיט basenames תקינים כגון Alpha-Black.woff2; וכן החרגת package-lock.json כולה השמיטה resolved URLs חיצוניים, אף שנדרש רק לדחות npm bin paths כגון cli.js.
+- Rust CI [41369416363](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369416363) על 97ab8c9: Formatting ו-Clippy עברו ב-Linux, אך 2 מתוך 21 unit tests נכשלו (font inventory ו-package-lock external resolved). fixed-point ו-negative unwrap עברו. התיקון ב-[7bcd686](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/7bcd6862eb2ebb4c8a8b8d53578d655fb716bac6): font inventory משתמש ב-normalize_asset_reference; package-lock סורק רק ערכי מפתח resolved באמצעות tokenizer, בלי להחזיר bin path extraction.
+- CI [41369485795](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369485795) על 7bcd686 נכשל בשער rustfmt בלבד (פריסת pattern ב-helper החדש). תיקון formatting בלבד ב-[218d50a](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/218d50abc1758fa9b187f3d39a9882d876ee7321).
+- ריצות האימות העדכניות על 218d50a: [Rust CI 41369525393](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525393) queued ו-[Manifest 41369525487](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525487) pending בעת הרישום. יש לבדוק את שתיהן; אין לייחס להן הצלחה עדיין.
+- [Legacy runner 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) נשאר ב-full-corpus comparison; smoke עבר, שלב השוואת הקורפוס עדיין in_progress, אין report/artifact מלא. אין לבטל.
+- שלב א נשאר פתוח. אין לשנות baselines/tolerances, אין לסמן provenance או manifest כ-complete, ואין להתחיל שלב ב.
