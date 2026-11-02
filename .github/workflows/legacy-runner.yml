@@ -276,6 +276,13 @@ jobs:
           ref: a444d34ccad30fd5ed0d6fd3873adbe9c23cb7e0
           path: legacy/gold
           persist-credentials: false
+      - name: Checkout exact same-profile Gold renderer overlay
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/Tora_Book_Typesetter_Gold
+          ref: 7ce8ee79b8dbd9347f45aa1819ac1594a7a3d91a
+          path: legacy/gold-renderer-overlay
+          persist-credentials: false
       - name: Checkout pinned self-hosted Google font source
         uses: actions/checkout@v4
         with:
