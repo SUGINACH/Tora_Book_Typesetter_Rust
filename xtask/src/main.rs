@@ -914,8 +914,7 @@ fn has_static_repository_root_binding(tokens: &[JsToken], name: &str, before: us
 
         match tokens.get(index + 1) {
             Some(JsToken::Identifier(binding))
-                if binding == name
-                    && tokens.get(index + 2) == Some(&JsToken::Punct('=')) =>
+                if binding == name && tokens.get(index + 2) == Some(&JsToken::Punct('=')) =>
             {
                 let start = (index + 3).min(tokens.len());
                 let end = (index + 20).min(tokens.len());
@@ -953,8 +952,7 @@ fn has_static_repository_root_binding(tokens: &[JsToken], name: &str, before: us
                 }
                 if has_root_property
                     && tokens.get(cursor + 1) == Some(&JsToken::Punct('='))
-                    && tokens.get(cursor + 2)
-                        == Some(&JsToken::Identifier("require".to_string()))
+                    && tokens.get(cursor + 2) == Some(&JsToken::Identifier("require".to_string()))
                     && tokens.get(cursor + 3) == Some(&JsToken::Punct('('))
                 {
                     if let Some(JsToken::String(module)) = tokens.get(cursor + 4) {
