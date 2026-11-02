@@ -330,6 +330,12 @@ fn ownership_for(
             "app-core".to_string(),
             "replace with immutable typed jobs and explicit application state; preserve profile settings".to_string(),
         )
+    } else if lower == "settings-manager.js" || lower.ends_with("/settings-manager.js") {
+        (
+            "legacy-profile-settings-loader".to_string(),
+            "settings".to_string(),
+            "preserve lossless settings import/export and profile-scoped defaults; verify every setting against its owning profile fixture".to_string(),
+        )
     } else if lower == "engine-inputs.js" || lower.ends_with("/engine-inputs.js") {
         (
             "legacy-engine-input-adapter".to_string(),
@@ -453,6 +459,9 @@ fn ownership_for(
             | "audit"
             | "xtask"
             | "compat-test-harness"
+            | "settings"
+            | "asset-registry"
+            | "font-environment"
     );
     if (active_status || executable_owner) && kind != "font" {
         fixtures.push(profile_fixture);
@@ -2344,6 +2353,22 @@ mod tests {
         assert_eq!(owner, "engine-core::decorations");
         assert!(migration.contains("geometry"));
         assert_eq!(fixtures.len(), 1);
+    }
+
+    #[test]
+    fn root_settings_manager_is_fixture_scoped() {
+        let source = SourceSpec {
+            repository: "SUGINACH/IMUD_TORANI".to_string(),
+            commit: "6dd79d0ba224c169b0d19778ba181fc90edc8319".to_string(),
+            profile: "legacy-imud-v20x".to_string(),
+            root: PathBuf::from("legacy/imud"),
+        };
+        let (_, owner, migration, fixtures) =
+            ownership_for(&source, "settings-manager.js", "javascript");
+        assert_eq!(owner, "settings");
+        assert!(migration.contains("lossless settings"));
+        assert_eq!(fixtures.len(), 1);
+        assert!(fixtures[0].contains("Tora_Book_Typesetter_"));
     }
 
     #[test]
