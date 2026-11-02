@@ -152,3 +152,26 @@ The root font file `Guttman-Rashi-Normal.woff2` is present with the same blob ID
 **Interpretation:** these exact shared blobs are reusable provenance facts, not evidence that the owning engines or their runtime font-loading behavior are interchangeable. The core executable files still have different blob IDs across the profiles. Do not deduplicate or remove profile-specific copies without a separate license, path-resolution and runtime-dependency review.
 
 This section is a bounded root-data comparison, not a complete inventory of nested presets, archive assets, tests or all font binaries.
+
+
+## 12. Test and runner ownership — pinned profile pass — 2026-11-02
+
+The five pinned executable profiles do not share one interchangeable test harness:
+
+| Profile | Pinned test/fixture layout | Root package test entry point | Ownership note |
+|---|---|---|---|
+| Orange V23 | 33 files under `tests/` or `fixtures/` | `npm test` runs six focused Node suites: settings consistency/wiring, header settings, H2 ornament scope, heading divider, shaar divider and renderer assets | Distribution test suite; Playwright is a development dependency |
+| Green V23 | 12 files under `tests/` or `fixtures/` | No `test` script; package scripts expose geometry audit commands | Engineering fixtures/audit evidence; do not infer that Orange's test suite is automatically Green's suite |
+| Gold V21 | No `tests/` or `fixtures/` directory matched by the path scan; 44 paths contain test/debug/audit/regression/verify/check naming across scripts, workflows, test-triggers and work documentation | `test:baseline`, `test:quick`, and `determinism` run scripts under `scripts/` | V21-specific test/debug scripts and trigger corpus; keep independent of V23 |
+| Yellow V10 profile (repository branch V22) | 13 files under `test/` or `tests/` | No root `package.json` at the pinned commit | Includes engine input/trace and geometry-audit tests plus historical PDF outputs |
+| IMUD V20x | 18 files under `tests/` or `fixtures/` | `npm test` runs quick layout suite and feature suite | Historical feature/layout test harness; package name is `tora-book-typesetter-orange`, but the pinned source identity remains IMUD |
+
+### Shared Orange–Green fixtures
+
+Eight paths under `tests/fixtures/` exist in both Orange and Green:
+- Seven have identical Git blob IDs: `geometry-audit-diagnostics-smoke.txt`, `geometry-audit-smoke.txt`, `no-legal-two-column-split.txt`, `ornament-geometry-parity-settings.json`, `ornament-geometry-parity-smoke.txt`, `ornament-geometry-smoke.txt`, and `ornament-geometry-title-tb-settings.json`.
+- `ornament-geometry-settings.json` differs. Six keys differ: `hdr-verso-r-type`, `hdr-verso-c-type`, `hdr-verso-l-type`, `hdr-r-type`, `hdr-c-type`, and `hdr-l-type`. Orange sets all six to `ext________2_svg`; Green sets all six to `none`.
+
+The differing fixture is an intentional profile-sensitive test input until proven otherwise; do not normalize it to one value or reuse one profile's expected output for the other. The seven byte-identical fixtures are shared test data, but do not imply identical engine behavior.
+
+This is a structural ownership inventory, not a test-quality or coverage judgment. Test names/counts alone do not establish that every required behavior is covered; task 9 must map each required compatibility record to an executable fixture and measurable criterion.
