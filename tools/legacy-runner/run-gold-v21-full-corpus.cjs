@@ -98,7 +98,6 @@ function chapterSignature(result) {
     pageCount: result.pageCount ?? null,
     geomSummary: result.geomSummary ?? null,
     geomIssues: result.geomIssues ?? null,
-    geomStats: result.geomStats ?? null,
     error: result.error ?? null
   };
 }
@@ -172,7 +171,7 @@ function main() {
   const pageErrors = attempts.flatMap(a => a.pageErrors);
   const consoleErrors = attempts.flatMap(a => a.consoleErrors);
   const nativeChapterCount = first.mode?.nativeChapterCount ?? null;
-  const measured = bothRendered && signaturesIdentical && externalRequests.length === 0 && pageErrors.length === 0 && consoleErrors.length === 0;
+  const measured = bothRendered && singleWholeCorpusFallback && signaturesIdentical && externalRequests.length === 0 && pageErrors.length === 0 && consoleErrors.length === 0;
   const status = measured ? 'measured-full-document' : 'blocked-render-error-or-nondeterminism';
   const firstSummary = first.summary;
   const firstChapter = first.chapter;
