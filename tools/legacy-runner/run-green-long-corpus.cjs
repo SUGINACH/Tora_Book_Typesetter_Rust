@@ -61,7 +61,7 @@ function buildOfflineAuditCli(sourcePath) {
   const reportHook = "browser:'Chromium headless' },";
   assert(patched.includes(reportHook), 'pinned CLI report anchor changed');
   patched = patched.replace(reportHook, "externalRequests, browser:'Chromium headless' },");
-  const outputPath = sourcePath.replace(/geometry-audit-cli\\.js$/, 'geometry-audit-cli.offline.cjs');
+  const outputPath = sourcePath.replace('geometry-audit-cli.js', 'geometry-audit-cli.offline.cjs');
   fs.writeFileSync(outputPath, patched, 'utf8');
   return outputPath;
 }
