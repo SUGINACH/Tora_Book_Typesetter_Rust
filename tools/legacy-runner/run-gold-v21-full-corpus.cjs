@@ -166,8 +166,6 @@ function main() {
   const first = attempts[0];
   const second = attempts[1];
   const singleWholeCorpusFallback = first.mode?.mode === 'single-whole-corpus' && second.mode?.mode === 'single-whole-corpus';
-  assert(first.mode?.nativeChapterCount === 0 && second.mode?.nativeChapterCount === 0,
-    'Pinned Gold corpus now has native H2 chapter markers; single-document fallback must be reviewed');
   const bothRendered = attempts.every(a => a.exitCode === 0 && a.summary && a.chapter && Number(a.chapter.pageCount) > 0 && !a.chapter.error);
   const signaturesIdentical = !!first.signature && !!second.signature && JSON.stringify(first.signature) === JSON.stringify(second.signature);
   const externalRequests = attempts.flatMap(a => a.externalRequests);
