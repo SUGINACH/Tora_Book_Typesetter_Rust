@@ -108,6 +108,7 @@ function main() {
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   const externalRequestsPath = path.join(root, 'artifacts', 'green-external-requests.txt');
   const failureLogPath = path.join(root, 'artifacts', 'legacy-green-layout-failure.log');
+  fs.mkdirSync(path.dirname(externalRequestsPath), { recursive: true });
   const args = [
     offlineCliPath,
     '--input', expected.inputPath,
