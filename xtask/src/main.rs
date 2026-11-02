@@ -2873,7 +2873,11 @@ mod tests {
             "historical-only"
         );
         assert_eq!(
-            status_for("legacy-imud-v20x", "settings", "presets/makom-bina-v20.5/default_settings.json"),
+            status_for(
+                "legacy-imud-v20x",
+                "settings",
+                "presets/makom-bina-v20.5/default_settings.json"
+            ),
             "historical-only"
         );
         assert_eq!(
