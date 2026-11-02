@@ -160,7 +160,7 @@ The five pinned executable profiles do not share one interchangeable test harnes
 
 | Profile | Pinned test/fixture layout | Root package test entry point | Ownership note |
 |---|---|---|---|
-| Orange V23 | 33 files under `tests/` or `fixtures/` | `npm test` runs six focused Node suites: settings consistency/wiring, header settings, H2 ornament scope, heading divider, shaar divider and renderer assets | Distribution test suite; Playwright is a development dependency |
+| Orange V23 | 33 files under `tests/` or `fixtures/` | `npm test` runs seven focused Node suites: settings consistency, settings wiring, header settings, H2 ornament scope, heading divider, shaar divider and renderer assets | Distribution test suite; Playwright is a development dependency |
 | Green V23 | 12 files under `tests/` or `fixtures/` | No `test` script; package scripts expose geometry audit commands | Engineering fixtures/audit evidence; do not infer that Orange's test suite is automatically Green's suite |
 | Gold V21 | No `tests/` or `fixtures/` directory matched by the path scan; 44 paths contain test/debug/audit/regression/verify/check naming across scripts, workflows, test-triggers and work documentation | `test:baseline`, `test:quick`, and `determinism` run scripts under `scripts/` | V21-specific test/debug scripts and trigger corpus; keep independent of V23 |
 | Yellow V10 profile (repository branch V22) | 13 files under `test/` or `tests/` | No root `package.json` at the pinned commit | Includes engine input/trace and geometry-audit tests plus historical PDF outputs |
@@ -175,3 +175,18 @@ Eight paths under `tests/fixtures/` exist in both Orange and Green:
 The differing fixture is an intentional profile-sensitive test input until proven otherwise; do not normalize it to one value or reuse one profile's expected output for the other. The seven byte-identical fixtures are shared test data, but do not imply identical engine behavior.
 
 This is a structural ownership inventory, not a test-quality or coverage judgment. Test names/counts alone do not establish that every required behavior is covered; task 9 must map each required compatibility record to an executable fixture and measurable criterion.
+
+
+### 12.1 Exact package/test commands and dependency pins
+
+The package metadata at the pinned commits confirms the test ownership distinction:
+
+| Profile | Package name | Exact test command(s) | Playwright dependency |
+|---|---|---|---|
+| Orange | `tora-book-typesetter-unified` | `npm test` = settings-consistency + settings-wiring + header-settings + h2-ornament-scope + heading-divider + shaar-divider + renderer-assets; also `npm run test:settings`, `test:header`, `test:consistency`, `test:h2scope`, `test:dividers`, `test:shaar`, `test:assets` | exact `1.55.0` |
+| Green | `imud-torani` | No test script; `npm run audit:geometry` and `npm run audit:geometry:long` only | `^1.55.0` |
+| Gold | `tora-book-typesetter-gold` | `npm run test:baseline` → `cd scripts && node test-chapters-enhanced.js 1 79 baseline`; `npm run test:quick` → `... 1 1 quick`; `npm run determinism` → `node determinism-test.js 9 3` | none declared |
+| Yellow | no root `package.json` at pinned commit | no npm script contract recorded | not declared |
+| IMUD | `tora-book-typesetter-orange` | `npm test` = `npm run test:layout:quick && npm run test:features`; layout suite `node tests/layout/run-suite.js`; feature suite `node tests/features/run.js`; baseline update `node tests/layout/run-suite.js --update-baseline` | `^1.50.0` |
+
+The package names are metadata labels, not source identity: in particular, the IMUD V20x pin's package name contains “orange”, while the Orange V23 pin has the distinct package name `tora-book-typesetter-unified`. Repository identity remains the pinned owner/repository/commit in `legacy-source-pins.json`.
