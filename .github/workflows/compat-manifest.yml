@@ -228,8 +228,30 @@ jobs:
           assert snapshot_records and all(record["status"] == "historical-only" for record in snapshot_records), "archived source snapshots must remain historical-only"
           resolved_count = sum(len(record["resolvedAssetDependencies"]) for record in records)
           unresolved_count = sum(len(record["unresolvedAssetDependencies"]) for record in records)
+          active_unresolved = [
+              (record, dependency)
+              for record in records
+              if record["status"] in active_statuses
+              for dependency in record["unresolvedAssetDependencies"]
+          ]
+          historical_unresolved_records = [record for record in records if record["unresolvedAssetDependencies"]]
+          historical_unresolved_paths = {
+              (record["owningProfile"], dependency)
+              for record in historical_unresolved_records
+              for dependency in record["unresolvedAssetDependencies"]
+          }
+          assert not active_unresolved, "active verified records have unresolved local dependencies"
+          assert all(
+              record["status"] == "historical-only"
+              and record["rustOwner"]
+              and record["migrationRule"]
+              and record["testIds"]
+              and record["acceptanceCriteria"]
+              for record in historical_unresolved_records
+          ), "every unresolved historical dependency must remain owner-assigned and documented"
           external_count = sum(sum(item.startswith("external:") for item in record["assetDependencies"]) for record in records)
-          print(f"Manifest schema and provenance validation passed: {len(actual_sources)} sources, {len(records)} records; {resolved_count} resolved local edges, {unresolved_count} unresolved local edges, {external_count} external references.")
+          print(f"Active dependency closure passed: 0 unresolved edges across {len(active_records)} active records; {unresolved_count} unresolved edges across {len(historical_unresolved_paths)} paths are historical-only and owner-assigned.")
+          print(f"Manifest schema and provenance validation passed: {len(actual_sources)} sources, {len(records)} records; {resolved_count} resolved local edges, {unresolved_count} historical-only unresolved local edges, {external_count} external references.")
           PY
           cp artifacts/legacy-compatibility-manifest-first.json artifacts/legacy-compatibility-manifest.json
           echo "Canonical manifest is byte-identical across two scans."
