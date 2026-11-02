@@ -2515,9 +2515,14 @@ mod tests {
 
     #[test]
     fn font_picker_metadata_and_duplicate_catalog_do_not_create_file_dependencies() {
-        let json = br#"[{"family":"Example Hebrew","file":"Example-Regular.woff2","format":"woff2"}]"#;
+        let json =
+            br#"[{"family":"Example Hebrew","file":"Example-Regular.woff2","format":"woff2"}]"#;
 
-        for path in ["fonts-extended.json", "fonts-priority.json", "fonts/fonts/fonts.json"] {
+        for path in [
+            "fonts-extended.json",
+            "fonts-priority.json",
+            "fonts/fonts/fonts.json",
+        ] {
             let dependencies = extract_asset_dependencies(path, "data", json);
             assert!(
                 dependencies.is_empty(),
@@ -2525,8 +2530,7 @@ mod tests {
             );
         }
 
-        let active_catalog =
-            extract_asset_dependencies("fonts/fonts.json", "data", json);
+        let active_catalog = extract_asset_dependencies("fonts/fonts.json", "data", json);
         assert!(
             active_catalog.contains(&"local:fonts/Example-Regular.woff2".to_string()),
             "the active font loader's catalog must retain its real font dependency: {active_catalog:?}"
