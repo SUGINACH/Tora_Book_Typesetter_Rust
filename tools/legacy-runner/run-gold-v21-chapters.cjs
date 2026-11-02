@@ -60,6 +60,9 @@ function buildOfflineChapterScript(sourcePath, outputPath) {
   const errorAnchor = "      console.error(`  [page-error] ${err.message}`);";
   assert(source.includes(errorAnchor), 'Gold chapter runner page-error anchor changed');
   source = source.replace(errorAnchor, errorAnchor + "\n      if (process.env.GOLD_PAGE_ERRORS_PATH) require('node:fs').appendFileSync(process.env.GOLD_PAGE_ERRORS_PATH, String(err && (err.stack || err)) + String.fromCharCode(10));");
+  const consoleAnchor = "    page.on('pageerror', (err) => {";
+  assert(source.includes(consoleAnchor), 'Gold chapter runner console-error insertion anchor changed');
+  source = source.replace(consoleAnchor, "    page.on('console', msg => { if (msg.type() === 'error' && process.env.GOLD_CONSOLE_ERRORS_PATH) require('node:fs').appendFileSync(process.env.GOLD_CONSOLE_ERRORS_PATH, msg.text() + String.fromCharCode(10)); });\n" + consoleAnchor);
   const exitAnchor = '  process.exit(totalHigh > 0 ? 1 : 0);';
   assert(source.includes(exitAnchor), 'Gold chapter runner exit anchor changed');
   source = source.replace(exitAnchor, '  process.exit(0); // measurement captures severity; it is not a zero-findings gate');
@@ -69,7 +72,7 @@ function buildOfflineDeterminismScript(sourcePath, outputPath) {
   let source = fs.readFileSync(sourcePath, 'utf8');
   const pageAnchor = '    const page = await browser.newPage();';
   assert(source.includes(pageAnchor), 'Gold determinism runner page creation anchor changed');
-  source = source.replace(pageAnchor, pageAnchor + '\n' + routeGuardLines('    ', 'GOLD_EXTERNAL_REQUESTS_PATH') + '\n    page.on(\'pageerror\', err => { if (process.env.GOLD_PAGE_ERRORS_PATH) require(\'node:fs\').appendFileSync(process.env.GOLD_PAGE_ERRORS_PATH, String(err && (err.stack || err)) + String.fromCharCode(10)); });');
+  source = source.replace(pageAnchor, pageAnchor + '\n' + routeGuardLines('    ', 'GOLD_EXTERNAL_REQUESTS_PATH') + '\n    page.on(\'pageerror\', err => { if (process.env.GOLD_PAGE_ERRORS_PATH) require(\'node:fs\').appendFileSync(process.env.GOLD_PAGE_ERRORS_PATH, String(err && (err.stack || err)) + String.fromCharCode(10)); });\n    page.on(\'console\', msg => { if (msg.type() === \'error\' && process.env.GOLD_CONSOLE_ERRORS_PATH) require(\'node:fs\').appendFileSync(process.env.GOLD_CONSOLE_ERRORS_PATH, msg.text() + String.fromCharCode(10)); });');
   fs.writeFileSync(outputPath, source, 'utf8');
 }
 function runNode(script, args, env, logPath) {
@@ -118,10 +121,12 @@ function main() {
   fs.mkdirSync(resultsDir, { recursive: true });
   const externalRequestsPath = path.join(artifactDir, 'gold-external-requests.txt');
   const pageErrorsPath = path.join(artifactDir, 'gold-page-errors.txt');
+  const consoleErrorsPath = path.join(artifactDir, 'gold-console-errors.txt');
   const chapterLogPath = path.join(artifactDir, 'gold-v21-chapters.log');
   const determinismLogPath = path.join(artifactDir, 'gold-v21-determinism.log');
   fs.writeFileSync(externalRequestsPath, '', 'utf8');
   fs.writeFileSync(pageErrorsPath, '', 'utf8');
+  fs.writeFileSync(consoleErrorsPath, '', 'utf8');
 
   const offlineChapterPath = path.join(legacyRoot, 'scripts', 'test-chapters-enhanced.offline.cjs');
   const offlineDeterminismPath = path.join(legacyRoot, 'scripts', 'determinism-test.offline.cjs');
@@ -132,7 +137,8 @@ function main() {
     BASE_URL: 'http://127.0.0.1:8765/index.html',
     TEST_TEXT_PATH: inputPath,
     GOLD_EXTERNAL_REQUESTS_PATH: externalRequestsPath,
-    GOLD_PAGE_ERRORS_PATH: pageErrorsPath
+    GOLD_PAGE_ERRORS_PATH: pageErrorsPath,
+    GOLD_CONSOLE_ERRORS_PATH: consoleErrorsPath
   };
   const full = runNode(offlineChapterPath, ['1', '79', 'stage-a-gold-v21'], { ...commonEnv, RESULTS_DIR: resultsDir }, chapterLogPath);
   assert(full.status === 0, 'Gold chapter harness process failed: ' + full.status);
@@ -151,17 +157,22 @@ function main() {
 
   const fullExternalRequests = readLines(externalRequestsPath);
   const fullPageErrors = readLines(pageErrorsPath);
+  const fullConsoleErrors = readLines(consoleErrorsPath);
   fs.writeFileSync(externalRequestsPath, '', 'utf8');
   fs.writeFileSync(pageErrorsPath, '', 'utf8');
+  fs.writeFileSync(consoleErrorsPath, '', 'utf8');
   const deterministic = runNode(offlineDeterminismPath, ['9', '3'], commonEnv, determinismLogPath);
   const deterministicText = String(deterministic.stdout || '') + String.fromCharCode(10) + String(deterministic.stderr || '');
   const determinismPass = deterministic.status === 0 && deterministicText.includes('unique page counts: 1') && deterministicText.includes('unique summaries: 1');
   const determinismExternalRequests = readLines(externalRequestsPath);
   const determinismPageErrors = readLines(pageErrorsPath);
+  const determinismConsoleErrors = readLines(consoleErrorsPath);
   const externalRequests = [...fullExternalRequests, ...determinismExternalRequests];
   const pageErrors = [...fullPageErrors, ...determinismPageErrors];
+  const consoleErrors = [...fullConsoleErrors, ...determinismConsoleErrors];
   assert(externalRequests.length === 0, 'Gold runner attempted external network requests');
   assert(pageErrors.length === 0, 'Gold browser reported page errors');
+  assert(consoleErrors.length === 0, 'Gold browser reported console errors');
 
   const chapterFiles = Array.from({ length: 79 }, (_, i) => path.join(resultsDir, 'chapter-' + String(i + 1).padStart(2, '0') + '.json'));
   const chapterHashes = chapterFiles.map(file => sha256File(file));
@@ -198,6 +209,7 @@ function main() {
       deterministicRunnerExitCode: deterministic.status,
       externalRequestCount: externalRequests.length,
       pageErrorCount: pageErrors.length,
+      consoleErrorCount: consoleErrors.length,
       chapterResultsDigest,
       summarySha256: sha256File(summaryPath),
       chapterLogSha256: sha256File(chapterLogPath),
