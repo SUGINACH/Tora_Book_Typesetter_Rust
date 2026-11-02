@@ -50,6 +50,7 @@ function buildOfflineAuditCli(sourcePath) {
     "                await route.continue();",
     "            } else {",
     "                externalRequests.push(requestUrl.href);",
+    "                if (process.env.GREEN_EXTERNAL_REQUESTS_PATH) require('node:fs').appendFileSync(process.env.GREEN_EXTERNAL_REQUESTS_PATH, requestUrl.href + '\\n');",
     "                await route.abort('blockedbyclient');",
     "            }",
     "        });",
@@ -105,7 +106,9 @@ function main() {
   const reportPath = path.join(legacyRoot, reportRelative);
   const summaryPath = path.join(legacyRoot, summaryRelative);
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-  const child = spawnSync(process.execPath, [
+  const externalRequestsPath = path.join(root, 'artifacts', 'green-external-requests.txt');
+  const failureLogPath = path.join(root, 'artifacts', 'legacy-green-layout-failure.log');
+  const args = [
     offlineCliPath,
     '--input', expected.inputPath,
     '--settings', expected.settingsPath,
@@ -116,16 +119,102 @@ function main() {
     '--repeat-check',
     '--full-model',
     '--step-audit-disabled'
-  ], {
-    cwd: legacyRoot,
-    encoding: 'utf8',
-    stdio: 'inherit',
-    env: { ...process.env, GITHUB_SHA: expected.sourceCommit, GITHUB_REF_NAME: 'legacy-green-v23' }
-  });
-  assert(child.error == null, 'could not start Green geometry audit CLI');
-  assert(child.status === 0, 'Green geometry audit CLI exited with status ' + child.status);
+  ];
+  const runAttempt = attempt => {
+    fs.writeFileSync(externalRequestsPath, '', 'utf8');
+    const result = spawnSync(process.execPath, args, {
+      cwd: legacyRoot,
+      encoding: 'utf8',
+      stdio: 'pipe',
+      maxBuffer: 32 * 1024 * 1024,
+      env: {
+        ...process.env,
+        GITHUB_SHA: expected.sourceCommit,
+        GITHUB_REF_NAME: 'legacy-green-v23',
+        GREEN_EXTERNAL_REQUESTS_PATH: externalRequestsPath
+      }
+    });
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    assert(result.error == null, 'could not start Green geometry audit CLI on attempt ' + attempt);
+    const externalRequests = fs.readFileSync(externalRequestsPath, 'utf8').split(/\\r?\\n/).filter(Boolean);
+    return { ...result, externalRequests };
+  };
+  const first = runAttempt(1);
+  if (first.status !== 0) {
+    const failurePattern = /Layout infeasible without violating widow\\/orphan rules: no content progress across 2 pages at tokenIndex=(\\d+), pending=(\\d+)\\|([^\\r\\n]*)/;
+    const firstText = String(first.stderr || '') + '\\n' + String(first.stdout || '');
+    const firstMatch = firstText.match(failurePattern);
+    if (firstMatch) {
+      const second = runAttempt(2);
+      const secondText = String(second.stderr || '') + '\\n' + String(second.stdout || '');
+      const secondMatch = secondText.match(failurePattern);
+      const signature = match => match ? {
+        tokenIndex: Number(match[1]),
+        pendingCount: Number(match[2]),
+        pendingTextPreview: match[3].slice(0, 180)
+      } : null;
+      const firstSignature = signature(firstMatch);
+      const secondSignature = signature(secondMatch);
+      assert(second.status !== 0 && secondMatch, 'second Green attempt did not reproduce the same layout-infeasible class');
+      assert(JSON.stringify(firstSignature) === JSON.stringify(secondSignature), 'Green layout-infeasible signature was not deterministic');
+      assert(first.externalRequests.length === 0 && second.externalRequests.length === 0, 'Green failure attempts tried external network requests');
+      fs.writeFileSync(failureLogPath, [
+        '=== attempt 1 stdout ===', first.stdout || '',
+        '=== attempt 1 stderr ===', first.stderr || '',
+        '=== attempt 2 stdout ===', second.stdout || '',
+        '=== attempt 2 stderr ===', second.stderr || ''
+      ].join('\\n'), 'utf8');
+      const failureManifest = {
+        schemaVersion: 1,
+        status: 'blocked-layout-infeasible',
+        fullCorpusComplete: false,
+        runner: 'tools/legacy-runner/run-green-long-corpus.cjs',
+        targetRustCommit: process.env.RUST_TARGET_COMMIT || process.env.GITHUB_SHA || null,
+        legacy: {
+          repository: 'SUGINACH/Tora_Book_Typesetter_Green',
+          profile: 'legacy-green-v23',
+          commit: actualCommit,
+          inputPath: expected.inputPath,
+          inputSha256: sha256File(inputPath),
+          settingsPath: expected.settingsPath,
+          settingsSha256: sha256File(settingsPath),
+          geometryAuditCliPath: expected.cliPath,
+          geometryAuditCliSha256: sha256File(cliPath),
+          offlineCliSha256: sha256File(offlineCliPath),
+          fontCss: expected.fontCss
+        },
+        environment: {
+          node: process.version,
+          playwright: playwrightVersion,
+          chromium: browser.stdout.trim(),
+          network: 'offline-enforced by an isolated Playwright route guard; only local renderer origin, data:, blob: and about: are allowed',
+          viewport: { width: 1440, height: 1000, deviceScaleFactor: 1 },
+          timeoutMs: 900000
+        },
+        failure: {
+          kind: 'layout-infeasible-widow-orphan-no-progress',
+          signature: firstSignature,
+          attempts: 2,
+          deterministicSignature: true,
+          exitCodes: [first.status, second.status],
+          externalRequests: []
+        },
+        failureLogSha256: sha256File(failureLogPath),
+        interpretation: 'Pinned Green V23 full-corpus attempt is blocked by a deterministic legacy layout-infeasible condition at the recorded token. This is a measured failure fingerprint, not a complete full-corpus baseline, not a Rust parity result and not a passing profile gate.'
+      };
+      const artifactDir = path.join(root, 'artifacts');
+      fs.mkdirSync(artifactDir, { recursive: true });
+      const manifestPath = path.join(artifactDir, 'legacy-green-long-corpus-manifest.json');
+      fs.writeFileSync(manifestPath, JSON.stringify(failureManifest, null, 2) + '\\n', 'utf8');
+      process.stdout.write('Green V23 full-corpus attempt: deterministic layout-infeasible result captured; profile baseline remains blocked.\\n');
+      process.stdout.write('Failure manifest: ' + relative(manifestPath) + '\\n');
+      return;
+    }
+    throw new Error('Green geometry audit failed for an unclassified reason; see captured output. Exit status: ' + first.status);
+  }
+  assert(first.externalRequests.length === 0, 'browser attempted external network requests');
   assert(fs.existsSync(reportPath) && fs.existsSync(summaryPath), 'full-corpus report/summary missing');
-
   const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
   assert(report.run?.gitCommit === expected.sourceCommit, 'report source commit mismatch');
   assert(report.run?.settingsSource === expected.settingsPath, 'report did not use pinned default settings');
@@ -180,6 +269,8 @@ function main() {
 
   const manifest = {
     schemaVersion: 1,
+    status: 'complete',
+    fullCorpusComplete: true,
     runner: 'tools/legacy-runner/run-green-long-corpus.cjs',
     targetRustCommit: process.env.RUST_TARGET_COMMIT || process.env.GITHUB_SHA || null,
     legacy: {
