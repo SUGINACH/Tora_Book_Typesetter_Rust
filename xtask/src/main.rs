@@ -412,18 +412,20 @@ fn ownership_for(
     if matches!(kind, "fixture" | "corpus" | "baseline") {
         fixtures.push(source_fixture.clone());
     }
-    if matches!(
+    let active_status = matches!(
+        status_for(&source.profile, kind, source_path),
+        "verified-data" | "verified-executable"
+    );
+    let executable_owner = matches!(
         owner.as_str(),
         "engine-core"
             | "engine-core::decorations"
             | "app-core"
-            | "settings"
-            | "asset-registry"
             | "legacy-renderer-adapter"
             | "audit"
             | "xtask"
-    ) && kind != "font"
-    {
+    );
+    if (active_status || executable_owner) && kind != "font" {
         fixtures.push(profile_fixture);
     }
     if matches!(owner.as_str(), "settings" | "asset-registry" | "engine-core::decorations")
@@ -443,7 +445,7 @@ fn tests_for(source: &SourceSpec, kind: &str, owner: &str, source_path: &str) ->
             "Every accepted requirement links to a feature/test or ADR; prose alone never proves executable behavior.".to_string(),
         );
     }
-    if kind == "baseline" {
+    if kind == "baseline" || (kind == "fixture" && source_path.to_ascii_lowercase().ends_with("baseline.json")) {
         return (
             vec!["SRC-PIN-HASH".to_string(), "BASELINE-IDENTITY".to_string(), "DETERMINISM-REPEAT".to_string()],
             "The profile-specific measured baseline hash and schema are immutable; replay must compare against this exact profile baseline and never rewrite it implicitly.".to_string(),
