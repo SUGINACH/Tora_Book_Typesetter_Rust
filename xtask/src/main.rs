@@ -271,7 +271,8 @@ fn ownership_for(
         _ => "source_code/V_current_snapshot.txt",
     };
     let profile_fixture = format!(
-        "{}@{}:{}", source.repository, source.commit, profile_fixture_path
+        "{}@{}:{}",
+        source.repository, source.commit, profile_fixture_path
     );
     let source_fixture = format!("{}@{}:{}", source.repository, source.commit, source_path);
 
@@ -313,13 +314,15 @@ fn ownership_for(
         (
             "legacy-independent-geometry-audit".to_string(),
             "audit".to_string(),
-            "reimplement as an independent audit; do not use audit measurements as layout inputs".to_string(),
+            "reimplement as an independent audit; do not use audit measurements as layout inputs"
+                .to_string(),
         )
     } else if lower.ends_with("geometry-audit-cli.js") {
         (
             "legacy-offline-renderer-runner".to_string(),
             "xtask".to_string(),
-            "retain as read-only pinned oracle; do not link legacy JavaScript into Rust crates".to_string(),
+            "retain as read-only pinned oracle; do not link legacy JavaScript into Rust crates"
+                .to_string(),
         )
     } else if lower == "app.js" || lower.ends_with("/app.js") {
         (
@@ -356,11 +359,16 @@ fn ownership_for(
             "legacy-renderer-adapter".to_string(),
             "retain only as a compatibility/export adapter; never use browser reflow to decide Rust pagination".to_string(),
         )
-    } else if lower.contains("setting") || lower.contains("preset") || lower.contains("default_settings") || kind == "settings" {
+    } else if lower.contains("setting")
+        || lower.contains("preset")
+        || lower.contains("default_settings")
+        || kind == "settings"
+    {
         (
             "legacy-profile-settings-loader".to_string(),
             "settings".to_string(),
-            "preserve losslessly and resolve defaults only within the selected legacy profile".to_string(),
+            "preserve losslessly and resolve defaults only within the selected legacy profile"
+                .to_string(),
         )
     } else if decoration_data {
         (
@@ -469,10 +477,13 @@ fn tests_for(
     if source.profile == "requirements-docs" {
         return (
             vec!["SPEC-TO-ADR".to_string()],
-            "Every accepted requirement links to a feature/test or ADR; prose alone never proves executable behavior.".to_string(),
+            "Every accepted requirement links to a feature/test or ADR; prose alone never proves executable behavior."
+                .to_string(),
         );
     }
-    if kind == "baseline" || (kind == "fixture" && source_path.to_ascii_lowercase().ends_with("baseline.json")) {
+    if kind == "baseline"
+        || (kind == "fixture" && source_path.to_ascii_lowercase().ends_with("baseline.json"))
+    {
         return (
             vec!["SRC-PIN-HASH".to_string(), "BASELINE-IDENTITY".to_string(), "DETERMINISM-REPEAT".to_string()],
             "The profile-specific measured baseline hash and schema are immutable; replay must compare against this exact profile baseline and never rewrite it implicitly.".to_string(),
