@@ -587,9 +587,7 @@ fn extract_asset_dependencies(source_path: &str, kind: &str, bytes: &[u8]) -> Ve
         // Settings and data files are structured catalogs. Retain their
         // explicit file-name values, but reject extension-only and directory
         // fragments in normalize_asset_reference.
-        if matches!(kind, "settings" | "data")
-            && !lower_path.ends_with("package-lock.json")
-        {
+        if matches!(kind, "settings" | "data") && !lower_path.ends_with("package-lock.json") {
             for value in extract_quoted_strings(&text) {
                 if is_path_candidate(&value) {
                     if let Some(normalized) = normalize_asset_reference(source_path, &value) {
@@ -1817,10 +1815,13 @@ mod tests {
             const local = require("./local.js");
             fetch("./assets/catalog.json");
         "#;
-        let dependencies =
-            extract_asset_dependencies("tools/runner.js", "javascript", javascript);
-        assert!(!dependencies.iter().any(|value| value.contains("playwright")));
-        assert!(!dependencies.iter().any(|value| value.contains("some-package")));
+        let dependencies = extract_asset_dependencies("tools/runner.js", "javascript", javascript);
+        assert!(!dependencies
+            .iter()
+            .any(|value| value.contains("playwright")));
+        assert!(!dependencies
+            .iter()
+            .any(|value| value.contains("some-package")));
         assert!(dependencies.contains(&"local:tools/local.js".to_string()));
         assert!(dependencies.contains(&"local:tools/assets/catalog.json".to_string()));
     }
