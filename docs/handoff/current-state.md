@@ -125,3 +125,13 @@
 - Formatting-only fix committed as [4af38d4](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/4af38d4779c8624924af1063e916246bcd71dab3).
 - Validation runs [41367871354](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367871354) and [41367871327](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367871327) queued.
 - Legacy full-corpus run [41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) remains in progress.
+
+
+## המשך מצב — 2026-11-02
+
+- ראש הקוד הנוכחי: [218d50a](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/218d50abc1758fa9b187f3d39a9882d876ee7321). תיקוני extractor אחרונים: font inventory basenames נשמרים באמצעות asset normalizer; package-lock.json סורק רק property בשם resolved כדי לשמור URLs חיצוניים בלי להחזיר npm bin false positives.
+- Manifest [41367871327](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367871327), artifact [13108185810](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367871327/artifacts/13108185810), לעומת baseline [41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733): 18,854 compatIds יציבים, 0 source hash changes; assetDependencies 41,192→40,626; resolved 35,356→35,221; unresolved 413→35. 35 unresolved: 32 paths היסטוריים בארכיונים ו-3 scripts חסרים ב-Gold. תוצאות אלה הן של 4af38d, לפני תיקון inventory/lockfile, ולכן נדרשת סריקה חוזרת.
+- CI [41369416363](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369416363) גילה 2 unit test failures (font inventory, package-lock resolved URL); התיקון ב-7bcd686. CI [41369485795](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369485795) גילה rustfmt בלבד; תוקן ב-218d50a.
+- ריצות עדכניות על 218d50a: [Rust CI 41369525393](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525393) queued; [Manifest 41369525487](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525487) pending.
+- [Legacy full corpus 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין in progress בשלב full-book corpus comparison; smoke עבר, אין report/artifact מלא. להשאיר פעיל.
+- Stage A פתוח; tasks 1–2 בלבד סגורות. אין Stage B, אין baseline/tolerance changes, אין סימון parity/provenance/manifest כהושלם עד לקבלת הראיות.
