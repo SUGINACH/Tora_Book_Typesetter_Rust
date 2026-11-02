@@ -240,6 +240,21 @@ jobs:
               for record in historical_unresolved_records
               for dependency in record["unresolvedAssetDependencies"]
           }
+          active_unresolved_report = [
+              {
+                  "compatId": record["compatId"],
+                  "profile": record["owningProfile"],
+                  "sourcePath": record["sourcePath"],
+                  "rustOwner": record["rustOwner"],
+                  "migrationRule": record["migrationRule"],
+                  "dependency": dependency,
+                  "assetDependencyStatus": record["assetDependencyStatus"],
+              }
+              for record, dependency in active_unresolved
+          ]
+          with open("artifacts/legacy-compatibility-active-unresolved.json", "w", encoding="utf-8") as report:
+              json.dump(active_unresolved_report, report, ensure_ascii=False, indent=2)
+          print(f"Active unresolved local edges ({len(active_unresolved_report)}): " + json.dumps(active_unresolved_report, ensure_ascii=False))
           assert not active_unresolved, "active verified records have unresolved local dependencies"
           assert all(
               record["status"] == "historical-only"
@@ -261,5 +276,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: legacy-compatibility-manifest
-          path: artifacts/legacy-compatibility-manifest.json
+          path: |
+            artifacts/legacy-compatibility-manifest.json
+            artifacts/legacy-compatibility-manifest-first.json
+            artifacts/legacy-compatibility-active-unresolved.json
           if-no-files-found: warn
