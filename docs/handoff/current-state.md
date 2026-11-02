@@ -1,6 +1,6 @@
 # קובץ מעבר — Tora Book Typesetter Rust
 
-עודכן: 2026-11-02 (לאחר CI ירוק וריצות manifest/full-corpus פעילות)  
+עודכן: 2026-11-02 (לאחר הצלחת full-corpus ו-manifest)  
 מאגר: [SUGINACH/Tora_Book_Typesetter_Rust](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust)  
 ענף: `main`  
 נקודת בסיס לפני עדכון המעבר: `028319268d56eb2492ed36a16d861f02c2bcfcc7`
@@ -12,8 +12,8 @@
 ## מצב כולל
 
 - שלב א (משימות 1–10) פעיל ועדיין פתוח.
-- משימות 1–2 הושלמו והוכחו ב-[CI 41347908551](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41347908551).
-- אין להתחיל שלב ב עד סגירת משימות 3–10 ושערי הקבלה שלהן.
+- משימות 1–3 ו-7 הושלמו; משימות 4–6 ו-8–10 פתוחות. CI עדכני [41395791603](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395791603) ו-manifest [41395791545](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395791545) עברו.
+- אין להתחיל שלב ב עד סגירת משימות 4–6 ו-8–10 ושערי הקבלה שלהן.
 - אין לטעון שקיים מנוע עימוד עובד: עדיין אין מימוש production של parser, shaping, pagination או renderer.
 - V21 ו-V23 נשארים מבודדים לחלוטין. אין למזג קוד, fixtures, baselines או החלטות אלגוריתמיות ביניהם.
 
@@ -252,3 +252,32 @@ Next: decide whether to add V19/V20.1–V20.5/V21 historical trees as separate m
 - Stage A tasks 1–3 closed. Tasks 4–10 remain open. Task 4 includes settings/preset/test mapping and exact historical archive-source audit but still needs owner decisions for the 17 absent targets and disposition of the 98 historical candidates.
 - Task 5 smoke is proven; full-corpus run remains open. Task 6 has pinned input/config/environment hashes but awaits full-corpus report. Tasks 7–8 have deterministic manifest generation and extractor CI, but provenance acceptance remains open. Tasks 9–10 remain open.
 - Stage B not started. No baseline/tolerance changes. V21/Gold and V23/Orange/Green remain separate; do not merge them.
+
+
+## Stage A tasks 9–10 — current verified checkpoint, 2026-11-02
+
+### Full-corpus baseline replay
+
+- [Legacy runner 41395543056](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395543056) completed successfully, including full-book corpus comparison. Artifact: [13119497022](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395543056/artifacts/13119497022); runner code commit 45bbc56d278fdc95311b59a918c899409844a517.
+- Orange V23 pinned input/settings/font CSS and runtime environment are recorded in legacy/corpus-manifest.json. Results: 639 pages; 39 audit findings (0 high, 11 medium, 28 low); 857/857 ledger-to-DOM; 3,105 paragraphs, 529 headings and 2,042 side notes with zero missing/mismatched content; 485/485 fonts; no external requests; deterministic repeat. Historical aggregate metrics matched.
+- Important qualification: active geometry gate was disabled. The report still contains 39 findings, including 12 container-gap, 8 imbalance, 7 containment-rounding, 6 structural-fallback, 3 sparse-page and 3 square-bracket-scope. Do not call this a zero-defect layout.
+
+### Task 9 — parity contract
+
+- docs/compat/parity-matrix.md updated with the full-corpus evidence, independent semantic/typographic/geometric gates, profile-specific tolerances, exact mask prohibition and the manifest-to-test mapping audit.
+- [Manifest 41395791545](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395791545), artifact 13119601763: 18,854 records; every record has owner, migration rule, test IDs and measurable acceptance criteria; all used test IDs are declared in the matrix. 140 records have parityFixtures and 18,714 do not. 163 local dependency edges remain unresolved across 115 paths.
+- Orange alone has a current measured full-corpus baseline. Green, Gold V21, Yellow V10 and IMUD V20.x receive no inherited Orange geometry tolerance. No masks are allowed.
+- Task 9 remains open because tasks 6 and 8 are dependencies and remain open; no Rust parity is claimed.
+
+### Task 10 — core technology ADRs
+
+- ADRs 0002–0005 updated. Evidence remains prototype-level: 27,627 exact Fraction checks (not Rust checked arithmetic); HarfRust/HarfBuzz 5/5 pure-Hebrew samples (mixed bidi run segmentation still missing); Tauri Windows build and generation gate (no actual WebView invoke round-trip); PDF Type0/ToUnicode and exact MuPDF extraction for three lines (no multi-page/viewer validation).
+- All four ADRs remain proposed. No production dependency was selected or added. This is deliberate: the experiments do not yet satisfy their own acceptance gates.
+- Task 10 remains open because tasks 6 and 8 are dependencies and because the experiment gaps above remain.
+
+### Exact continuation constraints
+
+- Stage A checklist: 1–3 and 7 closed; 4–6 and 8–10 open. Do not start Stage B.
+- Do not alter historical baselines or tolerances to remove findings. Do not turn the disabled geometry gate into a pass claim.
+- Keep legacy-gold-v21 separate from Orange/Green V23; no V21/V23 merge.
+- Next required upstream work: resolve task 4 source/profile ownership decisions; finish task 5 runner/profile isolation; obtain per-profile baselines for task 6; finish task 8 fixture/provenance ownership and unresolved-asset dispositions. Only then close tasks 9 and 10.

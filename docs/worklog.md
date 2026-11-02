@@ -7,7 +7,7 @@
 - נקודת מוצא: `2a6c4f11075a75a883c284c484e26db6db9e7828`
 - commit אתחול workspace: `0b76c2e8cdda388f6e6ef7b843db21656a880d90`
 - commit הקמת CI: `ee5dc4c1325fcd32f0e782262b63600487ca755b`
-- שלב פעיל: שלב א — משימות 1–10; משימות 1–2 הושלמו, 3–9 באימות, 10 בניסויים.
+- שלב פעיל: שלב א — משימות 1–10; משימות 1–3 ו-7 הושלמו; משימות 4–6 ו-8–10 פתוחות. משימות 9–10 מתועדות אך תלויות בשערי 6 ו-8.
 
 ## החלטות והבהרות
 
@@ -421,3 +421,15 @@
 - Legacy full-corpus run [41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) was cancelled after six hours during the full-book comparison step. Its smoke stage passed (six pages; deterministic repeat; decision ledger/DOM parity; fonts loaded; no external requests), but no full-corpus report exists.
 - Runner commit [45bbc56](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/45bbc56d278fdc95311b59a918c899409844a517) now disables per-step event tracing for the full-document run while retaining full-model export, geometry audit, ledger, text-conservation checks and repeat-run determinism. Run [41395543056](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395543056) is the revised attempt; it was still active at the last check, so no result is claimed.
 - Stage A tasks 1–3 are closed; tasks 4–10 remain open. Stage B is not started. No baseline/tolerance changes and no V21/V23 merge.
+
+
+### Stage A tasks 9–10 — parity and technology evidence checkpoint — 2026-11-02
+
+- Full-corpus Orange runner [41395543056](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395543056) completed successfully; artifact [13119497022](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395543056/artifacts/13119497022). Runner commit 45bbc56; exact Orange source/input/settings/font-CSS pins and Node 22.23.4 / Playwright 1.55.0 / Chromium 140.0.7339.16 / 1440×1000 viewport recorded in legacy/corpus-manifest.json.
+- Measured: 639 pages; 39 audit findings (0 high, 11 medium, 28 low); 857/857 valid decision-ledger records vs DOM blocks; 3,105 source paragraphs with zero missing/mismatch; 529 headings; 2,042 side notes; 485/485 fonts; zero external requests; repeat determinism PASS. Historical aggregate metrics matched exactly. The active geometry gate was disabled and the 39 findings remain visible; this is not a zero-defect claim or Rust parity.
+- Manifest [41395791545](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395791545), artifact [13119601763](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395791545/artifacts/13119601763): 18,854 records from six pinned sources, 18,489 edges, 18,199 resolved, 163 unresolved / 115 unique paths, 127 external references. Every record has owner, migration rule, test IDs and measurable acceptance criteria; 140 have parityFixtures and 18,714 do not. No record is promoted to parity-tested.
+- Task 9 deliverable updated: docs/compat/parity-matrix.md now contains the Orange full-corpus evidence, profile-scoped tolerance register, exact semantic/determinism requirements and explicit prohibition on masks. Green, Gold, Yellow and IMUD have no inherited Orange tolerance; their geometric tolerances remain NOT SET until their own pinned measured baselines exist.
+- The manifest workflow now cross-validates every record's testIds against the stable test-ID table in the parity matrix. This turns the mapping contract into a CI-enforced invariant.
+- Task 10 ADRs 0002–0005 were updated with current evidence and explicit reasons for not selecting production technologies: fixed-point remains a Fraction model rather than Rust checked arithmetic; shaping has 5/5 pure-Hebrew HarfBuzz parity but no mixed-bidi run segmentation; Tauri passes Windows build/generation-gate tests but lacks real WebView IPC round-trip; PDF Type0/ToUnicode passes a three-line MuPDF logical extraction but lacks multi-page and viewer coverage. No production dependencies were added.
+- Closure decision: tasks 9 and 10 remain unchecked because their explicit dependencies 6 and 8 are still open. Task 6 has a complete Orange replay but lacks measured baselines for Green/Gold/Yellow/IMUD. Task 8 still has unresolved provenance/asset ownership and incomplete fixture mapping. Do not start Stage B; do not alter baselines/tolerances; keep V21 and V23 separate.
+- Current Stage A checklist: tasks 1–3 and 7 closed; 4–6 and 8–10 open.
