@@ -389,3 +389,13 @@
 - Code under validation remains `526d6a04508be4145b09efaf25424ca59fb7ef51`; its dedicated Rust CI [41376496424](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41376496424) passed.
 - A docs-triggered Rust CI rerun [41380773019](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41380773019) is in progress. A docs-triggered manifest scan [41380737375](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41380737375) is also in progress; because source code and pinned trees are unchanged, its artifact can serve as a second-run reproducibility comparison against artifact 13111866073 once available.
 - Legacy full-corpus run [41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) remains in progress at the full-book corpus comparison step. The runner's 360-minute timeout remains in force. Do not wait idle, cancel, or infer its final result.
+
+
+### Task 4 progress — style-set and preset provenance — 2026-11-02
+
+- Re-fetched the five pinned repository trees and compared root `setting_sets/` files by Git blob SHA-1. All five profiles contain the same three style-set files, byte-identical across profiles: `פרשנות` (`2f92a70`), `קונטרס` (`c56c30f`), and `תלמוד` (`bb99eb2`), each with 249 keys.
+- The three shared style sets have identical key sets but distinct values: `קונטרס` and `תלמוד` each differ from `פרשנות` in 16 values. This is shared data with three semantic variants, not a single interchangeable preset.
+- IMUD's nested `presets/makom-bina-v20.5/` contains four 249-key snapshots. Compared with the root 264-key default, they each omit 24 root keys, add 9 different keys, and change 66/79/80/82 shared values respectively.
+- IMUD's pinned `settings-manager.js` loads root `default_settings.json` and only the three root `setting_sets/` files; it does not reference the nested V20.5 preset folder. The nested files are therefore recorded as separate snapshots, not presumed active UI defaults.
+- Archived IMUD V19 and V20.4 defaults have 20 and 38 value differences from the current root default, respectively, plus their own key-presence differences. They remain historical inputs.
+- Full blob IDs, counts and interpretation are in `docs/provenance/source-of-truth-matrix.md` §13. Task 4 remains open; this closes only the root style-set/preset comparison slice.
