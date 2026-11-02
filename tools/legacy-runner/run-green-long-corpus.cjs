@@ -13,6 +13,7 @@ const expected = {
   inputSha256: 'fdaf3fe024ffff3f547c0fe8ce27c2da287715c911cbe2000338d19f1438c282',
   settingsPath: 'default_settings.json',
   settingsSha256: 'cc03174d6d8df360813ee34a7718e2745364e5a5c8db21774ffa9c09dd8fb609',
+  styleCssSha256: 'd6fcc447e5bc57a4c62ac4d68bd0f0b939905390cafa8e5af95b82770ab7ea93',
   cliPath: 'tools/geometry-audit-cli.js',
   cliSha256: '5cea7320286de51c09397f6bd492eeadfa8d8f0678ff8b99ba25684cc8f98971',
   fontCss: [
@@ -31,6 +32,48 @@ function assert(condition, message) {
 }
 function relative(file) {
   return path.relative(root, file).split(path.sep).join('/');
+}
+
+function prepareOfflineFonts() {
+  const fontSourceRoot = path.join(root, 'legacy', 'offline-fonts');
+  const expectedFontCommit = '0b0ee279464a3db14672cd3f4051275aba5985da';
+  const actualFontCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: fontSourceRoot, encoding: 'utf8'
+  }).trim();
+  assert(actualFontCommit === expectedFontCommit, 'self-hosted font source commit differs from the pin');
+  const sourceCssPath = path.join(fontSourceRoot, 'selfhost-fonts', 'google-fonts-selfhost.css');
+  const sourceCssSha256 = sha256File(sourceCssPath);
+  const expectedCssSha256 = 'eec01e2b2a65ab67ad959625dd7b3640dceeb09a5cee8b7677787a1e89acd229';
+  assert(sourceCssSha256 === expectedCssSha256, 'self-hosted Google font CSS hash mismatch');
+  const sourceCss = fs.readFileSync(sourceCssPath, 'utf8');
+  const fontUrls = [...sourceCss.matchAll(/url\\(['"]?([^)'"]+)['"]?\\)/g)].map(match => match[1]);
+  assert(fontUrls.length === 38, 'unexpected self-hosted font asset count: ' + fontUrls.length);
+  for (const url of fontUrls) {
+    assert(!url.includes('..') && !/^https?:/i.test(url), 'self-hosted font CSS contains a non-local asset URL');
+    assert(fs.existsSync(path.join(fontSourceRoot, 'selfhost-fonts', url)), 'self-hosted font asset is missing: ' + url);
+  }
+  const destination = path.join(legacyRoot, 'selfhost-fonts');
+  fs.rmSync(destination, { recursive: true, force: true });
+  fs.cpSync(path.join(fontSourceRoot, 'selfhost-fonts'), destination, { recursive: true });
+  const styleCssPath = path.join(legacyRoot, 'style.css');
+  const originalStyleCssSha256 = sha256File(styleCssPath);
+  assert(originalStyleCssSha256 === expected.styleCssSha256, 'pinned source style.css hash mismatch');
+  let styleCss = fs.readFileSync(styleCssPath, 'utf8');
+  const remoteImport = /^@import\\s+url\\(['"]https:\\/\\/fonts\\.googleapis\\.com\\/css2\\?[^'"]+['"]\\);\\s*$/gm;
+  const imports = [...styleCss.matchAll(remoteImport)];
+  assert(imports.length === 1, 'expected exactly one Google Fonts @import in pinned style.css');
+  styleCss = styleCss.replace(remoteImport, "@import url('selfhost-fonts/google-fonts-selfhost.css');");
+  assert(!styleCss.includes('fonts.googleapis.com'), 'remote Google Fonts import remains after offline preparation');
+  fs.writeFileSync(styleCssPath, styleCss, 'utf8');
+  return {
+    sourceRepository: 'SUGINACH/Tora_Book_Typesetter_Orange',
+    sourceCommit: actualFontCommit,
+    cssPath: 'selfhost-fonts/google-fonts-selfhost.css',
+    cssSha256: sourceCssSha256,
+    fontAssetCount: fontUrls.length,
+    originalStyleCssSha256,
+    offlineStyleCssSha256: sha256File(styleCssPath)
+  };
 }
 
 function buildOfflineAuditCli(sourcePath) {
@@ -100,6 +143,7 @@ function main() {
   assert(browser.stdout.trim() === expected.chromiumVersion,
     'Chromium version mismatch: expected ' + expected.chromiumVersion + ', got ' + browser.stdout.trim());
 
+  const offlineFonts = prepareOfflineFonts();
   const offlineCliPath = buildOfflineAuditCli(cliPath);
   const reportRelative = 'artifacts/rust-green-long-report.json';
   const summaryRelative = 'artifacts/rust-green-long-summary.md';
@@ -189,7 +233,8 @@ function main() {
           geometryAuditCliPath: expected.cliPath,
           geometryAuditCliSha256: sha256File(cliPath),
           offlineCliSha256: sha256File(offlineCliPath),
-          fontCss: expected.fontCss
+          fontCss: expected.fontCss,
+          offlineFonts
         },
         environment: {
           node: process.version,
@@ -285,7 +330,7 @@ function main() {
       inputPath: expected.inputPath, inputSha256: sha256File(inputPath),
       settingsPath: expected.settingsPath, settingsSha256: sha256File(settingsPath),
       geometryAuditCliPath: expected.cliPath, geometryAuditCliSha256: sha256File(cliPath),
-      offlineCliSha256: sha256File(offlineCliPath), fontCss: expected.fontCss
+      offlineCliSha256: sha256File(offlineCliPath), fontCss: expected.fontCss, offlineFonts
     },
     environment: {
       node: process.version, playwright: playwrightVersion, chromium: browser.stdout.trim(),
