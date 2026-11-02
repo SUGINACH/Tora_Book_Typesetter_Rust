@@ -2346,6 +2346,22 @@ mod tests {
     }
 
     #[test]
+    fn root_geometry_audit_is_owned_and_fixture_scoped() {
+        let source = SourceSpec {
+            repository: "SUGINACH/Tora_Book_Typesetter_Orange".to_string(),
+            commit: "0b0ee279464a3db14672cd3f4051275aba5985da".to_string(),
+            profile: "legacy-orange-v23".to_string(),
+            root: PathBuf::from("legacy/orange"),
+        };
+        let (_, owner, migration, fixtures) =
+            ownership_for(&source, "geometry-audit.js", "javascript");
+        assert_eq!(owner, "audit");
+        assert!(migration.contains("independent audit"));
+        assert_eq!(fixtures.len(), 1);
+        assert!(fixtures[0].ends_with(":very_long_test_text.txt"));
+    }
+
+    #[test]
     fn v21_and_v23_profiles_keep_distinct_fixture_identities() {
         let gold = SourceSpec {
             repository: "SUGINACH/Tora_Book_Typesetter_Gold".to_string(),
