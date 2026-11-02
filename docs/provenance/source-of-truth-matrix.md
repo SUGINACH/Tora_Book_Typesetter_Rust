@@ -205,3 +205,51 @@ The five uploaded files were converted to Git blob SHA-1 values using Git's `blo
 | `app.js` | 78,737 | `744cfcdbf2b81e30987232ef17d8ee13ad85dcf9bcdbd1d96cccb207a5defe6b` | `9faba3b111b23451edeaef6625a0945b8f99141f` |
 
 The five attachment byte lengths and SHA-256 values continue to match the five `unattributedUserAttachments` records in `legacy-source-pins.json`. Their source attribution remains open; no branch or repository has been guessed.
+
+
+## 13. Preset and style-set provenance — 2026-11-02
+
+### Root style sets shared by all five executable profiles
+
+At the exact pinned commits, all five repositories contain the same three root paths with identical Git blob IDs:
+
+| Path | Git blob SHA-1 (all five profiles) | JSON keys |
+|---|---|---:|
+| `setting_sets/פרשנות.json` | `2f92a7002f3a9ef64e7e6592fb848ddf077bbe83` | 249 |
+| `setting_sets/קונטרס.json` | `c56c30f4f3d3c0f46411bba8760fa37a4ad5645a` | 249 |
+| `setting_sets/תלמוד.json` | `bb99eb2cc8d59edce7a18c8f92a5597627217d93` | 249 |
+
+These are exact byte identities, not merely equal parsed JSON. Comparing the three shared files: each has the same 249-key set; `קונטרס` differs from `פרשנות` in 16 values, and `תלמוד` differs from `פרשנות` in 16 values. Differences include body last-line alignment, footnote columns, body line-height, column proportions/gap, and heading sizes. The three styles must remain distinct inputs even though their schemas are identical.
+
+### IMUD V20x nested makom-bina-v20.5 snapshot
+
+The pinned IMUD tree also contains four nested JSON files under `presets/makom-bina-v20.5/`. Each has 249 keys, but these are not byte-identical to the current root `default_settings.json` (264 keys):
+
+| File | Keys | Root-only keys | Preset-only keys | Shared keys with changed values vs root default |
+|---|---:|---:|---:|---:|
+| `default_settings.json` | 249 | 24 | 9 | 66 |
+| `setting_sets/פרשנות.json` | 249 | 24 | 9 | 79 |
+| `setting_sets/קונטרס.json` | 249 | 24 | 9 | 80 |
+| `setting_sets/תלמוד.json` | 249 | 24 | 9 | 82 |
+
+The 24 root-only keys include `style-set-select`, the parenthesis-format controls, footnote layout mode, runt-word avoidance, H2 scope/divider controls, and the AQ controls. The nine preset-only keys are asset-path settings such as `assets-folder-input` and the builder/header/section SVG selectors. Value differences include font-family names (Hebrew family labels versus the root defaults), header configuration, book metadata, and style metrics.
+
+The pinned IMUD `settings-manager.js` explicitly loads root `default_settings.json` and then loads selected styles from `setting_sets/`; its manually enumerated style list is exactly `קונטרס.json`, `פרשנות.json`, `תלמוד.json`. It does not reference `presets/makom-bina-v20.5/`. Therefore the nested folder is recorded as a pinned preset snapshot, **not asserted to be part of the current root UI loading path**.
+
+### Historical archived defaults
+
+Two additional IMUD archived defaults were compared to the current root default:
+
+| File | Keys | Keys only in archive | Keys only in root | Shared values that differ |
+|---|---:|---:|---:|---:|
+| `archive/v19-baseline-6c5a7e1/default_settings.json` | 250 | 1 (`avoid-runt-word`) | 0 | 20 |
+| `archive/v20.4-tip/default_settings.json` | 242 | 2 | 9 | 38 |
+
+The V19 file contains distinct book metadata and layout defaults. The V20.4 file also has a different theme/header configuration and omits several root asset selectors. These files are historical profile data, not candidates to replace the pinned root defaults.
+
+### Acceptance consequence
+
+- Shared root style-set blobs may be represented once in a content-addressed inventory while preserving five profile/path owners.
+- The three style-set names remain semantically distinct because their values differ.
+- Nested V20.5 and archived defaults must retain explicit snapshot identity and must not be merged into current root defaults.
+- Task 4 remains open: this closes only a further preset/style-set comparison slice. It does not complete all profile-owned assets, tests, or source conflict ownership.
