@@ -214,3 +214,16 @@
 - Extractor correction for the Gold static alias was committed as [24d58bb](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/24d58bb9fbfe03af3c3dbd2b03351abd0d601f72): recognize `path.dirname(__filename)`/static script-directory bindings while continuing to reject runtime root parameters. Rust CI [41384362259](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41384362259) passed all five jobs. Manifest rerun [41384362288](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41384362288) is still in progress; do not accept the new extractor result until its artifact confirms the Gold dependency is restored and runtime-root false positives remain absent.
 - Legacy full-corpus run [41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) remains in progress at the full-book corpus comparison step; no final report/artifact yet.
 - Stage A tasks 1–3 closed; task 4 remains open with partial settings/preset/test ownership mapping; tasks 5–10 open. Stage B not started.
+
+
+## מצב עדכני — 2026-11-02, אחרי e2e2831
+
+- Main code commit: [e2e2831](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/e2e283151c9ae5bc25517a3fdfe6c867219f491e).
+- Rust CI [41385039659](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41385039659): success בכל חמשת ה-jobs.
+- Manifest [41385039519](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41385039519), artifact [13115046214](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41385039519/artifacts/13115046214): success. 18,854 records, 40,954 asset edges, 35,399 resolved, 163 unresolved edges / 115 unique paths, zero sourceSha256 changes.
+- Extractor now records the actual `fonts/<file>` URL for static `PRIORITY_FONT_FILES` arrays and excludes generated `writeFileSync` targets such as `fuzz_last.json`. Static `path.dirname(__filename)` aliases were separately verified in manifest run [41384549551](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41384549551).
+- Historical archive recovery: seven exact read-only refs are pinned in `docs/provenance/historical-archive-source-pins.json`. Their trees contain 98 candidate path targets; 17 unique targets were not found in the corresponding exact commits. Do not mark the 98 resolved in the primary manifest until they are represented as separate source profiles or exact mappings. V20.2 and V20.3 have archive/branch core-file differences; V20.3 work_v4 data files remain missing.
+- Full-corpus runner [41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) remains in progress at the full-book corpus comparison step. No final report/artifact yet; timeout remains 360 minutes. Do not cancel or infer a result.
+- Stage A tasks 1–3 closed; task 4 remains open with substantial but partial provenance mapping; tasks 5–10 open. No Stage B. No baseline/tolerance change. V21 and V23 remain separate.
+
+Next: decide whether to add V19/V20.1–V20.5/V21 historical trees as separate manifest profiles; obtain or explicitly waive the 17 unresolved targets; then continue the remaining Stage A gates.

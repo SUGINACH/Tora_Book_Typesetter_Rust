@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-11-02",
+  "purpose": "Read-only exact historical source commits referenced by partial archive directories in the pinned IMUD source. These refs preserve provenance; they do not merge branches or silently resolve dependencies in the primary six-profile manifest.",
+  "policy": [
+    "Keep V21/Gold and V23/Orange/Green as independent profiles; no branch merge is authorized.",
+    "Do not treat a path found in another historical commit as resolved in the primary IMUD-main profile until that commit is represented as an explicit source profile or an exact content mapping is accepted.",
+    "A same-basename file is not sufficient; path and content identity must be checked."
+  ],
+  "historicalSources": [
+    {
+      "id": "imud-v19-baseline",
+      "repository": "SUGINACH/IMUD_TORANI",
+      "refType": "commit",
+      "ref": "6c5a7e1",
+      "commit": "6c5a7e1f19b4b40348d9d8d6ee00d9c9b8fd15db",
+      "tree": "ba828db26585f1e42b4548a257882d719b5e2f9c",
+      "commitDate": "2026-10-16T09:57:49Z",
+      "archivePath": "archive/v19-baseline-6c5a7e1/",
+      "archiveFiles": {
+        "count": 6,
+        "identicalBlobsInHistoricalCommit": 6
+      },
+      "unresolvedReferenceAudit": {
+        "uniquePaths": 27,
+        "exactPathsPresentInHistoricalCommit": 27
+      },
+      "notes": [
+        "The six files present in the pinned main archive folder are byte-identical to this historical commit.",
+        "The 13 font inventory basenames are fetched by app.js using fetch('fonts/' + fontFile); the extractor now records the actual fonts/ paths. All 13 font files exist under fonts/ in this commit."
+      ]
+    },
+    {
+      "id": "imud-v20-1",
+      "repository": "SUGINACH/IMUD_TORANI",
+      "refType": "branch",
+      "ref": "V20.1",
+      "commit": "0f6de1791fe38268fe0b6053a4e9795ece6036ae",
+      "tree": "04ee15ad1c7e25e51bb3ef814db1cff7cb89a93e",
+      "commitDate": "2026-10-26T15:08:09Z",
+      "archivePath": "archive/v20.1-tools/",
+      "archiveFiles": {
+        "count": 27,
+        "identicalBlobsInHistoricalCommit": 12,
+        "archiveOnlyFiles": 15
+      },
+      "unresolvedReferenceAudit": {
+        "uniquePaths": 8,
+        "exactPathsPresentInHistoricalCommit": 6,
+        "notPresentInHistoricalCommit": [
+          "doc_full.txt",
+          "doc_part1.txt"
+        ]
+      },
+      "notes": [
+        "The six present paths are app.js, check_layout.js, decorations.js, settings-manager.js, style.css and typesetter.js.",
+        "fuzz_last.json was removed from the dependency set because fuzz.js writes it with fs.writeFileSync; it is generated output, not an input.",
+        "doc_full.txt and doc_part1.txt are read by fuzz.js but are absent from this exact branch commit and from the pinned main archive."
+      ]
+    },
+    {
+      "id": "imud-v20-2",
+      "repository": "SUGINACH/IMUD_TORANI",
+      "refType": "branch",
+      "ref": "V20.2",
+      "commit": "1b7900433bbed49c7e4336155d0d4d96764170c8",
+      "tree": "186cc9bdff0f0f13732ddf0818d648bf04c5f9eb",
+      "commitDate": "2026-10-26T15:05:32Z",
+      "archivePath": "archive/v20.2-tip/",
+      "archiveFiles": {
+        "count": 9,
+        "identicalBlobsInHistoricalCommit": 7,
+        "differentBlobsAtSamePath": 2
+      },
+      "unresolvedReferenceAudit": {
+        "uniquePaths": 10,
+        "exactPathsPresentInHistoricalCommit": 10
+      },
+      "notes": [
+        "The two differing archive files are script.js and styles.css; do not replace either from the branch without a separate content-level decision."
+      ]
+    },
+    {
+      "id": "imud-v20-3",
+      "repository": "SUGINACH/IMUD_TORANI",
+      "refType": "branch",
+      "ref": "V20.3",
+      "commit": "2a8723b2155b974e7e304ca09fb44a49362f30cb",
+      "tree": "c673f6d8a5ca46ace7fdf8fd8025ab9f795f033d",
+      "commitDate": "2026-10-26T15:34:29Z",
+      "archivePath": "archive/v20.3-tip/",
+      "archiveFiles": {
+        "count": 29,
+        "identicalBlobsInHistoricalCommit": 27,
+        "differentBlobsAtSamePath": 2
+      },
+      "unresolvedReferenceAudit": {
+        "uniquePaths": 19,
+        "exactPathsPresentInHistoricalCommit": 9,
+        "missingWorkV4Paths": 10
+      },
+      "notes": [
+        "The two differing archive files are root app.js and decorations.js.",
+        "The nine root-level data assets exist at the exact branch commit.",
+        "All ten work_v4 data assets are absent from the exact branch tree. work_v4/index.html has no base href, and work_v4/app.js fetches those paths relative to the work_v4 document directory; root-level copies are not treated as substitutes."
+      ]
+    },
+    {
+      "id": "imud-v20-4",
+      "repository": "SUGINACH/IMUD_TORANI",
+      "refType": "branch",
+      "ref": "V20.4",
+      "commit": "ff079951ce6f8a0c9243f97801e2fa1c27dc516a",
+      "tree": "36adc577a370448dd289b63920520eb393bb4ef6",
+      "commitDate": "2026-10-26T15:29:05Z",
+      "archivePath": "archive/v20.4-tip/",
+      "archiveFiles": {
+        "count": 6,
+        "identicalBlobsInHistoricalCommit": 6
+      },
+      "unresolvedReferenceAudit": {
+        "uniquePaths": 9,
+        "exactPathsPresentInHistoricalCommit": 9
+      },
+      "notes": [
+        "All nine referenced data paths exist at the exact V20.4 branch commit."
+      ]
+    },
+    {
+      "id": "imud-v20-5",
+      "repository": "SUGINACH/IMUD_TORANI",
+      "refType": "branch",
+      "ref": "V20.5",
+      "commit": "30bf8f36b4a1676214e6ea4f50b75e17baf37170",
+      "tree": "214dcc283ca4daff3a515c408a2cd5819441898a",
+      "commitDate": "2026-10-26T15:18:10Z",
+      "archivePath": "archive/v20.5-tip/",
+      "archiveFiles": {
+        "count": 6,
+        "identicalBlobsInHistoricalCommit": 6
+      },
+      "unresolvedReferenceAudit": {
+        "uniquePaths": 11,
+        "exactPathsPresentInHistoricalCommit": 11
+      },
+      "notes": [
+        "All eleven referenced data paths exist at the exact V20.5 branch commit."
+      ]
+    },
+    {
+      "id": "gold-v21-archive",
+      "repository": "SUGINACH/Tora_Book_Typesetter_Gold",
+      "refType": "commit",
+      "ref": "11b2b55",
+      "commit": "11b2b55487815508e2934c4792ee652c16865565",
+      "tree": "183614f9334fdd30fee3ddc6db2bb7d2bf0187bd",
+      "commitDate": "2026-10-26T08:51:28Z",
+      "archivePath": "archive/v21-glm-11b2b55/",
+      "archiveFiles": {
+        "count": 13,
+        "identicalBlobsInHistoricalCommit": 13
+      },
+      "unresolvedReferenceAudit": {
+        "uniquePaths": 26,
+        "exactPathsPresentInHistoricalCommit": 26
+      },
+      "notes": [
+        "All thirteen files present in the pinned IMUD archive folder are byte-identical to this Gold V21 historical commit.",
+        "The 13 font inventory basenames are fetched from fonts/; all 13 fonts/ files exist at this commit. The extractor now records the runtime paths."
+      ]
+    }
+  ],
+  "currentProfileUnresolvedOutsideArchive": [
+    {
+      "profile": "legacy-imud-v20x",
+      "paths": [
+        "archive/v20.1-tools/doc_full.txt",
+        "archive/v20.1-tools/doc_part1.txt"
+      ],
+      "status": "not found in the exact V20.1 branch commit"
+    },
+    {
+      "profile": "legacy-imud-v20x",
+      "paths": [
+        "archive/v20.3-tip/work_v4/assets_manifest.json",
+        "archive/v20.3-tip/work_v4/fonts/fonts.json",
+        "archive/v20.3-tip/work_v4/header_ornaments.json",
+        "archive/v20.3-tip/work_v4/note_rules.json",
+        "archive/v20.3-tip/work_v4/ornaments_left_right.json",
+        "archive/v20.3-tip/work_v4/ornaments_up_down.json",
+        "archive/v20.3-tip/work_v4/section_dividers.json",
+        "archive/v20.3-tip/work_v4/shaar_back.json",
+        "archive/v20.3-tip/work_v4/shaar_main.json",
+        "archive/v20.3-tip/work_v4/shaar_sub.json"
+      ],
+      "status": "not found in the exact V20.3 branch commit"
+    },
+    {
+      "profile": "legacy-gold-v21",
+      "paths": [
+        "engine-diagnostics.js",
+        "engine-inputs.js",
+        "engine-trace.js",
+        "very_long_test_text.txt"
+      ],
+      "status": "three engine scripts are absent from both checked Gold commits; root text fixture is absent from current Gold pin. The older Gold commit has a root text fixture, but it differs from the current nested fixture."
+    },
+    {
+      "profile": "legacy-orange-v23",
+      "paths": [
+        "../very_long_test_text.txt"
+      ],
+      "status": "outside the pinned repository root; no matching sibling source established"
+    }
+  ]
+}

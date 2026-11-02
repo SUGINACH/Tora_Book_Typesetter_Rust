@@ -253,3 +253,28 @@ The V19 file contains distinct book metadata and layout defaults. The V20.4 file
 - The three style-set names remain semantically distinct because their values differ.
 - Nested V20.5 and archived defaults must retain explicit snapshot identity and must not be merged into current root defaults.
 - Task 4 remains open: this closes only a further preset/style-set comparison slice. It does not complete all profile-owned assets, tests, or source conflict ownership.
+
+
+## 14. Exact historical source recovery for partial archive folders — 2026-11-02
+
+The pinned IMUD main tree's archive folders are partial snapshots, not complete standalone trees. Exact historical refs have now been identified and checked:
+
+| Archive folder | Exact source ref | Archive files byte-identical to source | Missing referenced paths present at that source | Not present |
+|---|---|---:|---:|---:|
+| `archive/v19-baseline-6c5a7e1/` | IMUD commit `6c5a7e1f19b4b40348d9d8d6ee00d9c9b8fd15db` | 6/6 | 27/27 | 0 |
+| `archive/v20.1-tools/` | IMUD branch V20.1, `0f6de1791fe38268fe0b6053a4e9795ece6036ae` | 12 identical among 27 archive files | 6/8 | 2 |
+| `archive/v20.2-tip/` | IMUD branch V20.2, `1b7900433bbed49c7e4336155d0d4d96764170c8` | 7/9 | 10/10 | 0 |
+| `archive/v20.3-tip/` | IMUD branch V20.3, `2a8723b2155b974e7e304ca09fb44a49362f30cb` | 27/29 | 9/19 | 10 work_v4 paths |
+| `archive/v20.4-tip/` | IMUD branch V20.4, `ff079951ce6f8a0c9243f97801e2fa1c27dc516a` | 6/6 | 9/9 | 0 |
+| `archive/v20.5-tip/` | IMUD branch V20.5, `30bf8f36b4a1676214e6ea4f50b75e17baf37170` | 6/6 | 11/11 | 0 |
+| `archive/v21-glm-11b2b55/` | Gold commit `11b2b55487815508e2934c4792ee652c16865565` | 13/13 | 26/26 | 0 |
+
+The path-presence total is 98 candidate historical files. Seventeen unique targets were not found in the corresponding exact commits checked: V20.1's `doc_full.txt` and `doc_part1.txt`; ten V20.3 `work_v4/` data files; Gold's three engine scripts and current root test-text fallback; and Orange's parent-directory test-text fallback. These are not declared globally lost; they are absent from the exact source trees checked.
+
+Important qualifications:
+- V20.2 has two archive/branch content differences (`script.js`, `styles.css`).
+- V20.3 has two archive/branch core-file differences (`app.js`, `decorations.js`); its work_v4 page has no base URL override, so its missing data paths cannot be satisfied by root-level copies.
+- The older Gold root test fixture differs by blob from the current nested fixture; it is not a safe replacement.
+- The exact refs are preserved in `docs/provenance/historical-archive-source-pins.json`; the full audit is in `docs/provenance/archive-source-recovery-2026-11-02.md`.
+
+These historical commits remain separate, read-only provenance references. They have **not** been merged into the primary source profiles or used to mark primary-manifest dependencies resolved. Stage A task 4 remains open pending explicit profile integration/owner decisions.
