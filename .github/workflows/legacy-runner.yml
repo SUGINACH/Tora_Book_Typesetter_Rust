@@ -196,6 +196,8 @@ jobs:
             artifacts/legacy-gold-v21-chapter-baseline.json
             artifacts/gold-v21-chapter-results/**
             artifacts/gold-v21-chapters.log
+            artifacts/gold-v21-chapters-attempt2.log
+            artifacts/gold-v21-corpus-shape-failure.log
             artifacts/gold-v21-determinism.log
             artifacts/gold-external-requests.txt
             artifacts/gold-page-errors.txt
