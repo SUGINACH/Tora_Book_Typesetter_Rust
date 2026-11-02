@@ -144,3 +144,11 @@
 - אימות עדכני: [Rust CI 41369621550](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369621550) ו-[Manifest 41369621509](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369621509) pending. Manifest קודם [41369525487](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525487) על 218d50a עדיין in_progress אך אינו כולל את תיקון fetch.
 - [Legacy full corpus 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) נשאר in_progress; smoke עבר, אין report מלא.
 - Stage A פתוח; משימות 1–2 בלבד סגורות. אין Stage B, אין שינוי baseline/tolerance.
+
+
+## קבלת CI — 2026-11-02
+
+- [Rust CI 41369673903](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369673903) עבר בכל חמשת ה-jobs על קוד extractor 73557d4: Linux, macOS ו-Windows עברו Formatting, Clippy, 21 unit tests, doc tests, release build ו-repeat clean build/metadata; fixed-point reproducibility ו-negative unwrap gate עברו.
+- [Manifest 41369621509](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369621509) עדיין in_progress ביצירת manifest canonical פעמיים; artifact טרם זמין.
+- [Legacy full corpus 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין in_progress בשלב full-book corpus comparison אחרי smoke מוצלח; timeout 360 דקות. אין report מלא.
+- Stage A פתוח; משימות 1–2 בלבד סגורות. נדרשים manifest edge diff, הכרעה על archive/Gold unresolved ו-full corpus report. אין Stage B ואין שינוי baselines/tolerances.
