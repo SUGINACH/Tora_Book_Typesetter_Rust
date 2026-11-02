@@ -200,6 +200,16 @@ async function runOnce(browser, baseUrl, text, settings, auditApi, attempt) {
       };
     });
     const audit = auditApi.audit(model);
+    const reportPath = path.join(root, 'artifacts', 'yellow-v10-attempt-' + attempt + '-geometry-report.json');
+    fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+    fs.writeFileSync(reportPath, JSON.stringify({
+      pageCount: render.pageCount,
+      modelStats: model.stats,
+      modelSha256: sha256(Buffer.from(JSON.stringify(model), 'utf8')),
+      summary: audit.summary,
+      issues: audit.issues
+    }, null, 2) + '\n', 'utf8');
+    const reportSha256 = sha256File(reportPath);
     const modelBytes = Buffer.from(JSON.stringify(model), 'utf8');
     const modelSha256 = sha256(modelBytes);
     const signature = sha256(JSON.stringify({
@@ -216,6 +226,8 @@ async function runOnce(browser, baseUrl, text, settings, auditApi, attempt) {
       signature,
       summary: audit.summary,
       issueCount: audit.issues.length,
+      reportPath: relative(reportPath),
+      reportSha256,
       issueKinds: audit.issues.reduce((result, issue) => {
         result[issue.kind] = (result[issue.kind] || 0) + 1;
         return result;
@@ -248,7 +260,8 @@ async function main() {
   const playwrightPackage = JSON.parse(fs.readFileSync(path.join(legacyRoot, 'node_modules', 'playwright', 'package.json'), 'utf8'));
   assert(playwrightPackage.version === expected.playwrightVersion, 'Playwright version mismatch: ' + playwrightPackage.version);
   const browser = await chromium.launch({ headless: true });
-  assert(browser.version() === expected.chromiumVersion, 'Chromium version mismatch: ' + browser.version());
+  const chromiumVersion = browser.version();
+  assert(chromiumVersion === expected.chromiumVersion, 'Chromium version mismatch: ' + chromiumVersion);
 
   const offlineFonts = prepareOfflineFonts();
   const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
@@ -297,7 +310,7 @@ async function main() {
     environment: {
       node: process.version,
       playwright: playwrightPackage.version,
-      chromium: browser.version(),
+      chromium: chromiumVersion,
       viewport: expected.viewport,
       network: 'offline-enforced; only local renderer origin, data:, blob: and about: are allowed',
       timeoutMs: 900000
