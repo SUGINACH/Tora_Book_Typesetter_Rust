@@ -165,7 +165,7 @@ async function runOnce(browser, baseUrl, text, settings, checker, variant, attem
 
   try {
     await page.goto(baseUrl + '/index.html', { waitUntil: 'load', timeout: 60000 });
-    await page.waitForFunction(() => window.__appReady === true, { timeout: 120000 });
+    await page.waitForFunction(() => window.__appReady === true, null, { timeout: 120000 });
 
     const appliedSettings = await page.evaluate(settings => {
       if (typeof window.applySettingsToDOM !== 'function') throw new Error('applySettingsToDOM is unavailable');
@@ -207,15 +207,17 @@ async function runOnce(browser, baseUrl, text, settings, checker, variant, attem
       };
     }, requestedFamilies);
 
-    await page.evaluate(text => {
+    await page.evaluate(async text => {
       const input = document.getElementById('raw-input');
       if (!input) throw new Error('#raw-input not found');
       if ('value' in input) input.value = text;
       else input.textContent = text;
-      if (typeof typesetDocumentNow === 'function') typesetDocumentNow();
-      else if (typeof performTypeset === 'function') performTypeset();
-      else if (typeof typesetDocument === 'function') typesetDocument(0);
+      let renderResult;
+      if (typeof typesetDocumentNow === 'function') renderResult = typesetDocumentNow();
+      else if (typeof performTypeset === 'function') renderResult = performTypeset();
+      else if (typeof typesetDocument === 'function') renderResult = typesetDocument(0);
       else throw new Error('no supported typeset entry point');
+      if (renderResult && typeof renderResult.then === 'function') await renderResult;
     }, text);
 
     let lastPages = -1, stable = 0, pageCount = 0;
@@ -232,7 +234,7 @@ async function runOnce(browser, baseUrl, text, settings, checker, variant, attem
     await page.addScriptTag({ content: checker });
     const audit = await page.evaluate(() => {
       const issues = window.__checkLayout({});
-      const tokens = Array.isArray(window.globalTokens) ? window.globalTokens : [];
+      const tokens = typeof globalTokens !== 'undefined' && Array.isArray(globalTokens) ? globalTokens : [];
       const paragraphs = tokens.filter(token => token.type === 'p');
       const counts = issues.reduce((result, issue) => {
         result[issue.type] = (result[issue.type] || 0) + 1;
