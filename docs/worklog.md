@@ -312,3 +312,14 @@
 - ריצות האימות העדכניות על 218d50a: [Rust CI 41369525393](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525393) queued ו-[Manifest 41369525487](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525487) pending בעת הרישום. יש לבדוק את שתיהן; אין לייחס להן הצלחה עדיין.
 - [Legacy runner 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) נשאר ב-full-corpus comparison; smoke עבר, שלב השוואת הקורפוס עדיין in_progress, אין report/artifact מלא. אין לבטל.
 - שלב א נשאר פתוח. אין לשנות baselines/tolerances, אין לסמן provenance או manifest כ-complete, ואין להתחיל שלב ב.
+
+
+### תיקון מסנן fetch והמשך אימות — 2026-11-02
+
+- [Rust CI 41369525393](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525393) על 218d50a: rustfmt ו-Clippy עברו בכל שלוש הפלטפורמות, אך unit test אחד נכשל בכולן. 20/21 בדיקות עברו; הכשל היחיד היה שהפניה סטטית fetch("fonts/fonts.json") לא נכללה, משום ש-fetch השתמש בטעות ב-module resolver המחייב ./ או ../.
+- בדיקת package-lock_bin_paths עברה לאחר התיקון הקודם; בדיקת font inventory עברה. מכאן שהטיפול בשני הכשלים הקודמים הצליח, ונשארה הבחנה בין fetch asset URL לבין require/import module specifier.
+- תיקון ב-[commit 73557d4](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/73557d41d240698c847e5e4d88fafcf82235e4d3): fetch משתמש ב-normalize_asset_reference; require/import ממשיכים להשתמש ב-normalize_module_reference. לא שונתה מדיניות bare module specifier.
+- ריצות על 73557d4: [Rust CI 41369621550](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369621550) ו-[Manifest 41369621509](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369621509) pending בעת העדכון. יש לבדוק אותן לפני קבלת השינוי.
+- Manifest [41369525487](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525487) על 218d50a עדיין in_progress; הוא קודם לתיקון fetch ולכן אינו קובע למניפסט הסופי.
+- [Legacy runner 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין in_progress ב-full-corpus comparison; smoke עבר ואין report מלא.
+- Stage A נשאר פתוח. אין לשנות baselines/tolerances, אין לסגור provenance/manifest, ואין להתחיל Stage B.
