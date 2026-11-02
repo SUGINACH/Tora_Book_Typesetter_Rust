@@ -278,3 +278,12 @@ Important qualifications:
 - The exact refs are preserved in `docs/provenance/historical-archive-source-pins.json`; the full audit is in `docs/provenance/archive-source-recovery-2026-11-02.md`.
 
 These historical commits remain separate, read-only provenance references. They have **not** been merged into the primary source profiles or used to mark primary-manifest dependencies resolved. Stage A task 4 remains open pending explicit profile integration/owner decisions.
+
+
+## 15. Stage A task 4 — conflict ownership and disposition (2026-11-02)
+
+The complete path-level owner/disposition decision is recorded in [stage-a-source-conflict-disposition-2026-11-02.md](stage-a-source-conflict-disposition-2026-11-02.md).
+
+This closes the **mapping** deliverable for task 4: all known conflicts are assigned to a profile/source set and an exact primary or historical pin (or explicitly to the unattributed attachment set), with path-level evidence and a no-substitution rule. It does not restore the 17 absent historical targets, resolve the 163 primary-manifest dependency edges, or make partial archives runnable. Those remain visible owner-assigned conflicts for tasks 6 and 8.
+
+The 98 files found at separate historical refs remain candidate recovery sources only. They are not added to the primary IMUD profile and do not change any V21/V23 separation rule. 
