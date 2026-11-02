@@ -934,12 +934,7 @@ fn extract_json_string_property(text: &str, property: &str) -> Vec<String> {
     let tokens = tokenize_javascript(text);
     let mut values = Vec::new();
     for window in tokens.windows(3) {
-        if let [
-            JsToken::String(key),
-            JsToken::Punct(':'),
-            JsToken::String(value),
-        ] = window
-        {
+        if let [JsToken::String(key), JsToken::Punct(':'), JsToken::String(value)] = window {
             if key == property {
                 values.push(value.clone());
             }
