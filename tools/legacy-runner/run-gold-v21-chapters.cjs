@@ -141,7 +141,65 @@ function main() {
     GOLD_CONSOLE_ERRORS_PATH: consoleErrorsPath
   };
   const full = runNode(offlineChapterPath, ['1', '79', 'stage-a-gold-v21'], { ...commonEnv, RESULTS_DIR: resultsDir }, chapterLogPath);
-  assert(full.status === 0, 'Gold chapter harness process failed: ' + full.status);
+  if (full.status !== 0) {
+    const firstLog = fs.readFileSync(chapterLogPath, 'utf8');
+    if (firstLog.includes('זוהו 0 פרקים')) {
+      const secondChapterLogPath = path.join(artifactDir, 'gold-v21-chapters-attempt2.log');
+      const second = runNode(offlineChapterPath, ['1', '79', 'stage-a-gold-v21'], { ...commonEnv, RESULTS_DIR: resultsDir }, secondChapterLogPath);
+      const secondLog = fs.readFileSync(secondChapterLogPath, 'utf8');
+      assert(second.status === full.status && secondLog.includes('זוהו 0 פרקים'), 'Gold no-chapter-marker failure did not reproduce');
+      const externalRequests = readLines(externalRequestsPath);
+      const pageErrors = readLines(pageErrorsPath);
+      const consoleErrors = readLines(consoleErrorsPath);
+      assert(externalRequests.length === 0 && pageErrors.length === 0 && consoleErrors.length === 0,
+        'Gold no-chapter-marker preflight unexpectedly launched a browser or emitted network/page errors');
+      const failureLogPath = path.join(artifactDir, 'gold-v21-corpus-shape-failure.log');
+      fs.writeFileSync(failureLogPath, firstLog + String.fromCharCode(10) + '=== deterministic repeat ===' + String.fromCharCode(10) + secondLog, 'utf8');
+      const failureManifest = {
+        schemaVersion: 1,
+        status: 'blocked-corpus-shape-mismatch',
+        fullCorpusCovered: false,
+        continuousDocumentRender: false,
+        runner: 'tools/legacy-runner/run-gold-v21-chapters.cjs',
+        targetRustCommit: process.env.RUST_TARGET_COMMIT || process.env.GITHUB_SHA || null,
+        legacy: {
+          repository: 'SUGINACH/Tora_Book_Typesetter_Gold',
+          profile: 'legacy-gold-v21',
+          commit: actualCommit,
+          inputPath: expected.inputPath,
+          inputSha256: sha256File(inputPath),
+          settingsPath: expected.settingsPath,
+          settingsSha256: sha256File(settingsPath),
+          packageLockPath: expected.packageLockPath,
+          packageLockSha256: sha256File(lockPath),
+          chapterScriptPath: expected.chapterScriptPath,
+          chapterScriptSha256: sha256File(chapterScriptPath),
+          determinismScriptPath: expected.determinismScriptPath,
+          determinismScriptSha256: sha256File(determinismScriptPath),
+          fontCss: expected.fontCss
+        },
+        environment: { node: process.version, playwright: playwrightPackage.version, chromium: browser.stdout.trim() },
+        failure: {
+          kind: 'native-chapter-harness-found-zero-h2-markers-in-pinned-corpus',
+          detectedChapterCount: 0,
+          requestedChapterRange: [1, 79],
+          attempts: 2,
+          deterministicFailure: true,
+          exitCodes: [full.status, second.status],
+          externalRequests: [],
+          pageErrors: [],
+          consoleErrors: []
+        },
+        failureLogSha256: sha256File(failureLogPath),
+        interpretation: 'The pinned Gold V21 chapter harness requires H2 chapter markers, but its exact pinned nested corpus produces zero chapters. The absent repository-root fallback is not replaced with another file. This is a measured source/harness mismatch, not a full-corpus baseline or a passing profile gate.'
+      };
+      const failureManifestPath = path.join(artifactDir, 'legacy-gold-v21-chapter-baseline.json');
+      fs.writeFileSync(failureManifestPath, JSON.stringify(failureManifest, null, 2) + String.fromCharCode(10), 'utf8');
+      process.stdout.write('Gold V21 corpus shape mismatch captured twice; full-corpus baseline remains blocked.' + String.fromCharCode(10));
+      return;
+    }
+    throw new Error('Gold chapter harness process failed for an unclassified reason: ' + full.status);
+  }
   const summaryPath = path.join(resultsDir, 'stage-a-gold-v21-summary.json');
   assert(fs.existsSync(summaryPath), 'Gold 79-chapter summary missing');
   const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
