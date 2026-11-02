@@ -137,8 +137,8 @@ jobs:
             legacy/green/artifacts/rust-green-long-report.json
             legacy/green/artifacts/rust-green-long-summary.md
           if-no-files-found: warn
-  legacy-gold-v21-chapters:
-    name: Pinned Gold V21 / Chromium offline 79-chapter measurement
+  legacy-gold-v21-full-corpus:
+    name: Pinned Gold V21 / Chromium offline full-document replay
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
@@ -169,9 +169,9 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Syntax-check Gold profile runner
-        run: node --check tools/legacy-runner/run-gold-v21-chapters.cjs
+        run: node --check tools/legacy-runner/run-gold-v21-full-corpus.cjs
 
-      - name: Run pinned Gold V21 79-chapter harness with offline guard
+      - name: Run pinned Gold V21 full-corpus single-document replay with offline guard
         shell: bash
         env:
           RUST_TARGET_COMMIT: ${{ github.sha }}
@@ -185,21 +185,25 @@ jobs:
             sleep 1
           done
           curl -fsS http://127.0.0.1:8765/index.html >/dev/null
-          node tools/legacy-runner/run-gold-v21-chapters.cjs
+          node tools/legacy-runner/run-gold-v21-full-corpus.cjs
 
-      - name: Upload Gold V21 chapter-sliced measurement
+      - name: Upload Gold V21 full-document measurement
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: legacy-gold-v21-chapter-measurement
+          name: legacy-gold-v21-full-document-measurement
           path: |
-            artifacts/legacy-gold-v21-chapter-baseline.json
-            artifacts/gold-v21-chapter-results/**
-            artifacts/gold-v21-chapters.log
-            artifacts/gold-v21-chapters-attempt2.log
-            artifacts/gold-v21-corpus-shape-failure.log
-            artifacts/gold-v21-determinism.log
-            artifacts/gold-external-requests.txt
-            artifacts/gold-page-errors.txt
-            artifacts/gold-console-errors.txt
+            artifacts/legacy-gold-v21-full-corpus-manifest.json
+            artifacts/gold-v21-full-attempt-1/**
+            artifacts/gold-v21-full-attempt-2/**
+            artifacts/gold-v21-full-attempt-1.log
+            artifacts/gold-v21-full-attempt-2.log
+            artifacts/gold-full-chapter-mode-1.json
+            artifacts/gold-full-chapter-mode-2.json
+            artifacts/gold-full-external-1.txt
+            artifacts/gold-full-external-2.txt
+            artifacts/gold-full-page-errors-1.txt
+            artifacts/gold-full-page-errors-2.txt
+            artifacts/gold-full-console-errors-1.txt
+            artifacts/gold-full-console-errors-2.txt
           if-no-files-found: warn
