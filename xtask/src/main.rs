@@ -834,7 +834,9 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                     && tokens.get(index + 1) == Some(&JsToken::Punct('('))
                 {
                     let base = match tokens.get(index + 2) {
-                        Some(JsToken::Identifier(name)) if name == "__dirname" || name == "SCRIPTS_DIR" => {
+                        Some(JsToken::Identifier(name))
+                            if name == "__dirname" || name == "SCRIPTS_DIR" =>
+                        {
                             Some(source_path)
                         }
                         Some(JsToken::Identifier(name)) if name == "root" => Some(""),
@@ -849,7 +851,9 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                             match &tokens[cursor] {
                                 JsToken::Punct('(') => depth += 1,
                                 JsToken::Punct(')') => depth -= 1,
-                                JsToken::String(value) if depth == 1 => segments.push(value.clone()),
+                                JsToken::String(value) if depth == 1 => {
+                                    segments.push(value.clone())
+                                }
                                 JsToken::Template(_) | JsToken::Identifier(_) if depth == 1 => {
                                     valid = false;
                                     break;
