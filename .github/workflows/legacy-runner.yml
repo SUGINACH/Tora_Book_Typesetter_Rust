@@ -83,3 +83,52 @@ jobs:
             legacy/orange/artifacts/rust-legacy-long-report.json
             legacy/orange/artifacts/rust-legacy-long-summary.md
           if-no-files-found: warn
+
+  legacy-green-full-corpus:
+    name: Pinned Green V23 / Chromium offline full-corpus baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout Rust target
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout exact Green V23 source commit
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/Tora_Book_Typesetter_Green
+          ref: e5cde5f194d0d9e9b20fdaa2a742f9bf6e8aec53
+          path: legacy/green
+          persist-credentials: false
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install isolated pinned Playwright
+        working-directory: legacy/green
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.55.0
+
+      - name: Install pinned Playwright Chromium
+        working-directory: legacy/green
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify Green V23 full corpus and write independent baseline
+        env:
+          LEGACY_SOURCE_COMMIT: e5cde5f194d0d9e9b20fdaa2a742f9bf6e8aec53
+          RUST_TARGET_COMMIT: \${{ github.sha }}
+        run: node tools/legacy-runner/run-green-long-corpus.cjs
+
+      - name: Upload Green V23 full-corpus evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-green-v23-full-corpus-baseline
+          path: |
+            artifacts/legacy-green-long-corpus-manifest.json
+            legacy/green/artifacts/rust-green-long-report.json
+            legacy/green/artifacts/rust-green-long-summary.md
+          if-no-files-found: warn
+
