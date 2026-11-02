@@ -10,16 +10,17 @@ The exact refs and tree SHAs are in `historical-archive-source-pins.json`.
 
 ## Latest extractor and manifest result
 
-- Code: [e2e2831](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/e2e283151c9ae5bc25517a3fdfe6c867219f491e)
-- Rust CI: [41385039659](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41385039659) — all five jobs passed.
-- Manifest: [41385039519](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41385039519), artifact [13115046214](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41385039519/artifacts/13115046214).
+- Current extractor: [3a86af8](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/3a86af841aa1321160eae821518b7a52a2fa5543).
+- Rust CI: [41395166264](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395166264) — all five jobs passed.
+- Manifest: [41395166090](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395166090), artifact [13118628003](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395166090/artifacts/13118628003).
 - 18,854 records; all compatIds stable; zero sourceSha256 changes against baseline.
-- Asset edges: 40,954; resolved: 35,399; unresolved: 163 edges across 115 unique paths.
+- Current counts: 18,489 dependency edges; 18,199 resolved; 163 unresolved across 115 unique paths. Baseline counts were 41,192 / 35,356 / 413 respectively. The drop is due to excluding font-picker/duplicate catalogs and rejecting inline SVG markup as file paths/URLs, not source-file removal.
+- The unresolved paths remain 98 candidate files found at exact historical commits and 17 targets not found at the exact historical refs checked. Candidate files are not automatically resolved in the primary six-profile manifest.
 
-Extractor corrections in e2e2831:
-1. A static font array such as `PRIORITY_FONT_FILES` is not itself a path. Where a `for...of` loop feeds `fetch('fonts/' + fontFile)`, the dependency is recorded as `fonts/<file>`.
-2. A `path.join(...)` used as the target of `writeFileSync`, `writeFile`, `appendFileSync`, `appendFile` or `createWriteStream` is generated output, not an input dependency. This removed the false `fuzz_last.json` dependency.
-3. Earlier fix [24d58bb](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/24d58bb9fbfe03af3c3dbd2b03351abd0d601f72) recognizes static `path.dirname(__filename)` script-directory aliases. Manifest run [41384549551](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41384549551), artifact [13114419741](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41384549551/artifacts/13114419741), restored Gold's `scripts/test-chapters-enhanced.js` dependency while not reintroducing the two runtime-root false positives.
+Extractor corrections:
+1. [b3032d1](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/b3032d16d1226d489a88bebad4a8494f67292590) excludes `fonts-extended.json`, `fonts-priority.json`, and the unreferenced duplicate `fonts/fonts/fonts.json` from generic file-edge extraction. The active `fonts/fonts.json` remains scanned.
+2. [e2e2831](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/e2e283151c9ae5bc25517a3fdfe6c867219f491e) records the real `fonts/<file>` dependency for the static `PRIORITY_FONT_FILES` → `fetch('fonts/' + fontFile)` flow and excludes generated `writeFileSync` outputs.
+3. [e80dda4](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/e80dda48a01c46278d25f8ae615f1ba78ee50aea) rejects inline SVG strings beginning with markup. Its regression test then exposed a trailing `></svg>` fragment; [3a86af8](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/3a86af841aa1321160eae821518b7a52a2fa5543) now rejects angle-bracket markup fragments anywhere in a candidate. The latest manifest is identical to the preceding scan; the fix closes the synthetic regression test without changing real source edges.
 
 ## Exact historical-tree checks
 
