@@ -149,13 +149,17 @@ function main() {
   assert(totalPages > 0, 'Gold chapter run produced no pages');
   for (let n = 1; n <= 79; n++) assert(fs.existsSync(path.join(resultsDir, 'chapter-' + String(n).padStart(2, '0') + '.json')), 'Gold chapter result file missing: ' + n);
 
+  const fullExternalRequests = readLines(externalRequestsPath);
+  const fullPageErrors = readLines(pageErrorsPath);
   fs.writeFileSync(externalRequestsPath, '', 'utf8');
   fs.writeFileSync(pageErrorsPath, '', 'utf8');
   const deterministic = runNode(offlineDeterminismPath, ['9', '3'], commonEnv, determinismLogPath);
   const deterministicText = String(deterministic.stdout || '') + String.fromCharCode(10) + String(deterministic.stderr || '');
   const determinismPass = deterministic.status === 0 && deterministicText.includes('unique page counts: 1') && deterministicText.includes('unique summaries: 1');
-  const externalRequests = readLines(externalRequestsPath);
-  const pageErrors = readLines(pageErrorsPath);
+  const determinismExternalRequests = readLines(externalRequestsPath);
+  const determinismPageErrors = readLines(pageErrorsPath);
+  const externalRequests = [...fullExternalRequests, ...determinismExternalRequests];
+  const pageErrors = [...fullPageErrors, ...determinismPageErrors];
   assert(externalRequests.length === 0, 'Gold runner attempted external network requests');
   assert(pageErrors.length === 0, 'Gold browser reported page errors');
 
