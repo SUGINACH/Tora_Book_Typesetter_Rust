@@ -330,6 +330,12 @@ fn ownership_for(
             "app-core".to_string(),
             "replace with immutable typed jobs and explicit application state; preserve profile settings".to_string(),
         )
+    } else if source.profile == "legacy-gold-v21" && lower == "renderer.html" {
+        (
+            "legacy-gold-renderer-harness".to_string(),
+            "legacy-profile-test-harness".to_string(),
+            "retain as a historical test harness only: the pinned renderer references three script files absent from the exact Gold V21 source tree; the full-corpus runner uses only the exact same-profile renderer overlay from commit 7ce8ee7, differing solely by removal of those stale tags; never import files from V23".to_string(),
+        )
     } else if lower == "settings-manager.js" || lower.ends_with("/settings-manager.js") {
         (
             "legacy-profile-settings-loader".to_string(),
@@ -462,6 +468,7 @@ fn ownership_for(
             | "settings"
             | "asset-registry"
             | "font-environment"
+            | "legacy-profile-test-harness"
     );
     if (active_status || executable_owner) && kind != "font" {
         fixtures.push(profile_fixture);
@@ -581,6 +588,10 @@ fn tests_for(
         "compat-test-harness" => (
             vec!["SRC-PIN-HASH".to_string(), "PROFILE-REPLAY".to_string(), "DETERMINISM-REPEAT".to_string()],
             "The fixture executes under its exact source profile and environment; repeat output signatures match.".to_string(),
+        ),
+        "legacy-profile-test-harness" => (
+            vec!["SRC-PIN-HASH".to_string(), "PROFILE-REPLAY".to_string(), "LEGACY-DOM-GEOMETRY".to_string(), "DETERMINISM-REPEAT".to_string()],
+            "The historical Gold renderer is retained as a profile-owned harness only; the exact same-profile overlay removes only script tags for files absent from the pinned tree, with no cross-profile code substitution.".to_string(),
         ),
         "build-system" => (
             vec!["SRC-PIN-HASH".to_string()],
@@ -1971,6 +1982,8 @@ fn status_for(profile: &str, kind: &str, source_path: &str) -> &'static str {
     let lower = source_path.to_ascii_lowercase();
     if profile == "requirements-docs" && kind == "documentation" {
         "spec-only"
+    } else if profile == "legacy-gold-v21" && lower == "renderer.html" {
+        "historical-only"
     } else if kind == "font" {
         "blocked-license"
     } else if is_historical_record_path(&lower) {
@@ -2353,6 +2366,23 @@ mod tests {
         assert_eq!(owner, "engine-core::decorations");
         assert!(migration.contains("geometry"));
         assert_eq!(fixtures.len(), 1);
+    }
+
+    #[test]
+    fn gold_renderer_harness_is_historical_and_profile_fixture_scoped() {
+        let source = SourceSpec {
+            repository: "SUGINACH/Tora_Book_Typesetter_Gold".to_string(),
+            commit: "a444d34ccad30fd5ed0d6fd3873adbe9c23cb7e0".to_string(),
+            profile: "legacy-gold-v21".to_string(),
+            root: PathBuf::from("legacy/gold"),
+        };
+        let (_, owner, migration, fixtures) =
+            ownership_for(&source, "renderer.html", "dom-contract");
+        assert_eq!(owner, "legacy-profile-test-harness");
+        assert!(migration.contains("three script files absent"));
+        assert_eq!(fixtures.len(), 1);
+        assert!(fixtures[0].contains("Tora_Book_Typesetter_Gold"));
+        assert_eq!(status_for("legacy-gold-v21", "dom-contract", "renderer.html"), "historical-only");
     }
 
     #[test]
