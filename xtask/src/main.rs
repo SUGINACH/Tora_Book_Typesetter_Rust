@@ -587,7 +587,16 @@ fn extract_asset_dependencies(source_path: &str, kind: &str, bytes: &[u8]) -> Ve
         // Settings and data files are structured catalogs. Retain their
         // explicit file-name values, but reject extension-only and directory
         // fragments in normalize_asset_reference.
-        if matches!(kind, "settings" | "data") && !lower_path.ends_with("package-lock.json") {
+        if lower_path.ends_with("package-lock.json") {
+            // npm lockfiles contain package-internal bin paths (for example
+            // "cli.js") that do not exist in the repository. Keep only the
+            // explicit package resolution URLs as external provenance edges.
+            for value in extract_json_string_property(&text, "resolved") {
+                if let Some(normalized) = normalize_asset_reference(source_path, &value) {
+                    dependencies.insert(normalized);
+                }
+            }
+        } else if matches!(kind, "settings" | "data") {
             for value in extract_quoted_strings(&text) {
                 if is_path_candidate(&value) {
                     if let Some(normalized) = normalize_asset_reference(source_path, &value) {
@@ -797,7 +806,7 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                                     JsToken::Punct(']') => depth -= 1,
                                     JsToken::String(value) if depth == 1 => {
                                         if let Some(normalized) =
-                                            normalize_module_reference(source_path, value)
+                                            normalize_asset_reference(source_path, value)
                                         {
                                             output.insert(normalized);
                                         }
@@ -919,6 +928,24 @@ fn extract_attributes(
             offset = value_end.max(offset + relative + pattern.len());
         }
     }
+}
+
+fn extract_json_string_property(text: &str, property: &str) -> Vec<String> {
+    let tokens = tokenize_javascript(text);
+    let mut values = Vec::new();
+    for window in tokens.windows(3) {
+        if let [
+            JsToken::String(key),
+            JsToken::Punct(':'),
+            JsToken::String(value),
+        ] = window
+        {
+            if key == property {
+                values.push(value.clone());
+            }
+        }
+    }
+    values
 }
 
 fn extract_quoted_strings(text: &str) -> Vec<String> {
