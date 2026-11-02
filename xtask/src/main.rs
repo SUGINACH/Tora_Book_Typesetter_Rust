@@ -1625,7 +1625,8 @@ fn normalize_asset_reference_impl(
         .trim_matches(|character| character == '"' || character == '\'');
     if value.is_empty()
         || value.starts_with('#')
-        || value.starts_with('<')
+        || value.contains('<')
+        || value.contains('>')
         || value.starts_with("data:")
         || value.starts_with("blob:")
         || value.starts_with("javascript:")
