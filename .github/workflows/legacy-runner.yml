@@ -115,7 +115,7 @@ jobs:
         working-directory: legacy/green
         run: npx playwright install --with-deps chromium
 
-      - name: Verify Green V23 full corpus and write independent baseline
+      - name: Capture Green V23 full-corpus baseline or deterministic failure fingerprint
         env:
           LEGACY_SOURCE_COMMIT: e5cde5f194d0d9e9b20fdaa2a742f9bf6e8aec53
           RUST_TARGET_COMMIT: \${{ github.sha }}
@@ -128,6 +128,8 @@ jobs:
           name: legacy-green-v23-full-corpus-baseline
           path: |
             artifacts/legacy-green-long-corpus-manifest.json
+            artifacts/legacy-green-layout-failure.log
+            artifacts/green-external-requests.txt
             legacy/green/artifacts/rust-green-long-report.json
             legacy/green/artifacts/rust-green-long-summary.md
           if-no-files-found: warn
