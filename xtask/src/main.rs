@@ -738,9 +738,7 @@ fn tokenize_javascript(text: &str) -> Vec<JsToken> {
         if current == 0x60 {
             let template_end = skip_template_literal(bytes, index);
             let content_end = template_end.saturating_sub(1).max(index + 1);
-            tokens.push(JsToken::Template(
-                text[index + 1..content_end].to_string(),
-            ));
+            tokens.push(JsToken::Template(text[index + 1..content_end].to_string()));
             index = template_end;
             continue;
         }
