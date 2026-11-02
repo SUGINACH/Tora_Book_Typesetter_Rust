@@ -377,7 +377,7 @@
 
 ### Task 4 partial — test harness ownership — 2026-11-02
 
-- Pinned profile test layouts are structurally different: Orange 33 paths under tests/fixtures and an npm test script running six suites; Green 12 fixtures and no npm test script; Gold 44 test/debug/audit-named paths across scripts/workflows/docs with its own baseline/quick/determinism scripts; Yellow 13 test paths and no root package.json; IMUD 18 test paths and its own quick layout + feature suites.
+- Pinned profile test layouts are structurally different: Orange 33 paths under tests/fixtures and an npm test script running seven suites; Green 12 fixtures and no npm test script; Gold 44 test/debug/audit-named paths across scripts/workflows/docs with its own baseline/quick/determinism scripts; Yellow 13 test paths and no root package.json; IMUD 18 test paths and its own quick layout + feature suites.
 - Orange/Green share eight test fixture paths: seven have identical blob IDs; one `ornament-geometry-settings.json` differs in six header type values (Orange `ext________2_svg`, Green `none`).
 - This confirms test ownership and expected results must remain profile-specific. Full detail in `docs/provenance/source-of-truth-matrix.md` §12.
 - Task 4 remains open; counts are structural inventory only, not proof of coverage. Every required compatibility behavior still needs explicit owner and test mapping.
