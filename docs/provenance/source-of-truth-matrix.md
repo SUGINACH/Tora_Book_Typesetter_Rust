@@ -190,3 +190,18 @@ The package metadata at the pinned commits confirms the test ownership distincti
 | IMUD | `tora-book-typesetter-orange` | `npm test` = `npm run test:layout:quick && npm run test:features`; layout suite `node tests/layout/run-suite.js`; feature suite `node tests/features/run.js`; baseline update `node tests/layout/run-suite.js --update-baseline` | `^1.50.0` |
 
 The package names are metadata labels, not source identity: in particular, the IMUD V20x pin's package name contains “orange”, while the Orange V23 pin has the distinct package name `tora-book-typesetter-unified`. Repository identity remains the pinned owner/repository/commit in `legacy-source-pins.json`.
+
+
+### 9.1 Exact-content search of uploaded files across all six pinned trees
+
+The five uploaded files were converted to Git blob SHA-1 values using Git's `blob {length}\0{bytes}` framing, then compared against every blob in all six pinned repository trees. **No exact blob match was found** in any of the six pinned trees. This confirms only that the files are not byte-identical to a file in those six snapshots; it does not rule out a modified ancestor, another branch, or a deleted historical commit.
+
+| Uploaded file | Bytes | SHA-256 | Git blob SHA-1 |
+|---|---:|---|---|
+| `style.css` | 51,621 | `1d69f505806bae7c6d114e9ca979f6bb54244ffbbb00ec634b5bb2043bf2047b` | `b2bf310856fa31b593b18b2bc9a41a02be400661` |
+| `decorations.js` | 35,597 | `69696aa6dbc0bed4772ba9a67508f08460ef26468fba469a89d98d3708414d65` | `de72223ef66e38100f2d10ec86fc622820312ace` |
+| `typesetter.js` | 158,627 | `7a02b7b770a861c96bcff919958d66d8c472f9e35d3783bd832519862a025d10` | `e06a9686345ca63aa892ac6387634b6541aad386` |
+| `index.html` | 97,694 | `f595b654e78055509150cd652403b905152a3a9c10b7f6d656178591a935b728` | `d165233f11ad8ff315990c3f967babe5cd921728` |
+| `app.js` | 78,737 | `744cfcdbf2b81e30987232ef17d8ee13ad85dcf9bcdbd1d96cccb207a5defe6b` | `9faba3b111b23451edeaef6625a0945b8f99141f` |
+
+The five attachment byte lengths and SHA-256 values continue to match the five `unattributedUserAttachments` records in `legacy-source-pins.json`. Their source attribution remains open; no branch or repository has been guessed.
