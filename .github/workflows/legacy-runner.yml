@@ -144,6 +144,64 @@ jobs:
             legacy/green/artifacts/rust-green-long-report.json
             legacy/green/artifacts/rust-green-long-summary.md
           if-no-files-found: warn
+  legacy-yellow-v10-full-corpus:
+    name: Pinned Yellow V10 / Chromium offline full-corpus baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout Rust target
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout exact Yellow V10 source commit
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/Tora_Book_Typesetter_Yellow
+          ref: 878535e12eb4aa7e3c4a72e0e79687082d8a6d3b
+          path: legacy/yellow
+          persist-credentials: false
+
+      - name: Checkout pinned self-hosted Google font source
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/Tora_Book_Typesetter_Orange
+          ref: 0b0ee279464a3db14672cd3f4051275aba5985da
+          path: legacy/offline-fonts
+          persist-credentials: false
+
+      - name: Setup Node 22.23.4
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+
+      - name: Install isolated pinned Playwright
+        working-directory: legacy/yellow
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.55.0
+
+      - name: Install pinned Playwright Chromium
+        working-directory: legacy/yellow
+        run: npx playwright install --with-deps chromium
+
+      - name: Syntax-check Yellow profile runner
+        run: node --check tools/legacy-runner/run-yellow-v10-full-corpus.cjs
+
+      - name: Measure pinned Yellow V10 full corpus twice, offline
+        env:
+          RUST_TARGET_COMMIT: ${{ github.sha }}
+        run: node tools/legacy-runner/run-yellow-v10-full-corpus.cjs
+
+      - name: Upload Yellow V10 full-corpus evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-yellow-v10-full-corpus-baseline
+          path: |
+            artifacts/legacy-yellow-v10-full-corpus-manifest.json
+            artifacts/yellow-v10-attempt-1-geometry-report.json
+            artifacts/yellow-v10-attempt-2-geometry-report.json
+          if-no-files-found: warn
+
   legacy-gold-v21-full-corpus:
     name: Pinned Gold V21 / Chromium offline full-document replay
     runs-on: ubuntu-latest
