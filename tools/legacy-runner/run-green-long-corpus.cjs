@@ -33,6 +33,39 @@ function relative(file) {
   return path.relative(root, file).split(path.sep).join('/');
 }
 
+function buildOfflineAuditCli(sourcePath) {
+  const source = fs.readFileSync(sourcePath, 'utf8');
+  const declaration = "const pageErrors = [], consoleErrors = [], started = Date.now();";
+  const replacement = "const pageErrors = [], consoleErrors = [], externalRequests = [], started = Date.now();";
+  assert(source.includes(declaration), 'pinned CLI instrumentation anchor changed');
+  let patched = source.replace(declaration, replacement);
+
+  const pageHook = "        page.on('pageerror', e => pageErrors.push(String(e && (e.stack || e))));";
+  const routeHook = [
+    "        const localOrigin = new URL(baseUrl).origin;",
+    "        await page.route('**/*', async route => {",
+    "            const requestUrl = new URL(route.request().url());",
+    "            if (requestUrl.origin === localOrigin ||",
+    "                ['data:', 'blob:', 'about:'].includes(requestUrl.protocol)) {",
+    "                await route.continue();",
+    "            } else {",
+    "                externalRequests.push(requestUrl.href);",
+    "                await route.abort('blockedbyclient');",
+    "            }",
+    "        });",
+    "        page.on('pageerror', e => pageErrors.push(String(e && (e.stack || e))));"
+  ].join('\n');
+  assert(patched.includes(pageHook), 'pinned CLI page-hook anchor changed');
+  patched = patched.replace(pageHook, routeHook);
+
+  const reportHook = "browser:'Chromium headless' },";
+  assert(patched.includes(reportHook), 'pinned CLI report anchor changed');
+  patched = patched.replace(reportHook, "externalRequests, browser:'Chromium headless' },");
+  const outputPath = sourcePath.replace(/geometry-audit-cli\\.js$/, 'geometry-audit-cli.offline.cjs');
+  fs.writeFileSync(outputPath, patched, 'utf8');
+  return outputPath;
+}
+
 function main() {
   assert(process.env.LEGACY_SOURCE_COMMIT === expected.sourceCommit,
     'LEGACY_SOURCE_COMMIT does not match the exact Green V23 pin');
@@ -59,7 +92,6 @@ function main() {
   assert(playwrightVersion === expected.playwrightVersion,
     'Playwright version mismatch: expected ' + expected.playwrightVersion + ', got ' + playwrightVersion);
 
-  const { chromium } = require(path.join(legacyRoot, 'node_modules', 'playwright'));
   const browser = spawnSync(process.execPath, ['-e',
     "const { chromium } = require('playwright'); (async()=>{const b=await chromium.launch({headless:true}); process.stdout.write(b.version()); await b.close();})().catch(e=>{console.error(e);process.exit(1);});"
   ], { cwd: legacyRoot, encoding: 'utf8' });
@@ -67,13 +99,14 @@ function main() {
   assert(browser.stdout.trim() === expected.chromiumVersion,
     'Chromium version mismatch: expected ' + expected.chromiumVersion + ', got ' + browser.stdout.trim());
 
+  const offlineCliPath = buildOfflineAuditCli(cliPath);
   const reportRelative = 'artifacts/rust-green-long-report.json';
   const summaryRelative = 'artifacts/rust-green-long-summary.md';
   const reportPath = path.join(legacyRoot, reportRelative);
   const summaryPath = path.join(legacyRoot, summaryRelative);
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   const child = spawnSync(process.execPath, [
-    cliPath,
+    offlineCliPath,
     '--input', expected.inputPath,
     '--settings', expected.settingsPath,
     '--timeout-ms', '900000',
@@ -87,11 +120,7 @@ function main() {
     cwd: legacyRoot,
     encoding: 'utf8',
     stdio: 'inherit',
-    env: {
-      ...process.env,
-      GITHUB_SHA: expected.sourceCommit,
-      GITHUB_REF_NAME: 'legacy-green-v23'
-    }
+    env: { ...process.env, GITHUB_SHA: expected.sourceCommit, GITHUB_REF_NAME: 'legacy-green-v23' }
   });
   assert(child.error == null, 'could not start Green geometry audit CLI');
   assert(child.status === 0, 'Green geometry audit CLI exited with status ' + child.status);
@@ -105,6 +134,8 @@ function main() {
   assert(report.run?.determinismCheck?.identical === true, 'repeat-render signatures are not identical');
   assert(Array.isArray(report.run?.externalRequests) && report.run.externalRequests.length === 0,
     'browser attempted external network requests');
+  assert(report.run?.stepAudit?.enabled === false && report.run.stepAudit.disabledByRequest === true,
+    'full-corpus run must explicitly disable per-step tracing');
   assert(Number.isInteger(report.pageCount) && report.pageCount > 0, 'no pages rendered');
 
   const fontPreflight = report.geometry?.fontPreflight;
@@ -117,10 +148,8 @@ function main() {
     'decision ledger does not match DOM blocks');
   const textAudit = report.geometry?.textConservationAudit;
   assert(textAudit?.available === true, 'source-to-rendered text conservation audit unavailable');
-  assert(textAudit.missingSourceParagraphCount === 0 &&
-    textAudit.textMismatchCount === 0 &&
-    textAudit.renderedIdsWithoutSourceCount === 0 &&
-    textAudit.headingAudit?.missingCount === 0 &&
+  assert(textAudit.missingSourceParagraphCount === 0 && textAudit.textMismatchCount === 0 &&
+    textAudit.renderedIdsWithoutSourceCount === 0 && textAudit.headingAudit?.missingCount === 0 &&
     textAudit.headingAudit?.mismatchCount === 0,
     'text conservation reported missing/mismatched paragraphs or headings');
   assert(report.runtime?.pageErrors?.length === 0, 'browser page errors were reported');
@@ -139,7 +168,7 @@ function main() {
     renderedIdsWithoutSource: textAudit.renderedIdsWithoutSourceCount,
     headingAudit: textAudit.headingAudit ?? null,
     fontPreflight,
-    externalRequests: report.run.externalRequests.length,
+    externalRequestCount: report.run.externalRequests.length,
     deterministicRepeat: report.run.determinismCheck.identical,
     browserPageErrors: report.runtime.pageErrors.length,
     browserConsoleErrors: report.runtime.consoleErrors?.length ?? null,
@@ -154,24 +183,16 @@ function main() {
     runner: 'tools/legacy-runner/run-green-long-corpus.cjs',
     targetRustCommit: process.env.RUST_TARGET_COMMIT || process.env.GITHUB_SHA || null,
     legacy: {
-      repository: 'SUGINACH/Tora_Book_Typesetter_Green',
-      profile: 'legacy-green-v23',
-      commit: actualCommit,
-      inputPath: expected.inputPath,
-      inputSha256: sha256File(inputPath),
-      settingsPath: expected.settingsPath,
-      settingsSha256: sha256File(settingsPath),
-      geometryAuditCliPath: expected.cliPath,
-      geometryAuditCliSha256: sha256File(cliPath),
-      fontCss: expected.fontCss
+      repository: 'SUGINACH/Tora_Book_Typesetter_Green', profile: 'legacy-green-v23', commit: actualCommit,
+      inputPath: expected.inputPath, inputSha256: sha256File(inputPath),
+      settingsPath: expected.settingsPath, settingsSha256: sha256File(settingsPath),
+      geometryAuditCliPath: expected.cliPath, geometryAuditCliSha256: sha256File(cliPath),
+      offlineCliSha256: sha256File(offlineCliPath), fontCss: expected.fontCss
     },
     environment: {
-      node: process.version,
-      playwright: playwrightVersion,
-      chromium: browser.stdout.trim(),
-      network: 'offline-enforced by pinned geometry-audit CLI',
-      viewport: report.run.viewport,
-      timeoutMs: 900000
+      node: process.version, playwright: playwrightVersion, chromium: browser.stdout.trim(),
+      network: 'offline-enforced by an isolated Playwright route guard; only local renderer origin, data:, blob: and about: are allowed',
+      viewport: report.run.viewport, timeoutMs: 900000
     },
     measured,
     interpretation: 'Independent measured Green V23 full-corpus baseline. Do not compare or merge its values with Orange V23, Gold V21, Yellow V10 or IMUD V20.x.'
@@ -184,9 +205,5 @@ function main() {
   process.stdout.write('Manifest: ' + relative(manifestPath) + '\n');
 }
 
-try {
-  main();
-} catch (error) {
-  process.stderr.write(String(error && (error.stack || error)) + '\n');
-  process.exitCode = 1;
-}
+try { main(); }
+catch (error) { process.stderr.write(String(error && (error.stack || error)) + '\n'); process.exitCode = 1; }
