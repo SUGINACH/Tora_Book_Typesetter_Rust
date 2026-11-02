@@ -353,6 +353,7 @@ async function main() {
   const offlineFonts = prepareOfflineFonts();
   const checkerPath = path.join(legacyRoot, expected.checkerPath);
   const checkerSha256 = sha256File(checkerPath);
+  const checker = fs.readFileSync(checkerPath, 'utf8');
   const text = fs.readFileSync(inputPath, 'utf8');
   const { server, url } = await startServer();
   const variants = [];
