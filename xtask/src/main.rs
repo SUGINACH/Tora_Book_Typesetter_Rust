@@ -862,10 +862,15 @@ fn has_static_repository_root_binding(tokens: &[JsToken], name: &str) -> bool {
                     matches!(
                         token,
                         JsToken::Identifier(value)
-                            if value == "__dirname" || value == "fileURLToPath" || value == "cwd"
+                            if value == "__dirname" || value == "fileURLToPath"
                     ) || matches!(token, JsToken::String(value) if value == ".")
                 });
-                if path_resolve && known_anchor {
+                let process_cwd = initializer.windows(3).any(|window| {
+                    matches!(window[0], JsToken::Identifier(ref value) if value == "process")
+                        && window[1] == JsToken::Punct('.')
+                        && matches!(window[2], JsToken::Identifier(ref value) if value == "cwd")
+                });
+                if (path_resolve && known_anchor) || process_cwd {
                     return true;
                 }
             }
@@ -2241,6 +2246,16 @@ mod tests {
         "#;
         let dependencies = extract_asset_dependencies("scripts/layout-ab.mjs", "javascript", javascript);
         assert!(dependencies.is_empty());
+    }
+
+    #[test]
+    fn path_join_resolves_process_working_directory_root() {
+        let javascript = br#"
+            const root = process.cwd();
+            fs.readFileSync(path.join(root, 'selfhost-fonts', 'google-fonts-selfhost.css'), 'utf8');
+        "#;
+        let dependencies = extract_asset_dependencies("tools/geometry-audit-cli.js", "javascript", javascript);
+        assert!(dependencies.contains(&"local:selfhost-fonts/google-fonts-selfhost.css".to_string()));
     }
 
     #[test]
