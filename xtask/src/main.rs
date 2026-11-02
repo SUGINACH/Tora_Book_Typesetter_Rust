@@ -2057,8 +2057,9 @@ fn sha256(input: &[u8]) -> [u8; 32] {
 mod tests {
     use super::{
         apply_runner_evidence_rows, classify, extract_asset_dependencies, hex, json_string,
-        normalize_asset_reference, ownership_for, parse_runner_evidence_line,
-        resolve_local_asset_path, sha256, status_for, FileRecord, SourceSpec,
+        has_static_repository_root_binding, normalize_asset_reference, ownership_for,
+        parse_runner_evidence_line, resolve_local_asset_path, sha256, status_for,
+        tokenize_javascript, FileRecord, SourceSpec,
     };
     use std::collections::BTreeSet;
     use std::path::PathBuf;
