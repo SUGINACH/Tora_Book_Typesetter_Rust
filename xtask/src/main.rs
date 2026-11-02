@@ -637,21 +637,19 @@ fn is_regex_literal_start(bytes: &[u8], slash_index: usize) -> bool {
             {
                 start -= 1;
             }
-            matches!(
-                &bytes[start..previous],
-                b"return"
-                    | b"throw"
-                    | b"case"
-                    | b"delete"
-                    | b"void"
-                    | b"typeof"
-                    | b"instanceof"
-                    | b"in"
-                    | b"of"
-                    | b"yield"
-                    | b"await"
-                    | b"else"
-            )
+            let keyword = &bytes[start..previous];
+            keyword == b"return"
+                || keyword == b"throw"
+                || keyword == b"case"
+                || keyword == b"delete"
+                || keyword == b"void"
+                || keyword == b"typeof"
+                || keyword == b"instanceof"
+                || keyword == b"in"
+                || keyword == b"of"
+                || keyword == b"yield"
+                || keyword == b"await"
+                || keyword == b"else"
         }
     }
 }
