@@ -247,9 +247,10 @@ async function runOnce(browser, baseUrl, text, settings, checker, variant, attem
       }).length;
       if (strayDividerCount) issues.push({ type: 'STRAY_DIVIDER', count: strayDividerCount });
       const counts = issues.reduce((result, issue) => {
-        result[issue.type] = (result[issue.type] || 0) + (issue.count || 1);
+        result[issue.type] = (result[issue.type] || 0) + 1;
         return result;
       }, {});
+      if (strayDividerCount) counts.STRAY_DIVIDER = strayDividerCount;
       const pages = Array.from(document.querySelectorAll('#book-container .a4-page'));
       const round = value => Math.round(value * 64) / 64;
       const geometry = pages.map((page, pageIndex) => {
@@ -295,6 +296,8 @@ async function runOnce(browser, baseUrl, text, settings, checker, variant, attem
       pageCount: audit.pageCount,
       counts: audit.counts,
       issues: audit.issues,
+      informationalCount: audit.informationalCount,
+      strayDividerCount: audit.strayDividerCount,
       tokenCount: audit.tokenCount,
       paragraphCount: audit.paragraphCount,
       missingText: audit.missingText,
@@ -305,7 +308,7 @@ async function runOnce(browser, baseUrl, text, settings, checker, variant, attem
     return {
       attempt,
       pageCount: audit.pageCount,
-      issueCount: audit.issues.length,
+      issueCount: Object.values(audit.counts).reduce((sum, count) => sum + count, 0),
       issueCounts: audit.counts,
       informationalCount: audit.informationalCount,
       strayDividerCount: audit.strayDividerCount,
