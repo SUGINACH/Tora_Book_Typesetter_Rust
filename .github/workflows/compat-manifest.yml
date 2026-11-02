@@ -119,6 +119,7 @@ jobs:
             --out artifacts/legacy-compatibility-manifest-second.json
           diff -u artifacts/legacy-compatibility-manifest-first.json artifacts/legacy-compatibility-manifest-second.json
           python3 - <<'PY'
+          import hashlib
           import json
           import re
           from pathlib import Path
@@ -169,7 +170,57 @@ jobs:
               assert (record["repository"], record["commit"]) in actual_sources, f"record {index} is outside the pinned source set"
               if record["status"] == "verified-executable":
                   assert record["verificationEvidence"], f"record {index} claims execution without runner evidence"
-          font_records = [record for record in records if record["kind"] == "font"]
+          source_roots = {
+              "legacy-orange-v23": Path("legacy/orange"),
+              "legacy-green-v23": Path("legacy/green"),
+              "legacy-gold-v21": Path("legacy/gold"),
+              "legacy-yellow-v10": Path("legacy/yellow"),
+              "legacy-imud-v20x": Path("legacy/imud"),
+              "requirements-docs": Path("legacy/docs"),
+          }
+          source_profile_by_identity = {
+              (item["repository"], item["commit"]): item["owningProfile"]
+              for item in manifest["sources"]
+          }
+          active_statuses = {"verified-data", "verified-executable"}
+          active_records = [record for record in records if record["status"] in active_statuses]
+          for index, record in enumerate(records):
+              fixtures = record["parityFixtures"]
+              if record["status"] in active_statuses:
+                  assert fixtures, f"active record {record['compatId']} has no parity fixture"
+              for fixture in fixtures:
+                  assert "@" in fixture and ":" in fixture, f"fixture reference is not profile-pinned: {fixture}"
+                  repository, remainder = fixture.split("@", 1)
+                  commit, fixture_path = remainder.split(":", 1)
+                  identity = (repository, commit)
+                  assert identity in source_profile_by_identity, f"fixture references an unpinned source: {fixture}"
+                  fixture_profile = source_profile_by_identity[identity]
+                  assert fixture_profile == record["owningProfile"], f"cross-profile fixture borrowing: {record['compatId']} -> {fixture}"
+                  assert (fixture_profile, fixture_path) in record_paths, f"fixture record missing from manifest: {fixture}"
+                  root = source_roots[fixture_profile]
+                  assert (root / fixture_path).is_file(), f"fixture file missing from exact source checkout: {fixture}"
+              if record["status"] in active_statuses:
+                  root = source_roots[record["owningProfile"]]
+                  source_file = root / record["sourcePath"]
+                  assert source_file.is_file(), f"active source file missing: {record['compatId']}"
+                  actual_sha256 = hashlib.sha256(source_file.read_bytes()).hexdigest()
+                  assert actual_sha256 == record["sourceSha256"], f"active source hash changed: {record['compatId']}"
+              if record["status"] in active_statuses and record["kind"] == "data":
+                  assert "DATA-ROUNDTRIP" in record["testIds"], f"active data record lacks DATA-ROUNDTRIP: {record['compatId']}"
+              if record["status"] in active_statuses and record["kind"] == "settings":
+                  assert "SETTINGS-ROUNDTRIP" in record["testIds"], f"active settings record lacks SETTINGS-ROUNDTRIP: {record['compatId']}"
+              if record["status"] in active_statuses and record["kind"] == "asset":
+                  assert "ASSET-REFERENCE-CLOSURE" in record["testIds"], f"active asset record lacks ASSET-REFERENCE-CLOSURE: {record['compatId']}"
+              if record["status"] in active_statuses and record["kind"] == "baseline":
+                  assert "BASELINE-IDENTITY" in record["testIds"], f"baseline record lacks BASELINE-IDENTITY: {record['compatId']}"
+              if record["status"] in active_statuses and record["kind"] in {"data", "settings", "baseline", "fixture"} and record["sourcePath"].lower().endswith((".json", ".jsonc", ".webmanifest")):
+                  root = source_roots[record["owningProfile"]]
+                  raw = (root / record["sourcePath"]).read_bytes()
+                  parsed = json.loads(raw.decode("utf-8-sig"))
+                  reparsed = json.loads(json.dumps(parsed, ensure_ascii=False))
+                  assert reparsed == parsed, f"JSON fixture round-trip changed the value tree: {record['compatId']}"
+          print(f"Fixture coverage validation passed: {len(active_records)} active records; every active record has an exact same-profile fixture; JSON data/settings/baselines round-trip.")
+                    font_records = [record for record in records if record["kind"] == "font"]
           assert font_records and all(record["status"] == "blocked-license" for record in font_records), "font records must remain blocked pending license review"
           spec_records = [record for record in records if record["owningProfile"] == "requirements-docs" and record["kind"] == "documentation"]
           assert spec_records and all(record["status"] == "spec-only" for record in spec_records), "requirements documentation must remain spec-only"
