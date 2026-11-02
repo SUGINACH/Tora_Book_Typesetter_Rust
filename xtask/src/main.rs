@@ -910,7 +910,9 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                     while cursor < tokens.len() {
                         match &tokens[cursor] {
                             JsToken::Punct(',') | JsToken::Punct(')') => break,
-                            JsToken::Punct('|') if tokens.get(cursor + 1) == Some(&JsToken::Punct('|')) => {
+                            JsToken::Punct('|')
+                                if tokens.get(cursor + 1) == Some(&JsToken::Punct('|')) =>
+                            {
                                 has_fallback = true;
                                 cursor += 1;
                             }
@@ -921,7 +923,8 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                     }
                     if has_fallback {
                         if let Some(value) = fallback {
-                            if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                            if let Some(normalized) = normalize_asset_reference(source_path, value)
+                            {
                                 output.insert(normalized);
                             }
                         }
@@ -1969,11 +1972,8 @@ mod tests {
         let javascript = br#"
             const source = fs.readFileSync(process.argv[2] || 'typesetter.js', 'utf8');
         "#;
-        let dependencies = extract_asset_dependencies(
-            "archive/v20.2-tip/verify_cut.js",
-            "javascript",
-            javascript,
-        );
+        let dependencies =
+            extract_asset_dependencies("archive/v20.2-tip/verify_cut.js", "javascript", javascript);
         assert!(dependencies.contains(&"local:archive/v20.2-tip/typesetter.js".to_string()));
     }
 
