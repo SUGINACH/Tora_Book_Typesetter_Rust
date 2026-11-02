@@ -837,6 +837,49 @@ fn tokenize_javascript(text: &str) -> Vec<JsToken> {
     tokens
 }
 
+fn static_string_expression(tokens: &[JsToken], start: usize) -> Option<(String, usize)> {
+    let mut cursor = start;
+    let mut value = String::new();
+
+    loop {
+        match tokens.get(cursor)? {
+            JsToken::String(part) => {
+                value.push_str(part);
+                cursor += 1;
+            }
+            JsToken::Template(part) if !part.contains("${") => {
+                value.push_str(part);
+                cursor += 1;
+            }
+            JsToken::Identifier(name)
+                if name == "encodeURIComponent"
+                    && tokens.get(cursor + 1) == Some(&JsToken::Punct('(')) =>
+            {
+                let encoded_part = match tokens.get(cursor + 2)? {
+                    JsToken::String(part) => part,
+                    JsToken::Template(part) if !part.contains("${") => part,
+                    _ => return None,
+                };
+                if tokens.get(cursor + 3) != Some(&JsToken::Punct(')')) {
+                    return None;
+                }
+                // URL percent-encoding does not change the repository filename;
+                // retain the decoded Unicode path for filesystem lookup.
+                value.push_str(encoded_part);
+                cursor += 4;
+            }
+            _ => return None,
+        }
+
+        if tokens.get(cursor) == Some(&JsToken::Punct('+')) {
+            cursor += 1;
+            continue;
+        }
+
+        return Some((value, cursor));
+    }
+}
+
 fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, source_path: &str) {
     let tokens = tokenize_javascript(text);
     let mut index = 0usize;
@@ -855,13 +898,21 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                 if matches!(identifier.as_str(), "fetch" | "require" | "import")
                     && next_is_open_call
                 {
-                    if let Some(JsToken::String(value)) = tokens.get(index + 2) {
-                        let normalized = if identifier == "fetch" {
-                            normalize_fetch_reference(source_path, value)
-                        } else {
-                            normalize_module_reference(source_path, value)
-                        };
-                        if let Some(normalized) = normalized {
+                    if identifier == "fetch" {
+                        if let Some((value, end)) = static_string_expression(&tokens, index + 2) {
+                            if matches!(
+                                tokens.get(end),
+                                Some(JsToken::Punct(',') | JsToken::Punct(')'))
+                            ) {
+                                if let Some(normalized) =
+                                    normalize_fetch_reference(source_path, &value)
+                                {
+                                    output.insert(normalized);
+                                }
+                            }
+                        }
+                    } else if let Some(JsToken::String(value)) = tokens.get(index + 2) {
+                        if let Some(normalized) = normalize_module_reference(source_path, value) {
                             output.insert(normalized);
                         }
                     }
@@ -2162,6 +2213,50 @@ mod tests {
         );
         assert!(dependencies.contains(&"local:default_settings.json".to_string()));
         assert!(!dependencies.contains(&"local:tests/features/default_settings.json".to_string()));
+    }
+
+    #[test]
+    fn browser_fetch_concatenation_with_encoded_static_filename_is_an_asset() {
+        let javascript = br#"
+            const set = await (await fetch(
+                'setting_sets/' + encodeURIComponent('קונטרס.json')
+            )).json();
+        "#;
+        let dependencies = extract_asset_dependencies(
+            "tests/features/20-settings-io.test.js",
+            "javascript",
+            javascript,
+        );
+        assert!(dependencies.contains(&"local:setting_sets/קונטרס.json".to_string()));
+        assert!(!dependencies.contains(&"local:tests/features/setting_sets/קונטרס.json".to_string()));
+    }
+
+    #[test]
+    fn browser_fetch_static_template_is_an_asset_but_dynamic_template_is_not() {
+        let javascript = br#"
+            fetch(`setting_sets/קונטרס.json`);
+            fetch(`setting_sets/${selectedPreset}`);
+        "#;
+        let dependencies = extract_asset_dependencies(
+            "tests/features/20-settings-io.test.js",
+            "javascript",
+            javascript,
+        );
+        assert!(dependencies.contains(&"local:setting_sets/קונטרס.json".to_string()));
+        assert_eq!(dependencies.len(), 1);
+    }
+
+    #[test]
+    fn browser_fetch_dynamic_concatenation_is_not_guessed() {
+        let javascript = br#"
+            fetch('setting_sets/' + encodeURIComponent(selectedPreset));
+        "#;
+        let dependencies = extract_asset_dependencies(
+            "tests/features/20-settings-io.test.js",
+            "javascript",
+            javascript,
+        );
+        assert!(dependencies.is_empty());
     }
 
     #[test]
