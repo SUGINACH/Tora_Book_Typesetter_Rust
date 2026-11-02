@@ -777,6 +777,11 @@ fn tokenize_javascript(text: &str) -> Vec<JsToken> {
             continue;
         }
 
+        if current == b'/' && is_regex_literal_start(bytes, index) {
+            index = skip_regex_literal(bytes, index);
+            continue;
+        }
+
         if current == b'\'' || current == b'"' {
             let quote = current;
             index += 1;
@@ -2112,6 +2117,18 @@ mod tests {
         let dependencies =
             extract_asset_dependencies("archive/v20.2-tip/verify_cut.js", "javascript", javascript);
         assert!(dependencies.contains(&"local:archive/v20.2-tip/typesetter.js".to_string()));
+    }
+
+    #[test]
+    fn top_level_regex_literals_with_quotes_do_not_hide_later_fetches() {
+        let javascript = br#"
+            const svgText = '<svg></svg>';
+            const safe = svgText.replace(/preserveAspectRatio="[^"]*"/, 'preserveAspectRatio="none"');
+            fetch('styles.css');
+        "#;
+        let dependencies =
+            extract_asset_dependencies("archive/v20.2-tip/script.js", "javascript", javascript);
+        assert!(dependencies.contains(&"local:archive/v20.2-tip/styles.css".to_string()));
     }
 
     #[test]
