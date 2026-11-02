@@ -2364,13 +2364,25 @@ mod tests {
             Err(error) => panic!("test fixture must be UTF-8: {error}"),
         };
         let tokens = tokenize_javascript(harness_text);
+        let join_index = tokens
+            .iter()
+            .position(|token| token == &super::JsToken::Identifier("join".to_string()))
+            .unwrap_or(tokens.len());
+        assert!(join_index < tokens.len(), "path.join token not found: {tokens:?}");
         assert!(
-            has_static_repository_root_binding(&tokens, "root", tokens.len()),
+            has_static_repository_root_binding(&tokens, "root", join_index),
             "the imported harness root binding was not recognized: {tokens:?}"
+        );
+        assert_eq!(
+            normalize_asset_reference("", "renderer.html"),
+            Some("local:renderer.html".to_string())
         );
         let harness_dependencies =
             extract_asset_dependencies("scripts/runner.mjs", "javascript", harness);
-        assert!(harness_dependencies.contains(&"local:renderer.html".to_string()));
+        assert!(
+            harness_dependencies.contains(&"local:renderer.html".to_string()),
+            "unexpected extracted dependencies: {harness_dependencies:?}"
+        );
     }
 
     #[test]
