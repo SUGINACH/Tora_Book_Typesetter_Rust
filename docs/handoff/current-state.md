@@ -281,3 +281,52 @@ Next: decide whether to add V19/V20.1–V20.5/V21 historical trees as separate m
 - Do not alter historical baselines or tolerances to remove findings. Do not turn the disabled geometry gate into a pass claim.
 - Keep legacy-gold-v21 separate from Orange/Green V23; no V21/V23 merge.
 - Next required upstream work: resolve task 4 source/profile ownership decisions; finish task 5 runner/profile isolation; obtain per-profile baselines for task 6; finish task 8 fixture/provenance ownership and unresolved-asset dispositions. Only then close tasks 9 and 10.
+
+## Continuation checkpoint — Stage A source/runner gates — 2026-11-02
+
+### Current verified task status
+
+- Stage A tasks **1–5 and 7 are closed**.
+- Tasks **6 and 8–10 remain open**. Stage B has not started.
+- Task 4 source mapping is complete. See `docs/provenance/stage-a-source-conflict-disposition-2026-11-02.md` and §15 of `docs/provenance/source-of-truth-matrix.md`.
+- Task 5 isolated legacy runner is accepted on the basis of Orange full-corpus run [41395543056](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395543056), artifact [13119497022](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395543056/artifacts/13119497022).
+
+### Source conflict disposition
+
+- 98 of 115 historical missing paths were found at seven exact historical refs and are candidate recovery sources only. 17 targets remain absent and are now fully assigned to owners: 2 V20.1 docs, 10 V20.3 work_v4 assets, 3 Gold engine scripts, Gold root test-text fallback, and Orange parent-directory fallback.
+- The 17 missing targets are not marked resolved. No placeholder, path substitution, wildcard ignore, or cross-profile borrowing is allowed.
+- User-supplied `typesetter.js`, `decorations.js`, `app.js`, `style.css`, and `index.html` remain an independent unattributed attachment set with exact hashes; do not guess their source branch.
+- V21/Gold remains separate from V23/Green and V23/Orange. The source disposition closes the ownership matrix only; it does not claim archived snapshots are runnable.
+
+### Task 6 — per-profile corpus baselines
+
+- Orange V23 is measured: 639 pages, 39 audit findings (0/11/28), 857 ledger records; full details and hashes are in `legacy/corpus-manifest.json` and `docs/compat/parity-matrix.md`. The active geometry gate was disabled and 39 findings remain; this is not a zero-defect claim.
+- A separate Green V23 full-corpus runner was added at `tools/legacy-runner/run-green-long-corpus.cjs`; it pins Green input/settings/CLI/font CSS hashes, Playwright 1.55.0 and Chromium 140.0.7339.16, and creates a temporary offline-guarded copy of the audit CLI without changing the pinned source file.
+- Green full-corpus run [41399530756](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41399530756) was in progress at the last check. Do not claim success or baseline until its report/artifact is available.
+- Gold V21, Yellow V10 and IMUD V20.x still need independent measured full-corpus/profile baselines. Never inherit Orange or Green metrics/tolerances.
+
+### Task 8 — manifest fixture coverage
+
+- Manifest artifact [13120725421](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41398058452/artifacts/13120725421): 18,854 records; all have owner, migration rule, test IDs and acceptance criteria; 140 currently have explicit `parityFixtures`.
+- 18,714 records have no explicit `parityFixtures`: 17,620 are blocked-license fonts, 704 historical-only, 222 spec-only, and 168 active records remain without a fixture (163 verified-data + 5 verified-executable).
+- 163 unresolved local dependency edges remain across 115 unique paths. Source disposition now assigns ownership, but task 8 remains open until fixture ownership is explicit for the 168 active records and dependency closure is resolved or documented per owner.
+
+### Task 9 and 10 dependencies
+
+- Task 9 parity contract is defined, including semantic/typographic/geometric gates, profile-scoped tolerances and no masks. It cannot close before tasks 6 and 8.
+- Four prototype runs on commit `cb3a79a` succeeded: shaping/bidi [41398058230](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41398058230), Tauri [41398058232](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41398058232), PDF Type0/ToUnicode [41398058288](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41398058288), and fixed-point reproducibility in Rust CI. These are feasibility results only. Mixed bidi run segmentation, real WebView IPC round-trip, multi-page PDF/viewer validation and Rust checked fixed-point arithmetic remain incomplete.
+- Task 10 remains open until dependencies 6 and 8 are closed and its remaining experiment acceptance gaps are resolved. No production library has been selected.
+
+### Latest validation / running workflows
+
+- Rust CI on `d67b4cf`: [41398132503](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41398132503) — success, all five jobs.
+- Latest Green/Orange runner attempt at the time of this handoff: [41399530756](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41399530756) — in progress at last check.
+- After any new commit, use the newest workflow run on that exact SHA; earlier queued/cancelled attempts are not acceptance evidence.
+
+### Non-negotiable continuation rules
+
+- Do not start Stage B.
+- Do not change baselines or tolerances to hide findings.
+- Do not merge V21 and V23 code, fixtures, baselines or algorithms.
+- Keep legacy repositories read-only; do not push changes to them.
+- Never mark a workflow, profile baseline, fixture or parity gate passed without its exact report/artifact and pinned source/input/config/environment hashes.
