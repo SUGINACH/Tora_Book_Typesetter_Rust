@@ -192,8 +192,9 @@ async function runOnce(browser, baseUrl, text, settings, checker, variant, attem
     const fontPreflight = await page.evaluate(async families => {
       const results = await Promise.all(families.map(async family => {
         try {
-          await document.fonts.load('16px "' + family.replace(/"/g, '') + '"');
-          return { family, loaded: document.fonts.check('16px "' + family.replace(/"/g, '') + '"') };
+          const loadedFaces = await document.fonts.load('16px "' + family.replace(/"/g, '') + '"');
+          const checked = document.fonts.check('16px "' + family.replace(/"/g, '') + '"');
+          return { family, loadedFaceCount: loadedFaces.length, loaded: loadedFaces.length > 0 && checked };
         } catch (error) {
           return { family, loaded: false, error: String(error) };
         }
