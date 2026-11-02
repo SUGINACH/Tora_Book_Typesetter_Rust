@@ -327,6 +327,22 @@ fn ownership_for(
             "app-core".to_string(),
             "replace with immutable typed jobs and explicit application state; preserve profile settings".to_string(),
         )
+    } else if lower == "engine-inputs.js" || lower.ends_with("/engine-inputs.js") {
+        (
+            "legacy-engine-input-adapter".to_string(),
+            "engine-core".to_string(),
+            "preserve profile-specific input parsing and token/source identity; do not merge V10/V21/V23 behavior".to_string(),
+        )
+    } else if lower.starts_with("tests/")
+        || lower == "test-suite.js"
+        || lower.ends_with("/test-suite.js")
+        || (lower.starts_with("scripts/") && (lower.contains("test") || lower.contains("audit")))
+    {
+        (
+            "legacy-profile-test-harness".to_string(),
+            "compat-test-harness".to_string(),
+            "port the test intent into deterministic profile-scoped fixtures; never share V21 and V23 fixtures implicitly".to_string(),
+        )
     } else if lower == "index.html"
         || lower.ends_with("/index.html")
         || lower == "renderer.html"
@@ -427,6 +443,7 @@ fn ownership_for(
             | "legacy-renderer-adapter"
             | "audit"
             | "xtask"
+            | "compat-test-harness"
     );
     if (active_status || executable_owner) && kind != "font" {
         fixtures.push(profile_fixture);
@@ -479,8 +496,19 @@ fn tests_for(
         );
     }
     if kind == "data" {
+        let mut test_ids = vec![
+            "SRC-PIN-HASH".to_string(),
+            "DATA-ROUNDTRIP".to_string(),
+            "PROFILE-REPLAY".to_string(),
+        ];
+        if owner == "asset-registry" {
+            test_ids.push("ASSET-REFERENCE-CLOSURE".to_string());
+        }
+        if owner == "engine-core::decorations" {
+            test_ids.push("SEMANTIC-CONSERVATION".to_string());
+        }
         return (
-            vec!["SRC-PIN-HASH".to_string(), "DATA-ROUNDTRIP".to_string(), "PROFILE-REPLAY".to_string()],
+            test_ids,
             "Profile-owned JSON data is parsed and losslessly round-tripped; its exact source file is retained as a fixture and is never substituted across profiles.".to_string(),
         );
     }
