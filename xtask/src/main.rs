@@ -2217,7 +2217,7 @@ mod tests {
 
     #[test]
     fn browser_fetch_concatenation_with_encoded_static_filename_is_an_asset() {
-        let javascript = br#"
+        let javascript = r#"
             const set = await (await fetch(
                 'setting_sets/' + encodeURIComponent('קונטרס.json')
             )).json();
@@ -2225,7 +2225,7 @@ mod tests {
         let dependencies = extract_asset_dependencies(
             "tests/features/20-settings-io.test.js",
             "javascript",
-            javascript,
+            javascript.as_bytes(),
         );
         assert!(dependencies.contains(&"local:setting_sets/קונטרס.json".to_string()));
         assert!(!dependencies.contains(&"local:tests/features/setting_sets/קונטרס.json".to_string()));
@@ -2233,14 +2233,14 @@ mod tests {
 
     #[test]
     fn browser_fetch_static_template_is_an_asset_but_dynamic_template_is_not() {
-        let javascript = br#"
+        let javascript = r#"
             fetch(`setting_sets/קונטרס.json`);
             fetch(`setting_sets/${selectedPreset}`);
         "#;
         let dependencies = extract_asset_dependencies(
             "tests/features/20-settings-io.test.js",
             "javascript",
-            javascript,
+            javascript.as_bytes(),
         );
         assert!(dependencies.contains(&"local:setting_sets/קונטרס.json".to_string()));
         assert_eq!(dependencies.len(), 1);
@@ -2248,13 +2248,13 @@ mod tests {
 
     #[test]
     fn browser_fetch_dynamic_concatenation_is_not_guessed() {
-        let javascript = br#"
+        let javascript = r#"
             fetch('setting_sets/' + encodeURIComponent(selectedPreset));
         "#;
         let dependencies = extract_asset_dependencies(
             "tests/features/20-settings-io.test.js",
             "javascript",
-            javascript,
+            javascript.as_bytes(),
         );
         assert!(dependencies.is_empty());
     }
