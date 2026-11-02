@@ -354,3 +354,12 @@
 - No current unresolved edge was demonstrated to be an extractor false positive. Manifest generation and identity/hash stability passed, but provenance/manifest acceptance remains open pending source-owner decisions.
 - Legacy full-corpus run [41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) remains in progress at full-book corpus comparison. Smoke, renderer, DOM geometry, and ledger steps completed; no full-corpus report/artifacts yet. Leave it running; do not infer a result.
 - Stage A remains open: tasks 1–2 closed, 3–10 open. Stage B not started.
+
+
+### Stage A task 3 — provenance pin verification — 2026-11-02
+
+- Re-fetched all six commit objects and recursive root trees recorded in `docs/provenance/legacy-source-pins.json`. All six commit objects exist and all six actual root-tree SHAs match the recorded tree SHAs exactly.
+- Cross-checked every pinned source file against the corresponding Git tree: **47/47 Git blob SHA-1 values match**, with zero missing paths and zero mismatches (Orange 15, Green 7, Gold 7, Yellow 7, IMUD 6, Typesetter_doc 5).
+- Verified the three lineage reference commits cited by Orange provenance are retrievable: Green import point `0ddaf89010e84e9e999c0e1faef2888994393915`, Gold reference point `31ed2ca830c1868cb2c9157d080f8922d112ff8e`, and common-ancestor reference `5c646c1fc2ea52233be76618463933dbe013cf2c`. Their role/relationship is recorded in `docs/provenance/source-of-truth-matrix.md`; existence checks alone are not presented as a full patch-level port audit.
+- Re-hashed the five files uploaded with this continuation. Their byte lengths and SHA-256 values match all five `unattributedUserAttachments` entries exactly. They remain an independent, unattributed source set; no branch/repository was guessed.
+- Task 3 acceptance criterion (exact reproducible pins and recorded Orange–Green–Gold lineage) is satisfied; task 3 is now checked complete in the 100-task plan. Tasks 1–3 are closed. Tasks 4–10 remain open; Stage B is not started.
