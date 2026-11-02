@@ -1108,7 +1108,11 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                         Some(JsToken::Identifier(name)) if name == "__dirname" => Some(source_path),
                         Some(JsToken::Identifier(name))
                             if name == "SCRIPTS_DIR"
-                                && has_static_repository_root_binding(&tokens, "SCRIPTS_DIR", index) =>
+                                && has_static_repository_root_binding(
+                                    &tokens,
+                                    "SCRIPTS_DIR",
+                                    index,
+                                ) =>
                         {
                             Some(source_path)
                         }
@@ -2311,7 +2315,8 @@ mod tests {
                 return fs.existsSync(path.join(root, 'fonts', 'fonts.json'));
             }
         "#;
-        let dependencies = extract_asset_dependencies("scripts/layout-ab.mjs", "javascript", javascript);
+        let dependencies =
+            extract_asset_dependencies("scripts/layout-ab.mjs", "javascript", javascript);
         assert!(dependencies.is_empty());
     }
 
@@ -2333,8 +2338,11 @@ mod tests {
             const root = process.cwd();
             fs.readFileSync(path.join(root, 'selfhost-fonts', 'google-fonts-selfhost.css'), 'utf8');
         "#;
-        let dependencies = extract_asset_dependencies("tools/geometry-audit-cli.js", "javascript", javascript);
-        assert!(dependencies.contains(&"local:selfhost-fonts/google-fonts-selfhost.css".to_string()));
+        let dependencies =
+            extract_asset_dependencies("tools/geometry-audit-cli.js", "javascript", javascript);
+        assert!(
+            dependencies.contains(&"local:selfhost-fonts/google-fonts-selfhost.css".to_string())
+        );
     }
 
     #[test]
@@ -2345,7 +2353,8 @@ mod tests {
             const { root, startServer } = require('./lib/harness');
             fs.readFileSync(path.join(root, 'renderer.html'), 'utf8');
         "#;
-        let dependencies = extract_asset_dependencies("scripts/runner.mjs", "javascript", javascript);
+        let dependencies =
+            extract_asset_dependencies("scripts/runner.mjs", "javascript", javascript);
         assert!(dependencies.contains(&"local:default_settings.json".to_string()));
         assert!(dependencies.contains(&"local:renderer.html".to_string()));
     }
