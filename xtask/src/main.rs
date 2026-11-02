@@ -617,6 +617,77 @@ enum JsToken {
     Punct(char),
 }
 
+fn is_regex_literal_start(bytes: &[u8], slash_index: usize) -> bool {
+    let mut previous = slash_index;
+    while previous > 0 && bytes[previous - 1].is_ascii_whitespace() {
+        previous -= 1;
+    }
+    if previous == 0 {
+        return true;
+    }
+
+    match bytes[previous - 1] {
+        b'(' | b'[' | b'{' | b',' | b':' | b'=' | b'!' | b'?' | b';' | b'&' | b'|' | b'>' => {
+            true
+        }
+        _ => {
+            let mut start = previous;
+            while start > 0
+                && (bytes[start - 1].is_ascii_alphanumeric()
+                    || bytes[start - 1] == b'_'
+                    || bytes[start - 1] == b'$')
+            {
+                start -= 1;
+            }
+            matches!(
+                &bytes[start..previous],
+                b"return"
+                    | b"throw"
+                    | b"case"
+                    | b"delete"
+                    | b"void"
+                    | b"typeof"
+                    | b"instanceof"
+                    | b"in"
+                    | b"of"
+                    | b"yield"
+                    | b"await"
+                    | b"else"
+            )
+        }
+    }
+}
+
+fn skip_regex_literal(bytes: &[u8], start: usize) -> usize {
+    let mut index = start + 1;
+    let mut escaped = false;
+    let mut in_character_class = false;
+
+    while index < bytes.len() {
+        let current = bytes[index];
+        if escaped {
+            escaped = false;
+        } else if current == b'\\' {
+            escaped = true;
+        } else if current == b'[' {
+            in_character_class = true;
+        } else if current == b']' {
+            in_character_class = false;
+        } else if current == b'/' && !in_character_class {
+            index += 1;
+            while index < bytes.len() && bytes[index].is_ascii_alphabetic() {
+                index += 1;
+            }
+            return index;
+        } else if current == b'\n' || current == b'\r' {
+            return start + 1;
+        }
+        index += 1;
+    }
+
+    start + 1
+}
+
 fn skip_template_literal(bytes: &[u8], start: usize) -> usize {
     let mut index = start + 1;
     let mut expression_depth = 0usize;
@@ -664,6 +735,8 @@ fn skip_template_literal(bytes: &[u8], start: usize) -> usize {
                 index += 1;
             }
             index = (index + 2).min(bytes.len());
+        } else if current == b'/' && is_regex_literal_start(bytes, index) {
+            index = skip_regex_literal(bytes, index);
         } else if current == 0x60 {
             index = skip_template_literal(bytes, index);
         } else if current == b'{' {
@@ -2052,7 +2125,7 @@ mod tests {
               ? `<div>${EXT_ANCHOR_OPTIONS.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</div>`
               : '';
             panel.innerHTML = `
-              <span>${icon} ${name}</span>
+              <span title="${String(name).replace(/"/g, '&quot;')}">${icon} ${name}</span>
               ${anchorRow}
             `;
             fetch('styles.css');
