@@ -291,3 +291,12 @@
 - תיקון false-positive נוסף ב-[commit 1a1ce26](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/1a1ce26b6fefa3db40decc304b86353284e466d6): bare Node module specifiers אינם נחשבים local paths; package-lock.json אינו נסרק כאילו ערכי bin פנימיים של npm הם קבצי repo. נוספו שתי בדיקות יחידה. [CI 41367799248](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367799248) ו-[Manifest scan 41367799385](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367799385) queued בעת הרישום; אין לטעון שהתיקון אומת עד לסיום.
 - [Legacy runner 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין ב-full-corpus comparison; smoke עבר, אין report מלא.
 - מסקנה: extractor המתוקן החזיר הפניות CSS עם רווחים, פתר imports extensionless חד-משמעיים, וכעת מתקן גם false positives של npm. נותרו 136 unresolved אמיתיים לפי snapshot נעול; יש להכריע במדיניות archive ולהשלים את שלושת הסקריפטים החסרים ב-Gold או לתעד את חסרונם במפורש. שלב א נשאר פתוח.
+
+
+### תיקון Formatting לאחר בדיקת npm false positives — 2026-11-02
+
+- [CI 41367799248](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367799248) נכשל בשלושת שערי Quality רק בשלב rustfmt; fixed-point ו-negative unwrap jobs עברו. לא היה כשל קומפילציה/לוגיקה שדווח.
+- לוג rustfmt הצביע על שני אזורים בלבד ב-`xtask/src/main.rs`: תנאי הסינון של package-lock ושתי assert-ים בבדיקה החדשה. תיקון formatting בלבד ב-[commit 4af38d4](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/4af38d4779c8624924af1063e916246bcd71dab3).
+- [Rust CI 41367871354](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367871354) ו-[Manifest scan 41367871327](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367871327) queued על 4af38d4; אלו הריצות הקובעות לתיקון npm false positives.
+- Manifest 41367799385 על 1a1ce26 עדיין in progress אך הוחלף על ידי הסריקה החדשה לאחר תיקון formatting.
+- Legacy runner 41361263075 עדיין full-corpus in progress; אין report.

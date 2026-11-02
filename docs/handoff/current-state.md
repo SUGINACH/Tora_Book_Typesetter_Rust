@@ -117,3 +117,11 @@
 - CI 41363362478 passed all 5 jobs. Follow-up extractor fix [1a1ce26](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/1a1ce26b6fefa3db40decc304b86353284e466d6) excludes bare Node package specifiers from local module resolution and excludes package-lock npm bin entries from repo-local data extraction; two tests added. CI [41367799248](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367799248) and manifest [41367799385](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367799385) pending.
 - Legacy full corpus [41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) remains in progress after smoke passed; no full report yet.
 - Stage A remains open; do not start Stage B.
+
+
+## npm false-positive patch formatting
+
+- Rust CI [41367799248](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367799248) failed only rustfmt on two formatting locations; other two CI jobs passed.
+- Formatting-only fix committed as [4af38d4](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/4af38d4779c8624924af1063e916246bcd71dab3).
+- Validation runs [41367871354](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367871354) and [41367871327](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367871327) queued.
+- Legacy full-corpus run [41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) remains in progress.
