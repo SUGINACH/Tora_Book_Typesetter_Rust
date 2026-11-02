@@ -50,7 +50,7 @@ function buildOfflineAuditCli(sourcePath) {
     "                await route.continue();",
     "            } else {",
     "                externalRequests.push(requestUrl.href);",
-    "                if (process.env.GREEN_EXTERNAL_REQUESTS_PATH) require('node:fs').appendFileSync(process.env.GREEN_EXTERNAL_REQUESTS_PATH, requestUrl.href + '\\n');",
+    "                if (process.env.GREEN_EXTERNAL_REQUESTS_PATH) require('node:fs').appendFileSync(process.env.GREEN_EXTERNAL_REQUESTS_PATH, requestUrl.href + String.fromCharCode(10));",
     "                await route.abort('blockedbyclient');",
     "            }",
     "        });",
@@ -142,21 +142,27 @@ function main() {
   };
   const first = runAttempt(1);
   if (first.status !== 0) {
-    const failurePattern = /Layout infeasible without violating widow\\/orphan rules: no content progress across 2 pages at tokenIndex=(\\d+), pending=(\\d+)\\|([^\\r\\n]*)/;
-    const firstText = String(first.stderr || '') + '\\n' + String(first.stdout || '');
-    const firstMatch = firstText.match(failurePattern);
-    if (firstMatch) {
+    const failurePrefix = 'Layout infeasible without violating widow/orphan rules: no content progress across 2 pages at tokenIndex=';
+    const locateFailure = output => {
+      const markerIndex = output.indexOf(failurePrefix);
+      if (markerIndex < 0) return null;
+      const detail = output.slice(markerIndex + failurePrefix.length).split(String.fromCharCode(10))[0].trimEnd();
+      const pendingMarker = ', pending=';
+      const comma = detail.indexOf(pendingMarker);
+      const pipe = detail.indexOf('|', comma + pendingMarker.length);
+      if (comma < 1 || pipe < 0) return null;
+      const tokenIndex = Number(detail.slice(0, comma));
+      const pendingCount = Number(detail.slice(comma + pendingMarker.length, pipe));
+      if (!Number.isInteger(tokenIndex) || !Number.isInteger(pendingCount)) return null;
+      return { tokenIndex, pendingCount, pendingTextPreview: detail.slice(pipe + 1, pipe + 181) };
+    };
+    const firstText = String(first.stderr || '') + String.fromCharCode(10) + String(first.stdout || '');
+    const firstSignature = locateFailure(firstText);
+    if (firstSignature) {
       const second = runAttempt(2);
-      const secondText = String(second.stderr || '') + '\\n' + String(second.stdout || '');
-      const secondMatch = secondText.match(failurePattern);
-      const signature = match => match ? {
-        tokenIndex: Number(match[1]),
-        pendingCount: Number(match[2]),
-        pendingTextPreview: match[3].slice(0, 180)
-      } : null;
-      const firstSignature = signature(firstMatch);
-      const secondSignature = signature(secondMatch);
-      assert(second.status !== 0 && secondMatch, 'second Green attempt did not reproduce the same layout-infeasible class');
+      const secondText = String(second.stderr || '') + String.fromCharCode(10) + String(second.stdout || '');
+      const secondSignature = locateFailure(secondText);
+      assert(second.status !== 0 && secondSignature, 'second Green attempt did not reproduce the same layout-infeasible class');
       assert(JSON.stringify(firstSignature) === JSON.stringify(secondSignature), 'Green layout-infeasible signature was not deterministic');
       assert(first.externalRequests.length === 0 && second.externalRequests.length === 0, 'Green failure attempts tried external network requests');
       fs.writeFileSync(failureLogPath, [
