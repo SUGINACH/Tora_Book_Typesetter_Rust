@@ -136,4 +136,66 @@ jobs:
             legacy/green/artifacts/rust-green-long-report.json
             legacy/green/artifacts/rust-green-long-summary.md
           if-no-files-found: warn
+  legacy-gold-v21-chapters:
+    name: Pinned Gold V21 / Chromium offline 79-chapter measurement
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout Rust target
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
+      - name: Checkout exact Gold V21 source commit
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/Tora_Book_Typesetter_Gold
+          ref: a444d34ccad30fd5ed0d6fd3873adbe9c23cb7e0
+          path: legacy/gold
+          persist-credentials: false
+
+      - name: Setup pinned Node 22.23.4
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+
+      - name: Install exact Gold package-lock dependencies
+        working-directory: legacy/gold
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: legacy/gold
+        run: npx playwright install --with-deps chromium
+
+      - name: Syntax-check Gold profile runner
+        run: node --check tools/legacy-runner/run-gold-v21-chapters.cjs
+
+      - name: Run pinned Gold V21 79-chapter harness with offline guard
+        shell: bash
+        env:
+          RUST_TARGET_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory legacy/gold > /tmp/gold-v21-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8765/index.html >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8765/index.html >/dev/null
+          node tools/legacy-runner/run-gold-v21-chapters.cjs
+
+      - name: Upload Gold V21 chapter-sliced measurement
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-gold-v21-chapter-measurement
+          path: |
+            artifacts/legacy-gold-v21-chapter-baseline.json
+            artifacts/gold-v21-chapter-results/**
+            artifacts/gold-v21-chapters.log
+            artifacts/gold-v21-determinism.log
+            artifacts/gold-external-requests.txt
+            artifacts/gold-page-errors.txt
+          if-no-files-found: warn
