@@ -896,6 +896,85 @@ fn has_function_parameter(tokens: &[JsToken], name: &str) -> bool {
     false
 }
 
+fn is_write_target_path_join(tokens: &[JsToken], join_index: usize) -> bool {
+    if join_index < 4 {
+        return false;
+    }
+    matches!(
+        tokens.get(join_index - 4),
+        Some(JsToken::Identifier(name))
+            if matches!(
+                name.as_str(),
+                "writeFileSync" | "writeFile" | "appendFileSync" | "appendFile" | "createWriteStream"
+            )
+    ) && tokens.get(join_index - 3) == Some(&JsToken::Punct('('))
+        && tokens.get(join_index - 2) == Some(&JsToken::Identifier("path".to_string()))
+        && tokens.get(join_index - 1) == Some(&JsToken::Punct('.'))
+}
+
+fn static_fetch_prefix_for_array(tokens: &[JsToken], array_name: &str) -> Option<String> {
+    for index in 0..tokens.len() {
+        if tokens.get(index) != Some(&JsToken::Identifier("for".to_string()))
+            || tokens.get(index + 1) != Some(&JsToken::Punct('('))
+        {
+            continue;
+        }
+
+        let mut cursor = index + 2;
+        if matches!(
+            tokens.get(cursor),
+            Some(JsToken::Identifier(kind)) if kind == "const" || kind == "let" || kind == "var"
+        ) {
+            cursor += 1;
+        }
+        let Some(JsToken::Identifier(iterator)) = tokens.get(cursor) else {
+            continue;
+        };
+        let iterator = iterator.clone();
+        if tokens.get(cursor + 1) != Some(&JsToken::Identifier("of".to_string()))
+            || tokens.get(cursor + 2) != Some(&JsToken::Identifier(array_name.to_string()))
+        {
+            continue;
+        }
+
+        let mut close = cursor + 3;
+        while close < tokens.len() && tokens.get(close) != Some(&JsToken::Punct(')')) {
+            close += 1;
+        }
+        if close == tokens.len() || tokens.get(close + 1) != Some(&JsToken::Punct('{')) {
+            continue;
+        }
+
+        let mut brace_depth = 1usize;
+        let mut body_end = close + 2;
+        while body_end < tokens.len() && brace_depth > 0 {
+            match tokens.get(body_end) {
+                Some(JsToken::Punct('{')) => brace_depth += 1,
+                Some(JsToken::Punct('}')) => brace_depth -= 1,
+                _ => {}
+            }
+            body_end += 1;
+        }
+
+        for call in close + 2..body_end.saturating_sub(1) {
+            if tokens.get(call) != Some(&JsToken::Identifier("fetch".to_string()))
+                || tokens.get(call + 1) != Some(&JsToken::Punct('('))
+                || tokens.get(call + 3) != Some(&JsToken::Punct('+'))
+                || tokens.get(call + 4) != Some(&JsToken::Identifier(iterator.clone()))
+                || tokens.get(call + 5) != Some(&JsToken::Punct(')'))
+            {
+                continue;
+            }
+            if let Some(JsToken::String(prefix)) = tokens.get(call + 2) {
+                if !prefix.is_empty() {
+                    return Some(prefix.clone());
+                }
+            }
+        }
+    }
+    None
+}
+
 fn has_static_repository_root_binding(tokens: &[JsToken], name: &str, before: usize) -> bool {
     // A function parameter named "root" is runtime input, not proof of a
     // repository-root alias. Be conservative rather than resolving arbitrary
@@ -1106,6 +1185,7 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                 if identifier == "join"
                     && tokens.get(index.wrapping_sub(1)) == Some(&JsToken::Punct('.'))
                     && tokens.get(index + 1) == Some(&JsToken::Punct('('))
+                    && !is_write_target_path_join(&tokens, index)
                 {
                     let base = match tokens.get(index + 2) {
                         Some(JsToken::Identifier(name)) if name == "__dirname" => Some(source_path),
@@ -1271,6 +1351,12 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                         .iter()
                         .any(|marker| upper.contains(marker))
                         {
+                            let font_file_inventory = upper.contains("FONT_FILES");
+                            let fetch_prefix = if font_file_inventory {
+                                static_fetch_prefix_for_array(&tokens, name)
+                            } else {
+                                None
+                            };
                             let mut cursor = index + 4;
                             let mut depth = 1usize;
                             while cursor < tokens.len() && depth > 0 {
@@ -1278,9 +1364,20 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                                     JsToken::Punct('[') => depth += 1,
                                     JsToken::Punct(']') => depth -= 1,
                                     JsToken::String(value) if depth == 1 => {
-                                        if let Some(normalized) =
+                                        let normalized = if let Some(prefix) = &fetch_prefix {
+                                            normalize_fetch_reference(
+                                                source_path,
+                                                &format!("{prefix}{value}"),
+                                            )
+                                        } else if font_file_inventory {
+                                            // A font basename is not a path by itself. If no
+                                            // static fetch prefix is proven, do not guess its
+                                            // repository location.
+                                            None
+                                        } else {
                                             normalize_asset_reference(source_path, value)
-                                        {
+                                        };
+                                        if let Some(normalized) = normalized {
                                             output.insert(normalized);
                                         }
                                     }
@@ -2248,8 +2345,10 @@ mod tests {
             const markup = `<svg><image href="icons/real.svg"></image></svg>`;
             const PRIORITY_FONT_FILES = ["Alpha-Black.woff2", "Book-Regular.woff2"];
             const assetsToLoad = [{ file: "ornaments.json", type: "ornaments" }];
+            for (const fontFile of PRIORITY_FONT_FILES) {
+                await fetch("fonts/" + fontFile);
+            }
             fetch("fonts/fonts.json");
-            fetch("fonts/" + fontFile);
             import "./side-effect.css";
             import module from "./module.js";
             const helper = require("./helper.cjs");
@@ -2258,8 +2357,8 @@ mod tests {
         let dependencies = extract_asset_dependencies("app.js", "javascript", javascript);
         for expected in [
             "local:icons/real.svg",
-            "local:Alpha-Black.woff2",
-            "local:Book-Regular.woff2",
+            "local:fonts/Alpha-Black.woff2",
+            "local:fonts/Book-Regular.woff2",
             "local:ornaments.json",
             "local:fonts/fonts.json",
             "local:side-effect.css",
@@ -2272,7 +2371,13 @@ mod tests {
                 "missing expected dependency {expected:?} in {dependencies:?}"
             );
         }
-        for rejected in ["local:comment-only.svg", "local:sample.json", "local:fonts"] {
+        for rejected in [
+            "local:comment-only.svg",
+            "local:sample.json",
+            "local:fonts",
+            "local:Alpha-Black.woff2",
+            "local:Book-Regular.woff2",
+        ] {
             assert!(
                 !dependencies.iter().any(|dependency| dependency == rejected),
                 "unexpected dependency {rejected:?} in {dependencies:?}"
@@ -2393,6 +2498,19 @@ mod tests {
         assert!(
             harness_dependencies.contains(&"local:renderer.html".to_string()),
             "unexpected extracted dependencies: {harness_dependencies:?}"
+        );
+    }
+
+    #[test]
+    fn write_file_sync_path_join_is_an_output_not_a_dependency() {
+        let javascript = br#"
+            fs.writeFileSync(path.join(__dirname, 'fuzz_last.json'), JSON.stringify(summary));
+        "#;
+        let dependencies =
+            extract_asset_dependencies("archive/v20.1-tools/fuzz.js", "javascript", javascript);
+        assert!(
+            !dependencies.contains(&"local:archive/v20.1-tools/fuzz_last.json".to_string()),
+            "generated output was misclassified as an input dependency: {dependencies:?}"
         );
     }
 
