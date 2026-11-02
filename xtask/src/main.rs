@@ -2418,7 +2418,9 @@ mod tests {
             javascript.as_bytes(),
         );
         assert!(dependencies.contains(&"local:setting_sets/קונטרס.json".to_string()));
-        assert!(!dependencies.contains(&"local:tests/features/setting_sets/קונטרס.json".to_string()));
+        assert!(
+            !dependencies.contains(&"local:tests/features/setting_sets/קונטרס.json".to_string())
+        );
     }
 
     #[test]
