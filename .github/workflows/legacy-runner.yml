@@ -122,7 +122,7 @@ jobs:
       - name: Capture Green V23 full-corpus baseline or deterministic failure fingerprint
         env:
           LEGACY_SOURCE_COMMIT: e5cde5f194d0d9e9b20fdaa2a742f9bf6e8aec53
-          RUST_TARGET_COMMIT: \${{ github.sha }}
+          RUST_TARGET_COMMIT: ${{ github.sha }}
         run: node tools/legacy-runner/run-green-long-corpus.cjs
 
       - name: Upload Green V23 full-corpus evidence
