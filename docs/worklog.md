@@ -381,3 +381,11 @@
 - Orange/Green share eight test fixture paths: seven have identical blob IDs; one `ornament-geometry-settings.json` differs in six header type values (Orange `ext________2_svg`, Green `none`).
 - This confirms test ownership and expected results must remain profile-specific. Full detail in `docs/provenance/source-of-truth-matrix.md` §12.
 - Task 4 remains open; counts are structural inventory only, not proof of coverage. Every required compatibility behavior still needs explicit owner and test mapping.
+
+
+### Latest workflow state — 2026-11-02 03:02 UTC
+
+- Latest documentation/main commit: `1a0cb91d0df73c22a52be8e0f23f37cf27a3f955`.
+- Code under validation remains `526d6a04508be4145b09efaf25424ca59fb7ef51`; its dedicated Rust CI [41376496424](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41376496424) passed.
+- A docs-triggered Rust CI rerun [41380773019](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41380773019) is in progress. A docs-triggered manifest scan [41380737375](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41380737375) is also in progress; because source code and pinned trees are unchanged, its artifact can serve as a second-run reproducibility comparison against artifact 13111866073 once available.
+- Legacy full-corpus run [41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) remains in progress at the full-book corpus comparison step. The runner's 360-minute timeout remains in force. Do not wait idle, cancel, or infer its final result.
