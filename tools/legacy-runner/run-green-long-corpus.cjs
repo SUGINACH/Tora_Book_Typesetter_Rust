@@ -46,7 +46,7 @@ function prepareOfflineFonts() {
   const expectedCssSha256 = 'eec01e2b2a65ab67ad959625dd7b3640dceeb09a5cee8b7677787a1e89acd229';
   assert(sourceCssSha256 === expectedCssSha256, 'self-hosted Google font CSS hash mismatch');
   const sourceCss = fs.readFileSync(sourceCssPath, 'utf8');
-  const fontUrls = [...sourceCss.matchAll(/url\\(['"]?([^)'"]+)['"]?\\)/g)].map(match => match[1]);
+  const fontUrls = [...sourceCss.matchAll(/url\(['"]?([^)'"]+)['"]?\)/g)].map(match => match[1]);
   assert(fontUrls.length === 38, 'unexpected self-hosted font asset count: ' + fontUrls.length);
   for (const url of fontUrls) {
     assert(!url.includes('..') && !/^https?:/i.test(url), 'self-hosted font CSS contains a non-local asset URL');
@@ -59,7 +59,7 @@ function prepareOfflineFonts() {
   const originalStyleCssSha256 = sha256File(styleCssPath);
   assert(originalStyleCssSha256 === expected.styleCssSha256, 'pinned source style.css hash mismatch');
   let styleCss = fs.readFileSync(styleCssPath, 'utf8');
-  const remoteImport = /^@import\\s+url\\(['"]https:\\/\\/fonts\\.googleapis\\.com\\/css2\\?[^'"]+['"]\\);\\s*$/gm;
+  const remoteImport = /^@import\s+url\(['"]https:\/\/fonts\.googleapis\.com\/css2\?[^'"]+['"]\);\s*$/gm;
   const imports = [...styleCss.matchAll(remoteImport)];
   assert(imports.length === 1, 'expected exactly one Google Fonts @import in pinned style.css');
   styleCss = styleCss.replace(remoteImport, "@import url('selfhost-fonts/google-fonts-selfhost.css');");
