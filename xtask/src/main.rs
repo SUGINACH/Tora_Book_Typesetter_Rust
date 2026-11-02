@@ -2359,7 +2359,11 @@ mod tests {
             const { root, startServer } = require('./lib/harness');
             fs.readFileSync(path.join(root, 'renderer.html'), 'utf8');
         "#;
-        let tokens = tokenize_javascript(std::str::from_utf8(harness).unwrap());
+        let harness_text = match std::str::from_utf8(harness) {
+            Ok(value) => value,
+            Err(error) => panic!("test fixture must be UTF-8: {error}"),
+        };
+        let tokens = tokenize_javascript(harness_text);
         assert!(
             has_static_repository_root_binding(&tokens, "root", tokens.len()),
             "the imported harness root binding was not recognized: {tokens:?}"
