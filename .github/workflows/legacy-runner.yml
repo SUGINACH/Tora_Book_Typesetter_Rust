@@ -102,6 +102,13 @@ jobs:
           ref: e5cde5f194d0d9e9b20fdaa2a742f9bf6e8aec53
           path: legacy/green
           persist-credentials: false
+      - name: Checkout pinned self-hosted Google font source
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/Tora_Book_Typesetter_Orange
+          ref: 0b0ee279464a3db14672cd3f4051275aba5985da
+          path: legacy/offline-fonts
+          persist-credentials: false
 
       - name: Setup Node 22
         uses: actions/setup-node@v4
@@ -153,6 +160,13 @@ jobs:
           repository: SUGINACH/Tora_Book_Typesetter_Gold
           ref: a444d34ccad30fd5ed0d6fd3873adbe9c23cb7e0
           path: legacy/gold
+          persist-credentials: false
+      - name: Checkout pinned self-hosted Google font source
+        uses: actions/checkout@v4
+        with:
+          repository: SUGINACH/Tora_Book_Typesetter_Orange
+          ref: 0b0ee279464a3db14672cd3f4051275aba5985da
+          path: legacy/offline-fonts
           persist-credentials: false
 
       - name: Setup pinned Node 22.23.4
