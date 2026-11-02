@@ -1625,6 +1625,7 @@ fn normalize_asset_reference_impl(
         .trim_matches(|character| character == '"' || character == '\'');
     if value.is_empty()
         || value.starts_with('#')
+        || value.starts_with('<')
         || value.starts_with("data:")
         || value.starts_with("blob:")
         || value.starts_with("javascript:")
@@ -2510,6 +2511,16 @@ mod tests {
         assert!(
             harness_dependencies.contains(&"local:renderer.html".to_string()),
             "unexpected extracted dependencies: {harness_dependencies:?}"
+        );
+    }
+
+    #[test]
+    fn inline_svg_markup_is_not_reported_as_an_external_dependency() {
+        let json = br#"[{"svg":"<?xml version=\\"1.0\\"?><svg xmlns=\\"http://www.w3.org/2000/svg\\"><path d=\\"M0 0\\"/></svg>"}]"#;
+        let dependencies = extract_asset_dependencies("ornaments.json", "data", json);
+        assert!(
+            dependencies.is_empty(),
+            "inline SVG markup must not be reported as a single external URL: {dependencies:?}"
         );
     }
 
