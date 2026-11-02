@@ -456,11 +456,7 @@ fn ownership_for(
     if (active_status || executable_owner) && kind != "font" {
         fixtures.push(profile_fixture);
     }
-    if matches!(
-        owner.as_str(),
-        "settings" | "asset-registry" | "engine-core::decorations"
-    ) && matches!(kind, "settings" | "data" | "asset" | "fixture")
-    {
+    if matches!(kind, "settings" | "data" | "asset") {
         fixtures.push(source_fixture);
     }
     fixtures.sort();
@@ -504,6 +500,20 @@ fn tests_for(
                 "DETERMINISM-REPEAT".to_string(),
             ],
             "Pinned input byte length and SHA-256 must match; replay only with this profile's own settings/fonts; repeated canonical output hashes must be identical.".to_string(),
+        );
+    }
+    if kind == "style"
+        && (source_path.to_ascii_lowercase().contains("font")
+            || source_path.to_ascii_lowercase().starts_with("fonts/"))
+    {
+        return (
+            vec![
+                "SRC-PIN-HASH".to_string(),
+                "FONT-PREFLIGHT".to_string(),
+                "LEGACY-DOM-GEOMETRY".to_string(),
+                "PROFILE-REPLAY".to_string(),
+            ],
+            "Pinned font CSS is loaded in the isolated profile renderer; required faces and glyph coverage are measured without external font requests.".to_string(),
         );
     }
     if kind == "data" {
