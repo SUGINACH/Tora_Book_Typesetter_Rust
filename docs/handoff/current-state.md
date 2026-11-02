@@ -152,3 +152,13 @@
 - [Manifest 41369621509](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369621509) עדיין in_progress ביצירת manifest canonical פעמיים; artifact טרם זמין.
 - [Legacy full corpus 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין in_progress בשלב full-book corpus comparison אחרי smoke מוצלח; timeout 360 דקות. אין report מלא.
 - Stage A פתוח; משימות 1–2 בלבד סגורות. נדרשים manifest edge diff, הכרעה על archive/Gold unresolved ו-full corpus report. אין Stage B ואין שינוי baselines/tolerances.
+
+
+## מצב עדכני — 2026-11-02
+
+- קוד ראשי: [3b4268d](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/3b4268d0e3e806729248aef7bbe0b2d95d1293a2).
+- [Rust CI 41374863123](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41374863123) עבר בכל חמשת ה-jobs על 3b4268d.
+- [Manifest 41374863178](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41374863178) על 3b4268d עדיין in_progress. artifact קודם 73557d4: 18,854 IDs יציבים, 0 source hash changes; asset edges 41,192→40,877; resolved 35,356→35,359; unresolved 413→136. ה-unresolved: 132 archive edges (121 unique paths בשבעה תתי-עצים), 3 Gold scripts חסרים, והפניה אחת fetch ב-test שנפתרה ביחס שגוי. אין להסיק שכל תיקיות archive חסרות.
+- השוואת artifact קודם מצאה גם 15 resolved edges שנעלמו ו-59 unresolved removals שעדיין דרשו review; לכן 73557d4 לא התקבל. תיקוני 3b4268d מוסיפים זיהוי של nested templates, path.join, page.goto, readFileSync fallback, DOM href/src/poster, ו-fetch root semantics ל-browser tests. יש לאשר רק לאחר diff של artifact חדש.
+- [Legacy full corpus 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין in_progress; smoke עבר, full-book comparison טרם הסתיים ואין report/artifacts.
+- Stage A פתוח; tasks 1–2 בלבד סגורות. אין Stage B ואין שינוי baseline/tolerance.
