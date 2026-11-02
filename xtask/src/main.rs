@@ -627,9 +627,7 @@ fn is_regex_literal_start(bytes: &[u8], slash_index: usize) -> bool {
     }
 
     match bytes[previous - 1] {
-        b'(' | b'[' | b'{' | b',' | b':' | b'=' | b'!' | b'?' | b';' | b'&' | b'|' | b'>' => {
-            true
-        }
+        b'(' | b'[' | b'{' | b',' | b':' | b'=' | b'!' | b'?' | b';' | b'&' | b'|' | b'>' => true,
         _ => {
             let mut start = previous;
             while start > 0
