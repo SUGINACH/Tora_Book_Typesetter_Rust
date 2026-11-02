@@ -162,3 +162,13 @@
 - השוואת artifact קודם מצאה גם 15 resolved edges שנעלמו ו-59 unresolved removals שעדיין דרשו review; לכן 73557d4 לא התקבל. תיקוני 3b4268d מוסיפים זיהוי של nested templates, path.join, page.goto, readFileSync fallback, DOM href/src/poster, ו-fetch root semantics ל-browser tests. יש לאשר רק לאחר diff של artifact חדש.
 - [Legacy full corpus 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין in_progress; smoke עבר, full-book comparison טרם הסתיים ואין report/artifacts.
 - Stage A פתוח; tasks 1–2 בלבד סגורות. אין Stage B ואין שינוי baseline/tolerance.
+
+
+## Handoff update — manifest triage 2026-11-02
+
+- Code at scan: [526d6a0](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/526d6a04508be4145b09efaf25424ca59fb7ef51); Rust CI [41376496424](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41376496424) passed.
+- Manifest [41376496462](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41376496462) passed; artifact [13111866073](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41376496462/artifacts/13111866073) compared to baseline 13105540442: records/compatIds 18,854 identical; source hashes unchanged; edges 41,192→40,940; resolved 35,356→35,387; unresolved 413→161. No previously resolved edge was lost.
+- 161 unresolved: IMUD 147 edges / 133 unique assets missing from seven partial archive subtrees; Gold 13 edges / 4 paths (three missing engine scripts + ten references to a missing root-level text fallback); Orange one path escaping repository root. Detailed triage: [asset-edge-triage-41376496462.md](../provenance/asset-edge-triage-41376496462.md).
+- These are not currently classified as extractor false positives. Source-owner decisions/restoration required before manifest/provenance acceptance. No suppressions, baseline changes, or tolerance changes.
+- Legacy full corpus [41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) still in progress at full-book comparison; prior smoke/renderer/DOM/ledger passed; report pending.
+- Stage A: tasks 1–2 closed, 3–10 open. Stage B not started.
