@@ -135,3 +135,12 @@
 - ריצות עדכניות על 218d50a: [Rust CI 41369525393](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525393) queued; [Manifest 41369525487](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525487) pending.
 - [Legacy full corpus 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) עדיין in progress בשלב full-book corpus comparison; smoke עבר, אין report/artifact מלא. להשאיר פעיל.
 - Stage A פתוח; tasks 1–2 בלבד סגורות. אין Stage B, אין baseline/tolerance changes, אין סימון parity/provenance/manifest כהושלם עד לקבלת הראיות.
+
+
+## תיקון fetch asset — 2026-11-02
+
+- ראש קוד extractor: [73557d4](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/73557d41d240698c847e5e4d88fafcf82235e4d3). fetch URL מטופל כ-asset reference; require/import מטופלים כ-module specifiers. זאת בעקבות unit test שהראה שהנתיב fonts/fonts.json הושמט.
+- ב-CI [41369525393](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525393) עברו rustfmt ו-Clippy בכל שלוש הפלטפורמות; 20/21 unit tests עברו. שתי בדיקות שתוקנו קודם (font inventory ו-package-lock external URL) עברו; נותר כשל fetch יחיד שתוקן ב-73557d4.
+- אימות עדכני: [Rust CI 41369621550](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369621550) ו-[Manifest 41369621509](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369621509) pending. Manifest קודם [41369525487](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41369525487) על 218d50a עדיין in_progress אך אינו כולל את תיקון fetch.
+- [Legacy full corpus 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) נשאר in_progress; smoke עבר, אין report מלא.
+- Stage A פתוח; משימות 1–2 בלבד סגורות. אין Stage B, אין שינוי baseline/tolerance.
