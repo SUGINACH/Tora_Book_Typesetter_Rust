@@ -107,3 +107,24 @@ The six repository commits and tree IDs in `legacy-source-pins.json` were re-fet
 The three historical lineage references in Orange's provenance record were also checked for existence: Green import point `0ddaf89010e84e9e999c0e1faef2888994393915`, Gold reference point `31ed2ca830c1868cb2c9157d080f8922d112ff8e`, and common-ancestor reference `5c646c1fc2ea52233be76618463933dbe013cf2c`. This verifies that the referenced commit objects are retrievable; it does not by itself prove all file-level port relationships. Those remain grounded in the pinned Orange provenance document and need file-level lineage evidence where a specific port is material.
 
 The five user-uploaded core files were re-hashed again on 2026-11-02. All five byte lengths and SHA-256 values match the `unattributedUserAttachments` entries in `legacy-source-pins.json` exactly. Their source repository/branch remains unattributed.
+
+
+## 10. Pinned default-settings key-set comparison — 2026-11-02
+
+A structural comparison was run over the root `default_settings.json` in the five executable profiles (Orange, Green, Gold, Yellow, IMUD), each at the exact commit pinned above.
+
+- Key counts: Orange 254; Green 248; Gold 264; Yellow 246; IMUD 264.
+- Union: 267 keys; intersection present in all five profiles: 246 keys.
+- **Zero value conflicts** were found among keys present in more than one profile: every shared key has the same JSON value and type wherever it exists.
+- The remaining 21 differences are key-presence differences, not contradictory values:
+
+| Presence profile(s) | Keys | Classification |
+|---|---|---|
+| Green only | `allow-terminal-residual-fallback=true`; `balance-chapter-end="balance"` | Green-specific engine controls; do not inject into other profiles by default |
+| Orange only | `hdr-h1-title-mode="full"` | Orange-specific header setting |
+| Gold + IMUD only | `aq-enabled`, `aq-line-height`, `aq-line-height-max`, `aq-para-spacing`, `aq-para-spacing-max`, `aq-shared-load`, `aq-word-spacing`, `aq-word-spacing-max`, `aq-word-spacing-max-diff`, `aq-word-spacing-min`, `aq-word-spacing-threshold` | AQ controls present in the byte-identical Gold/IMUD default file; absent from Orange/Green/Yellow |
+| Orange + Gold + IMUD | `h2-orn-scope="both"`, `heading-divider-h3` through `heading-divider-h6="none"`, `shaar-main-divider="none"`, `shaar-sub-divider="none"` | Shared subset of decoration/divider defaults; absent from Green/Yellow |
+
+**Interpretation rule:** a missing key is not equivalent to `false`, zero, empty string, or another profile's value. Preserve the distinction between present, explicit null/zero/false, and absent. The fact that Gold and IMUD share the same default-settings blob is not permission to merge their executable behavior.
+
+This is a first settings-data conflict pass for task 4, not completion of the full source-of-truth matrix. JSON presets, font/ornament assets, tests, and other profile-specific data still require inventory and owner mapping.
