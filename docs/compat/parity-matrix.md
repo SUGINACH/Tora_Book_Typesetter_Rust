@@ -70,6 +70,8 @@ The abbreviated SHAs above are display-only. The full 40-character commits and f
 | `FONT-PREFLIGHT` | Font/CSS/settings records | Every required font face loads; zero failed required faces; alias resolution and glyph coverage reported; license separately cleared |
 | `SETTINGS-ROUNDTRIP` | Settings/preset records | Unknown keys preserved losslessly; serialized normalized settings stable; no cross-profile fallback |
 | `ASSET-REFERENCE-CLOSURE` | SVG/CSS/HTML/JSON asset records | Every local dependency resolves to a pinned asset; zero unapproved external requests, path traversal or missing references |
+| `DATA-ROUNDTRIP` | Profile-owned JSON data records | JSON parses under the pinned schema policy and parse→serialize→parse preserves the complete value tree and unknown keys; source bytes remain SHA-256 pinned |
+| `BASELINE-IDENTITY` | Historical/profile baseline records | Baseline bytes/schema/hash are immutable and profile-scoped; updates require an explicit reviewed baseline migration |
 | `LEGACY-DOM-GEOMETRY` | DOM/CSS/decoration records | Measured page/column/block bounds available; no clipping/overflow; cross-renderer epsilon explicit and unit-bearing |
 | `PDF-UNICODE-EXTRACTION` | PDF export records | Independent extractor returns exact logical Unicode text, Hebrew RTL order, niqqud and punctuation from embedded Type0/ToUnicode fonts |
 | `SPEC-TO-ADR` | Spec-only documentation records | Every accepted requirement links to a feature/test or ADR; documentation alone never marks executable parity passed |
@@ -85,6 +87,7 @@ The IDs are stable test contracts. A manifest record may list multiple IDs. Unti
 5. An unexplained fallback, missing font, dropped setting, nondeterministic tie-break or missing ledger entry fails the relevant gate.
 6. A known conflict is not silently converted into a pass. It receives status `conflict`, an ADR, a named migration rule and a fixture that demonstrates the chosen behavior.
 7. Visual similarity cannot compensate for semantic loss; semantic equality cannot compensate for a documented clipping/overflow defect.
+8. Every `verified-data` or `verified-executable` manifest record must have at least one exact profile-scoped fixture reference. `blocked-license`, `historical-only` and `spec-only` records may omit fixtures only while retaining that explicit disposition.
 
 ## 6. First measured run — Orange smoke
 
