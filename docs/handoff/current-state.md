@@ -227,3 +227,28 @@
 - Stage A tasks 1–3 closed; task 4 remains open with substantial but partial provenance mapping; tasks 5–10 open. No Stage B. No baseline/tolerance change. V21 and V23 remain separate.
 
 Next: decide whether to add V19/V20.1–V20.5/V21 historical trees as separate manifest profiles; obtain or explicitly waive the 17 unresolved targets; then continue the remaining Stage A gates.
+
+
+## Handoff update — extractor and Legacy runner checkpoint, 2026-11-02
+
+### Current code and validation
+
+- Main extractor fix: [3a86af8](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/3a86af841aa1321160eae821518b7a52a2fa5543). It rejects inline SVG markup fragments as candidate asset paths. This closes the unit-test failure from e80dda4 (`local:></svg>`).
+- [Rust CI 41395166264](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395166264) passed all five jobs on 3a86af8.
+- [Manifest 41395166090](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395166090), artifact [13118628003](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395166090/artifacts/13118628003), passed. Exact comparison against baseline 13105540442:
+  - 18,854 records; all compatIds identical; zero sourceSha256 changes.
+  - 18,489 dependency edges; 18,199 resolved; 163 unresolved edges / 115 unique paths.
+  - Baseline: 41,192 edges / 35,356 resolved / 413 unresolved. The reduction removes false edges from font metadata/duplicate catalogs and inline SVG markup; static active font fetches remain represented. Full edge-level forensic review: `docs/provenance/asset-edge-triage-41395166090.md`.
+- Current unresolved inventory: IMUD 149 edges / 110 paths across seven archive subtrees; Gold 13 edges / 4 paths; Orange 1 edge / 1 path. Historical audit found 98/115 targets in their exact historical commits and 17 not found there. Do not mark the 98 as resolved in the primary profile, do not add placeholders, and do not merge historical profiles.
+
+### Legacy runner
+
+- [Previous full-corpus run 41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) is now **cancelled**, not in progress. It reached the full-corpus step after successful smoke, then was cancelled after six hours. Smoke evidence: six pages; geometry audit; decision diagnostics PASS; ledger parity PASS; parenthesis diagnostics complete 2/2; determinism PASS; fonts loaded; no external requests. No full-corpus report was produced.
+- Runner improvement commit: [45bbc56](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/45bbc56d278fdc95311b59a918c899409844a517). The full-document replay now passes `--step-audit-disabled`, while retaining full-model export, geometry audit, decision ledger, text-conservation audit and repeat-check determinism. The runner asserts that this policy was applied in the report. Detailed causal step tracing remains available in targeted fixture runs.
+- New run [41395543056](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395543056) is in progress at the pinned Chromium install step at last check. Do not infer a result; no report/artifact yet.
+
+### Work state
+
+- Stage A tasks 1–3 closed. Tasks 4–10 remain open. Task 4 includes settings/preset/test mapping and exact historical archive-source audit but still needs owner decisions for the 17 absent targets and disposition of the 98 historical candidates.
+- Task 5 smoke is proven; full-corpus run remains open. Task 6 has pinned input/config/environment hashes but awaits full-corpus report. Tasks 7–8 have deterministic manifest generation and extractor CI, but provenance acceptance remains open. Tasks 9–10 remain open.
+- Stage B not started. No baseline/tolerance changes. V21/Gold and V23/Orange/Green remain separate; do not merge them.
