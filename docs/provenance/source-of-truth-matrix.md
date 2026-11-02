@@ -128,3 +128,27 @@ A structural comparison was run over the root `default_settings.json` in the fiv
 **Interpretation rule:** a missing key is not equivalent to `false`, zero, empty string, or another profile's value. Preserve the distinction between present, explicit null/zero/false, and absent. The fact that Gold and IMUD share the same default-settings blob is not permission to merge their executable behavior.
 
 This is a first settings-data conflict pass for task 4, not completion of the full source-of-truth matrix. JSON presets, font/ornament assets, tests, and other profile-specific data still require inventory and owner mapping.
+
+
+## 11. Shared root data/assets — Git blob identity pass — 2026-11-02
+
+The five pinned executable repository trees were compared by path and Git blob SHA-1. The following root-level data assets exist in all five profiles and have identical blob IDs in Orange, Green, Gold, Yellow and IMUD:
+
+- `assets_manifest.json`
+- `fonts/fonts.json` and `fonts/fonts/fonts.json`
+- `header_ornaments.json`
+- `note_rules.json`
+- `ornaments_left_right.json`
+- `ornaments_up_down.json`
+- `section_dividers.json`
+- `shaar_back.json`
+- `shaar_main.json`
+- `shaar_sub.json`
+
+The following font inventory files are also byte-identical across all five pinned trees: `fonts-def.css`, `fonts-extended.css`, `fonts-extended.json`, and `fonts-priority.json`.
+
+The root font file `Guttman-Rashi-Normal.woff2` is present with the same blob ID in Orange and Yellow; it is absent at the root in Green, Gold and IMUD. This is a path/presence observation only; other copies may exist under nested font directories and are part of the complete font inventory.
+
+**Interpretation:** these exact shared blobs are reusable provenance facts, not evidence that the owning engines or their runtime font-loading behavior are interchangeable. The core executable files still have different blob IDs across the profiles. Do not deduplicate or remove profile-specific copies without a separate license, path-resolution and runtime-dependency review.
+
+This section is a bounded root-data comparison, not a complete inventory of nested presets, archive assets, tests or all font binaries.
