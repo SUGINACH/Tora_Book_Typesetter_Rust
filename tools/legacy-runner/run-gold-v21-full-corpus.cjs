@@ -14,6 +14,9 @@ const expected = {
   settingsPath: 'default_settings.json',
   settingsSha256: '5ec4f40f41de5f1c8cbfcaa942b8703a0311cd30610c4346a22ab9f8d0efcc17',
   styleCssSha256: '24381dc5a5077436877a9731039e90085f4adf9621296d9424a9a53afb50275f',
+  rendererBlobSha1: 'e3cf01b94036cbfbb99197346dc8b75d24dc79f1',
+  rendererOverlayCommit: '7ce8ee79b8dbd9347f45aa1819ac1594a7a3d91a',
+  rendererOverlayBlobSha1: 'e570047f74761bdf8120f6014466884426d458b1',
   packageLockPath: 'package-lock.json',
   packageLockSha256: 'ba4c754b2a187cbb149e57f939c73b25204f0a1434c5cc14fefd1aa1357fade0',
   chapterScriptPath: 'scripts/test-chapters-enhanced.js',
@@ -33,6 +36,56 @@ function sha256File(file) { return crypto.createHash('sha256').update(fs.readFil
 function assert(condition, message) { if (!condition) throw new Error('Gold V21 full-corpus measurement failed: ' + message); }
 function relative(file) { return path.relative(root, file).split(path.sep).join('/'); }
 function writeLine(file, value) { fs.appendFileSync(file, String(value) + String.fromCharCode(10)); }
+
+function prepareGoldRendererOverlay() {
+  const rendererPath = path.join(legacyRoot, 'renderer.html');
+  const overlayRoot = path.join(root, 'legacy', 'gold-renderer-overlay');
+  const overlayPath = path.join(overlayRoot, 'renderer.html');
+  const sourceCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: overlayRoot, encoding: 'utf8'
+  }).trim();
+  assert(sourceCommit === expected.rendererOverlayCommit, 'Gold V21 renderer overlay commit differs from its exact pin');
+  const pinnedBlob = execFileSync('git', ['hash-object', rendererPath], {
+    cwd: legacyRoot, encoding: 'utf8'
+  }).trim();
+  assert(pinnedBlob === expected.rendererBlobSha1, 'pinned Gold renderer.html blob identity changed');
+  const overlayBlob = execFileSync('git', ['hash-object', overlayPath], {
+    cwd: overlayRoot, encoding: 'utf8'
+  }).trim();
+  assert(overlayBlob === expected.rendererOverlayBlobSha1, 'Gold renderer overlay blob identity changed');
+
+  const missingScripts = ['engine-inputs.js', 'engine-trace.js', 'engine-diagnostics.js'];
+  for (const script of missingScripts) {
+    assert(!fs.existsSync(path.join(legacyRoot, script)), 'pinned Gold tree unexpectedly contains formerly missing renderer script: ' + script);
+  }
+  const pinnedText = fs.readFileSync(rendererPath, 'utf8').replace(/\r\n/g, '\n');
+  const overlayText = fs.readFileSync(overlayPath, 'utf8').replace(/\r\n/g, '\n');
+  let exactExpectedOverlay = pinnedText;
+  for (const script of missingScripts) {
+    const tag = '  <script src="' + script + '"></script>\n';
+    assert(exactExpectedOverlay.split(tag).length === 2, 'pinned renderer must contain exactly one stale script tag: ' + script);
+    exactExpectedOverlay = exactExpectedOverlay.replace(tag, '');
+  }
+  exactExpectedOverlay = exactExpectedOverlay.replace(
+    '  <div id="measuring-box"></div>\n\n  <script src="decorations.js"></script>',
+    '  <div id="measuring-box"></div>\n  <script src="decorations.js"></script>'
+  );
+  assert(exactExpectedOverlay === overlayText,
+    'same-profile renderer overlay differs by more than the three absent optional instrumentation tags');
+  const originalSha256 = sha256File(rendererPath);
+  fs.copyFileSync(overlayPath, rendererPath);
+  return {
+    repository: 'SUGINACH/Tora_Book_Typesetter_Gold',
+    sourceCommit: sourceCommit,
+    path: 'renderer.html',
+    blobSha1: overlayBlob,
+    sha256: sha256File(rendererPath),
+    replacesPinnedBlobSha1: pinnedBlob,
+    originalSha256,
+    removedStaleScriptTags: missingScripts,
+    reason: 'The pinned Gold V21 renderer.html contains exactly three script tags whose files are absent from the pinned Gold V21 tree. The overlay is the same-profile renderer.html from commit 7ce8ee7 and differs only by removal of those exact missing instrumentation tags; no V23 files are imported.'
+  };
+}
 
 function prepareOfflineFonts() {
   const fontSourceRoot = path.join(root, 'legacy', 'offline-fonts');
@@ -179,6 +232,7 @@ function main() {
   const browser = spawnSync(process.execPath, ['-e', "const {chromium}=require('playwright'); (async()=>{const b=await chromium.launch({headless:true});process.stdout.write(b.version());await b.close();})().catch(e=>{console.error(e);process.exit(1)});"], { cwd: legacyRoot, encoding: 'utf8' });
   assert(browser.status === 0 && browser.stdout.trim() === expected.chromiumVersion, 'Chromium version mismatch: ' + (browser.stdout || browser.stderr));
 
+  const rendererOverlay = prepareGoldRendererOverlay();
   const offlineFonts = prepareOfflineFonts();
   const artifactDir = path.join(root, 'artifacts');
   fs.mkdirSync(artifactDir, { recursive: true });
@@ -257,7 +311,7 @@ function main() {
       packageLockPath: expected.packageLockPath, packageLockSha256: sha256File(lockPath),
       chapterScriptPath: expected.chapterScriptPath, chapterScriptSha256: sha256File(chapterScriptPath),
       determinismScriptPath: expected.determinismScriptPath, determinismScriptSha256: sha256File(determinismScriptPath),
-      offlineScriptSha256: sha256File(offlineScriptPath), fontCss: expected.fontCss, offlineFonts
+      offlineScriptSha256: sha256File(offlineScriptPath), fontCss: expected.fontCss, offlineFonts, rendererOverlay
     },
     environment: { node: process.version, playwright: playwrightPackage.version, chromium: browser.stdout.trim(), offlineFonts, viewport: { width: 1400, height: 1000 }, timeoutMs: 900000, network: 'offline-enforced by Playwright route guard' },
     measured: {
@@ -276,7 +330,7 @@ function main() {
       resultHashes: attempts.map(a => a.resultPath && fs.existsSync(a.resultPath) ? sha256File(a.resultPath) : null),
       logHashes: attempts.map(a => sha256File(a.logPath))
     },
-    interpretation: 'The pinned Gold V21 corpus contains no native H2 chapter markers expected by the legacy 79-chapter splitter. The harness copy therefore falls back to one single whole-corpus render, preserving the exact pinned input bytes. A measured baseline requires two identical full-document renders, all enumerated font faces loaded, zero external requests, and zero browser/page errors. Geometry findings remain measured findings, not waivers; the original legacy source and test scripts remain unchanged.'
+    interpretation: 'The pinned Gold V21 corpus contains no native H2 chapter markers expected by the legacy 79-chapter splitter. The harness copy therefore falls back to one single whole-corpus render, preserving the exact pinned input bytes. The pinned renderer.html has three stale script tags for files absent from the pinned Gold tree; the only renderer-page adaptation is the exact same-profile renderer overlay recorded in legacy.rendererOverlay. A measured baseline requires two identical full-document renders, all enumerated font faces loaded, zero external requests, and zero browser/page errors. Geometry findings remain measured findings, not waivers; the pinned source files and test scripts remain unchanged.'
   };
   const manifestPath = path.join(artifactDir, 'legacy-gold-v21-full-corpus-manifest.json');
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + String.fromCharCode(10), 'utf8');
