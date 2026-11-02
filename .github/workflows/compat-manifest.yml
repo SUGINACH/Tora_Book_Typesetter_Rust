@@ -220,7 +220,7 @@ jobs:
                   reparsed = json.loads(json.dumps(parsed, ensure_ascii=False))
                   assert reparsed == parsed, f"JSON fixture round-trip changed the value tree: {record['compatId']}"
           print(f"Fixture coverage validation passed: {len(active_records)} active records; every active record has an exact same-profile fixture; JSON data/settings/baselines round-trip.")
-                    font_records = [record for record in records if record["kind"] == "font"]
+          font_records = [record for record in records if record["kind"] == "font"]
           assert font_records and all(record["status"] == "blocked-license" for record in font_records), "font records must remain blocked pending license review"
           spec_records = [record for record in records if record["owningProfile"] == "requirements-docs" and record["kind"] == "documentation"]
           assert spec_records and all(record["status"] == "spec-only" for record in spec_records), "requirements documentation must remain spec-only"
