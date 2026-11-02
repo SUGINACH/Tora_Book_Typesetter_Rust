@@ -310,7 +310,7 @@ fn ownership_for(
             "engine-core::decorations".to_string(),
             "model decoration flow/visual/anchor geometry as explicit engine operations; preserve profile behavior".to_string(),
         )
-    } else if lower.ends_with("/geometry-audit.js") {
+    } else if lower == "geometry-audit.js" || lower.ends_with("/geometry-audit.js") {
         (
             "legacy-independent-geometry-audit".to_string(),
             "audit".to_string(),
