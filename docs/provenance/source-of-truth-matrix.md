@@ -89,3 +89,21 @@ A byte-level recheck against the five files mounted with the conversation was pe
 ## 8. Scope boundary
 
 This is the initial conflict matrix for the six repositories and the core executable set. It is not yet the complete inventory of every font, SVG, ornament, settings preset, test fixture or historical branch. Those inventories are owned by tasks 7–9 and must be generated from the pinned trees, not estimated from filenames in a partial checkout.
+
+
+## 9. Pin revalidation — 2026-11-02
+
+The six repository commits and tree IDs in `legacy-source-pins.json` were re-fetched from GitHub and checked against the pinned metadata. All six commit objects exist and all six root tree SHAs match exactly:
+
+| Repository | Pinned commit | Tree SHA match |
+|---|---|---|
+| Orange | `0b0ee279464a3db14672cd3f4051275aba5985da` | yes |
+| Green | `e5cde5f194d0d9e9b20fdaa2a742f9bf6e8aec53` | yes |
+| Gold | `a444d34ccad30fd5ed0d6fd3873adbe9c23cb7e0` | yes |
+| Yellow | `878535e12eb4aa7e3c4a72e0e79687082d8a6d3b` | yes |
+| IMUD_TORANI | `6dd79d0ba224c169b0d19778ba181fc90edc8319` | yes |
+| Typesetter_doc | `534b8f4e0ba9f5cb8abe9e3ad888904a217910cd` | yes |
+
+The three historical lineage references in Orange's provenance record were also checked for existence: Green import point `0ddaf89010e84e9e999c0e1faef2888994393915`, Gold reference point `31ed2ca830c1868cb2c9157d080f8922d112ff8e`, and common-ancestor reference `5c646c1fc2ea52233be76618463933dbe013cf2c`. This verifies that the referenced commit objects are retrievable; it does not by itself prove all file-level port relationships. Those remain grounded in the pinned Orange provenance document and need file-level lineage evidence where a specific port is material.
+
+The five user-uploaded core files were re-hashed again on 2026-11-02. All five byte lengths and SHA-256 values match the `unattributedUserAttachments` entries in `legacy-source-pins.json` exactly. Their source repository/branch remains unattributed.
