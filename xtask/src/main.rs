@@ -596,7 +596,19 @@ fn extract_asset_dependencies(source_path: &str, kind: &str, bytes: &[u8]) -> Ve
                     dependencies.insert(normalized);
                 }
             }
-        } else if matches!(kind, "settings" | "data") {
+        } else if matches!(kind, "settings" | "data")
+            && !matches!(
+                lower_path.as_str(),
+                "fonts-extended.json" | "fonts-priority.json" | "fonts/fonts/fonts.json"
+            )
+        {
+            // These font catalogs are not all asset manifests:
+            // - fonts/fonts.json is the active catalog whose file entries are loaded.
+            // - fonts-extended.json is used only to populate picker labels.
+            // - fonts-priority.json is not loaded by the pinned app.
+            // - fonts/fonts/fonts.json is an unreferenced duplicate catalog.
+            // Treating every file value in the latter three as a path creates
+            // thousands of false dependencies to fonts that are not fetched there.
             for value in extract_quoted_strings(&text) {
                 if is_path_candidate(&value) {
                     if let Some(normalized) = normalize_asset_reference(source_path, &value) {
@@ -2498,6 +2510,26 @@ mod tests {
         assert!(
             harness_dependencies.contains(&"local:renderer.html".to_string()),
             "unexpected extracted dependencies: {harness_dependencies:?}"
+        );
+    }
+
+    #[test]
+    fn font_picker_metadata_and_duplicate_catalog_do_not_create_file_dependencies() {
+        let json = br#"[{"family":"Example Hebrew","file":"Example-Regular.woff2","format":"woff2"}]"#;
+
+        for path in ["fonts-extended.json", "fonts-priority.json", "fonts/fonts/fonts.json"] {
+            let dependencies = extract_asset_dependencies(path, "data", json);
+            assert!(
+                dependencies.is_empty(),
+                "{path} is metadata or an unreferenced duplicate, not a file-loading manifest: {dependencies:?}"
+            );
+        }
+
+        let active_catalog =
+            extract_asset_dependencies("fonts/fonts.json", "data", json);
+        assert!(
+            active_catalog.contains(&"local:fonts/Example-Regular.woff2".to_string()),
+            "the active font loader's catalog must retain its real font dependency: {active_catalog:?}"
         );
     }
 
