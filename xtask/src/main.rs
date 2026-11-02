@@ -2288,6 +2288,7 @@ mod tests {
     #[test]
     fn path_join_and_playwright_navigation_preserve_static_files() {
         let javascript = br#"
+            const root = path.resolve(__dirname, '..');
             const checker = fs.readFileSync(path.join(__dirname, '..', 'layout', 'check_layout.js'), 'utf8');
             const defaults = fs.readFileSync(path.join(root, 'default_settings.json'), 'utf8');
             await page.goto(baseUrl + '/renderer.html', { waitUntil: 'load' });
@@ -2348,13 +2349,23 @@ mod tests {
         let javascript = br#"
             const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
             fs.readFileSync(path.join(ROOT, 'default_settings.json'), 'utf8');
-            const { root, startServer } = require('./lib/harness');
-            fs.readFileSync(path.join(root, 'renderer.html'), 'utf8');
         "#;
         let dependencies =
             extract_asset_dependencies("scripts/runner.mjs", "javascript", javascript);
         assert!(dependencies.contains(&"local:default_settings.json".to_string()));
-        assert!(dependencies.contains(&"local:renderer.html".to_string()));
+
+        let harness = br#"
+            const { root, startServer } = require('./lib/harness');
+            fs.readFileSync(path.join(root, 'renderer.html'), 'utf8');
+        "#;
+        let tokens = tokenize_javascript(std::str::from_utf8(harness).unwrap());
+        assert!(
+            has_static_repository_root_binding(&tokens, "root", tokens.len()),
+            "the imported harness root binding was not recognized: {tokens:?}"
+        );
+        let harness_dependencies =
+            extract_asset_dependencies("scripts/runner.mjs", "javascript", harness);
+        assert!(harness_dependencies.contains(&"local:renderer.html".to_string()));
     }
 
     #[test]
