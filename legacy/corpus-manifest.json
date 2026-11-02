@@ -191,6 +191,116 @@
           "summarySha256": "f4a94bbaa6d60fb6a6d3878ab36cdaa12b8cfc9f9d162f23cf3d8ec4e69422d5"
         },
         "verificationNote": "The first pinned smoke run passed and its artifact was inspected: 485/485 font faces loaded. A subsequent runner commit adds an explicit 485/485 preflight assertion and pins Chromium 140.0.7339.16; that stricter wrapper revision is awaiting its own CI rerun."
+      },
+      "fullCorpusRun": {
+        "workflowRun": 41395543056,
+        "workflowUrl": "https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395543056",
+        "artifactId": 13119497022,
+        "artifactArchiveSha256": "6d21b148368da685bcc42db45438a5c07e926477caf5aad2fb4272398ca1bb54",
+        "runnerCommit": "45bbc56d278fdc95311b59a918c899409844a517",
+        "targetRustCommit": "45bbc56d278fdc95311b59a918c899409844a517",
+        "legacyCommit": "0b0ee279464a3db14672cd3f4051275aba5985da",
+        "inputSha256": "5e73b913f9843fce695d0e4073c176961b8dbc2fa87e8e4c3d99051a826ce0e4",
+        "settingsSha256": "5c78a49ca2b205f0a846e6f87a1058b4a61595967b472bda65ac7412f13f5b3f",
+        "fontCssSha256": "eec01e2b2a65ab67ad959625dd7b3640dceeb09a5cee8b7677787a1e89acd229",
+        "environment": {
+          "node": "v22.23.4",
+          "playwright": "1.55.0",
+          "chromium": "140.0.7339.16",
+          "network": "offline-enforced",
+          "viewport": {
+            "width": 1440,
+            "height": 1000,
+            "deviceScaleFactor": 1
+          },
+          "renderTimeoutMs": 900000
+        },
+        "measured": {
+          "pages": 639,
+          "issues": {
+            "total": 39,
+            "high": 0,
+            "medium": 11,
+            "low": 28,
+            "byKind": {
+              "container-gap": 12,
+              "imbalance": 8,
+              "containment-rounding": 7,
+              "structural-fallback": 6,
+              "sparse-page": 3,
+              "square-bracket-scope": 3
+            }
+          },
+          "decisionLedger": {
+            "records": 857,
+            "domBlocks": 857,
+            "recordCountMatchesDom": true,
+            "missingOrMalformed": 0
+          },
+          "fontPreflight": {
+            "faceCount": 485,
+            "loaded": 485,
+            "failed": 0
+          },
+          "textConservation": {
+            "sourceTokenCount": 3634,
+            "sourceParagraphTokenCount": 3105,
+            "renderedParagraphTokenIdCount": 3105,
+            "missingSourceParagraphCount": 0,
+            "textMismatchCount": 0,
+            "renderedIdsWithoutSourceCount": 0,
+            "headingSourceCount": 529,
+            "headingMissingCount": 0,
+            "headingMismatchCount": 0,
+            "sideNoteSourceCount": 2042,
+            "sideNoteMissingCount": 0,
+            "sideNoteMismatchCount": 0,
+            "endNoteSourceCount": 0,
+            "endNoteMissingCount": 0,
+            "endNoteMismatchCount": 0
+          },
+          "parenthesisScope": {
+            "paragraphCount": 4265,
+            "pairedParenthesisCount": 2483,
+            "crossColumnPairCount": 81,
+            "crossPagePairCount": 48,
+            "unmatchedOpenCountAtDocumentEnd": 0,
+            "unmatchedCloseCount": 3
+          },
+          "externalRequests": 0,
+          "deterministicRepeat": true,
+          "browserPageErrors": 0,
+          "browserConsoleErrors": 0,
+          "renderMilliseconds": 323813,
+          "activeGeometryGate": {
+            "enabled": false,
+            "result": "PASS",
+            "blockingFindings": 0,
+            "nonBlockingNoteMarkerRoundingFindings": 7
+          }
+        },
+        "historicalComparison": {
+          "expected": {
+            "pages": 639,
+            "issues": 39,
+            "high": 0,
+            "medium": 11,
+            "low": 28,
+            "ledger": 857
+          },
+          "actual": {
+            "pages": 639,
+            "issues": 39,
+            "high": 0,
+            "medium": 11,
+            "low": 28,
+            "ledger": 857
+          },
+          "matchesHistoricalMetrics": true
+        },
+        "reportSha256": "7fa09479bde1050ca51ee20ae5a2bf59f958f99dbdf69731dff75e77d5dce95a",
+        "summarySha256": "71ec2c6030cff7161fec045e78c191abd9b3ca341a6a27d44bfb14ebd471cc55",
+        "interpretation": "Full-corpus Orange V23 legacy replay passed and matched historical aggregate metrics under the current pinned environment. This is not Rust parity and does not establish measured baselines for Green, Gold, Yellow or IMUD. The active geometry gate was disabled; all 39 audit findings remain visible."
       }
     },
     {
@@ -323,6 +433,6 @@
     "A Git blob SHA-1 is retained as the repository's immutable object identity; SHA-256 is retained for content-addressed compatibility records.",
     "Historical metrics without input/config/environment identity are not accepted as parity baselines.",
     "The Orange ornament baseline in expected_baseline.json is documentary-only until reproduced locally by the pinned runner.",
-    "The legacy runner is a smoke oracle, not a complete corpus runner. Full corpus replay is a later stage."
+    "The pinned Orange V23 runner now has both smoke and full-corpus evidence; only Orange has a current measured full-corpus replay. Other profiles require their own pinned runner and baseline before parity acceptance."
   ]
 }

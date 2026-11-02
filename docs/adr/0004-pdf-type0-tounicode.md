@@ -86,3 +86,14 @@ Evidence: [PDF Type0/ToUnicode run 41350088448](https://github.com/SUGINACH/Tora
 - The artifact contains the PDF, extraction outputs, font table report, PDF metadata, rendered PNG and manifest.
 
 This result validates a narrow writer prototype. It does not close task 66, does not establish a production PDF backend and does not justify importing printpdf into the production workspace.
+
+
+## Stage A technology-gate update — 2026-11-02
+
+The second prototype [run 41350088448](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41350088448) passed its narrow acceptance check. HarfRust-shaped glyph IDs/positions were supplied to printpdf 0.12.8; inspection found a Type0 font, ToUnicode CMap, embedded/subset CID TrueType font and Identity-H. Thirty glyph-to-Unicode mappings were emitted; two builds produced identical glyph manifests; independent MuPDF extraction reproduced all three Hebrew/niqqud and mixed Latin source lines in logical order.
+
+Poppler pdftotext -raw and -layout remain diagnostic non-matches because their RTL post-processing reverses the Hebrew codepoint sequence and adds bidi controls. This discrepancy is recorded, not normalized away. The test is one page and three lines; it does not prove multi-page extraction, vertical mark placement, broad ligature/cluster coverage, raster/DisplayList geometry, multiple viewers, bookmarks, accessibility or production performance.
+
+printpdf 0.12.8 is therefore a viable prototype candidate, not an accepted production backend. lopdf remains the lower-level alternative with greater project-owned Type0/CID/ToUnicode responsibility; lightweight-pdf remains a writer reference whose scalar mapping is insufficient evidence for multi-scalar clusters. No backend is selected.
+
+**Task 10 gate:** open pending a larger multi-page Hebrew/niqqud corpus and cross-viewer/rendering checks.

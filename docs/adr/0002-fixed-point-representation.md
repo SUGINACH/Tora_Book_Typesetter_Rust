@@ -70,3 +70,12 @@ Record max absolute/relative error, overflow behavior, canonical serialized valu
 ## Acceptance
 
 Choose one representation only after the remaining alternatives have a recorded result, a reproducible fixture/hash, checked-overflow/property tests and a documented conversion/rounding rule. The current scale study is insufficient to accept an implementation.
+
+
+## Stage A technology-gate update — 2026-11-02
+
+The fixed-point model was rerun by [Rust CI 41395791603](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41395791603); the reproducibility job passed. The committed exact-rational study contains 27,627 deterministic Fraction-model checks, including signed px/pt/tick conversions, percentages, font-unit conversions, i64 boundaries and tie cases. Residual-carry accumulation removes drift in the tested 1,000-line case.
+
+This is not a Rust Fixed implementation test. It does not prove checked i128 intermediates, overflow behavior in production code, real Hebrew/niqqud font geometry, maximum supported page dimensions, 1,000-page accumulation or CPU cost. The candidates remain 1/64 CSS px, 1/1024 pt, 1/65536 pt, rational scaling and font-unit coordinates. The reason for not selecting one is evidentiary: the current experiment is an exact arithmetic model, not a compiled engine geometry path. No candidate is accepted and no production dependency or scale is locked by this ADR.
+
+**Task 10 gate:** open. Required next evidence is a Rust-level checked-arithmetic prototype plus the pinned Hebrew/niqqud geometry fixture and measured large-page accumulation.

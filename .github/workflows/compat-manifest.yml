@@ -125,6 +125,10 @@ jobs:
 
           manifest = json.loads(Path("artifacts/legacy-compatibility-manifest-first.json").read_text(encoding="utf-8"))
           pins = json.loads(Path("docs/provenance/legacy-source-pins.json").read_text(encoding="utf-8"))
+          matrix_text = Path("docs/compat/parity-matrix.md").read_text(encoding="utf-8")
+          matrix_section = matrix_text.split("## 4. Stable test identifiers and measurable gates", 1)[1].split("## 5. Acceptance rules", 1)[0]
+          declared_test_ids = set(re.findall(r"^\|\s*`([A-Z][A-Z0-9-]+)`\s*\|", matrix_section, re.MULTILINE))
+          assert declared_test_ids, "parity matrix declares no stable test IDs"
           expected_sources = {(f"SUGINACH/{item['name']}", item["commit"]) for item in pins["repositories"]}
           actual_sources = {(item["repository"], item["commit"]) for item in manifest["sources"]}
           assert manifest.get("schemaVersion") == 1, "unexpected manifest schema version"
@@ -147,6 +151,8 @@ jobs:
               assert record["migrationRule"].strip(), f"record {index} has no migration rule"
               assert record["acceptanceCriteria"].strip(), f"record {index} has no acceptance criteria"
               assert isinstance(record["testIds"], list) and record["testIds"], f"record {index} has no test IDs"
+              unknown_test_ids = sorted(set(record["testIds"]) - declared_test_ids)
+              assert not unknown_test_ids, f"record {index} references undeclared test IDs: {unknown_test_ids}"
               assert isinstance(record["parityFixtures"], list), f"record {index} parityFixtures is not an array"
               assert all(isinstance(fixture, str) and fixture for fixture in record["parityFixtures"]), f"record {index} has an invalid fixture reference"
               assert isinstance(record["assetDependencies"], list), f"record {index} assetDependencies is not an array"

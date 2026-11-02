@@ -50,3 +50,12 @@ Evidence: [Tauri workflow run 41347404787](https://github.com/SUGINACH/Tora_Book
 - Follow-up [run 41348380250](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41348380250) passed after adding strict validation for profile IDs, job IDs, positive generations and 64-character hexadecimal SHA-256 fingerprints. Tests prove invalid input does not advance the generation gate; stale generations are rejected. This remains a Rust-side command-handler test, not an actual WebView invoke round-trip.
 
 **Current result:** Tauri 2.12.5 is the first candidate to test, not an accepted selection. The remaining experiment must prove an actual IPC round-trip, allowlisted project I/O, progress/cancellation events, offline operation and stale-generation rejection before shell selection.
+
+
+## Stage A technology-gate update — 2026-11-02
+
+The pinned Windows feasibility workflow [run 41348380250](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41348380250) passed after strict validation was added for profile IDs, job IDs, positive generations and 64-character SHA-256 fingerprints. The run built Tauri 2.12.5 / tauri-build 2.7.4, passed formatting, Clippy, unit tests and release build, and demonstrated that invalid/stale generations are rejected by the Rust-side gate.
+
+This is not an actual WebView invoke round-trip. It does not test file-dialog allowlists, project save/load, progress/cancellation events crossing the WebView boundary, offline packaged assets, installer size/signing or runtime WebView2 behavior. The alternative native Rust shell is not yet measured against the same contract. Tauri remains the first candidate to test, not an accepted shell choice.
+
+**Task 10 gate:** open pending an automated real-WebView IPC round-trip and allowlisted project I/O/event test.

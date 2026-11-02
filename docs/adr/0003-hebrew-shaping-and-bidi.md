@@ -71,3 +71,12 @@ Evidence: [shaping/Bidi run 41348678930](https://github.com/SUGINACH/Tora_Book_T
 - The run pinned both source commits, font binary and OFL license, corpus, Rust toolchain and environment; repeat-run identity and HarfRust verification were also checked.
 - This is component-level parity only. It does not cover mixed-direction run segmentation, line-level visual reordering, complete source-span mapping, all production font aliases, missing-glyph policy or PDF mark positioning.
 - Decision remains **proposed**. Do not add HarfRust or `unicode-bidi` to the production workspace until the remaining acceptance corpus and cross-platform tests are complete.
+
+
+## Stage A technology-gate update — 2026-11-02
+
+The pinned experiment [run 41348678930](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41348678930) compared HarfRust 0.15.0 with upstream HarfBuzz 15.0.0: all five pure-Hebrew serialized glyph-line samples matched exactly (5/5). The eight-line corpus includes Hebrew without niqqud, niqqud, cantillation, maqaf, mixed Hebrew/Latin/digits/parentheses/brackets and Latin ligature opportunities. The probe pinned Noto Serif Hebrew and its OFL, recorded glyph positions/advances/clusters and Unicode bidi levels, and passed repeat-run identity.
+
+The result is not a mixed-direction shaping pass. unicode-bidi computes paragraph levels and visual reordering, but the probe does not yet split mixed-direction text into script/direction shaping runs before shaping. Complete cluster-to-SourceSpan round-trip, mark positioning, missing-glyph behavior, all profile font aliases, variable-font axes and cross-platform repeat evidence are also absent. These are the reasons no shaper/version is selected. rustybuzz 0.20.1 remains excluded from selection while the cited RustSec advisory is unresolved; alternatives B–D remain comparison candidates, not accepted fallbacks.
+
+**Task 10 gate:** open. HarfRust remains the leading prototype candidate only; no production dependency has been added.
