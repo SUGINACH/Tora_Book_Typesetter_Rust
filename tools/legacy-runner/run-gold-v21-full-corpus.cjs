@@ -89,6 +89,7 @@ function routeGuardLines(indent, externalEnv, pageErrorEnv, consoleErrorEnv) {
     indent + "  }",
     indent + "});",
     indent + "page.on('pageerror', err => { if (process.env." + pageErrorEnv + ") require('node:fs').appendFileSync(process.env." + pageErrorEnv + ", String(err && (err.stack || err)) + String.fromCharCode(10)); });",
+    indent + "page.on('response', response => { if (response.status() >= 400 && process.env." + consoleErrorEnv + ") require('node:fs').appendFileSync(process.env." + consoleErrorEnv + ", 'HTTP ' + response.status() + ' ' + response.url() + String.fromCharCode(10)); });",
     indent + "page.on('console', msg => { if (msg.type() === 'error' && process.env." + consoleErrorEnv + ") require('node:fs').appendFileSync(process.env." + consoleErrorEnv + ", msg.text() + String.fromCharCode(10)); });"
   ].join('\n');
 }
@@ -111,6 +112,16 @@ function buildOfflineFullCorpusScript(sourcePath, outputPath) {
   source = source.replace('const TYPESCRIPT_TIMEOUT_MS = 180000;', 'const TYPESCRIPT_TIMEOUT_MS = 900000;');
   assert(source.includes('const GEOM_AUDIT_TIMEOUT_MS = 30000;'), 'Gold audit-timeout anchor changed');
   source = source.replace('const GEOM_AUDIT_TIMEOUT_MS = 30000;', 'const GEOM_AUDIT_TIMEOUT_MS = 180000;');
+  const fontAnchor = '      chapterResult.geomStats = geomResult.stats;';
+  assert(source.includes(fontAnchor), 'Gold font-preflight insertion anchor changed');
+  source = source.replace(fontAnchor, fontAnchor + [
+    '      chapterResult.fontPreflight = await iframe.evaluate(async () => {',
+    '        await document.fonts.ready;',
+    '        const faces = Array.from(document.fonts);',
+    "        const failed = faces.filter(face => face.status !== 'loaded');",
+    '        return { faceCount: faces.length, loaded: faces.length - failed.length, failed: failed.length, failures: failed.map(face => ({ family: face.family, weight: face.weight, style: face.style, status: face.status })) };',
+    '      });'
+  ].join('\\n'));
   const pageAnchor = '    page = await context.newPage();';
   assert(source.includes(pageAnchor), 'Gold chapter runner page creation anchor changed');
   source = source.replace(pageAnchor, pageAnchor + '\n' + routeGuardLines('    ', 'GOLD_EXTERNAL_REQUESTS_PATH', 'GOLD_PAGE_ERRORS_PATH', 'GOLD_CONSOLE_ERRORS_PATH'));
@@ -141,6 +152,7 @@ function chapterSignature(result) {
     pageCount: result.pageCount ?? null,
     geomSummary: result.geomSummary ?? null,
     geomIssues: result.geomIssues ?? null,
+    fontPreflight: result.fontPreflight ?? null,
     error: result.error ?? null
   };
 }
