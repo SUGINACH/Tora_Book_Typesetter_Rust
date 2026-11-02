@@ -350,6 +350,7 @@ fn ownership_for(
         || lower.ends_with("/index.html")
         || lower == "renderer.html"
         || lower.ends_with("/renderer.html")
+        || lower == "renderer-bridge.js"
         || lower.ends_with("/renderer-bridge.js")
         || kind == "style"
         || kind == "dom-contract"
@@ -2342,6 +2343,21 @@ mod tests {
             ownership_for(&source, "decorations.js", "javascript");
         assert_eq!(owner, "engine-core::decorations");
         assert!(migration.contains("geometry"));
+        assert_eq!(fixtures.len(), 1);
+    }
+
+    #[test]
+    fn root_renderer_bridge_is_fixture_scoped() {
+        let source = SourceSpec {
+            repository: "SUGINACH/Tora_Book_Typesetter_Orange".to_string(),
+            commit: "0b0ee279464a3db14672cd3f4051275aba5985da".to_string(),
+            profile: "legacy-orange-v23".to_string(),
+            root: PathBuf::from("legacy/orange"),
+        };
+        let (_, owner, migration, fixtures) =
+            ownership_for(&source, "renderer-bridge.js", "javascript");
+        assert_eq!(owner, "legacy-renderer-adapter");
+        assert!(migration.contains("browser reflow"));
         assert_eq!(fixtures.len(), 1);
     }
 
