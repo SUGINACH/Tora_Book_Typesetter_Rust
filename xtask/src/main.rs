@@ -733,7 +733,12 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                     && next_is_open_call
                 {
                     if let Some(JsToken::String(value)) = tokens.get(index + 2) {
-                        if let Some(normalized) = normalize_module_reference(source_path, value) {
+                        let normalized = if identifier == "fetch" {
+                            normalize_asset_reference(source_path, value)
+                        } else {
+                            normalize_module_reference(source_path, value)
+                        };
+                        if let Some(normalized) = normalized {
                             output.insert(normalized);
                         }
                     }
