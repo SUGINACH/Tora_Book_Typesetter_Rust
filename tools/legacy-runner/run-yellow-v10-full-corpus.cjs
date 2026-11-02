@@ -5,7 +5,7 @@ const path = require('node:path');
 const http = require('node:http');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
-const { chromium } = require('playwright');
+const { chromium } = require(path.resolve(__dirname, '../../legacy/yellow/node_modules/playwright'));
 
 const root = path.resolve(__dirname, '../..');
 const legacyRoot = path.join(root, 'legacy', 'yellow');
