@@ -234,11 +234,20 @@ async function runOnce(browser, baseUrl, text, settings, checker, variant, attem
 
     await page.addScriptTag({ content: checker });
     const audit = await page.evaluate(() => {
-      const issues = window.__checkLayout({});
+      const rawIssues = window.__checkLayout({});
+      const issues = rawIssues.filter(issue => issue.type !== 'GRANULARITY(ok)');
+      const informationalCount = rawIssues.length - issues.length;
       const tokens = typeof globalTokens !== 'undefined' && Array.isArray(globalTokens) ? globalTokens : [];
       const paragraphs = tokens.filter(token => token.type === 'p');
+      const strayDividerCount = Array.from(document.querySelectorAll(
+        '.main-column .heading-divider-wrap, .single-wide-col .heading-divider-wrap'
+      )).filter(divider => {
+        const next = divider.nextElementSibling;
+        return !next || !/title-level/.test(next.className || '');
+      }).length;
+      if (strayDividerCount) issues.push({ type: 'STRAY_DIVIDER', count: strayDividerCount });
       const counts = issues.reduce((result, issue) => {
-        result[issue.type] = (result[issue.type] || 0) + 1;
+        result[issue.type] = (result[issue.type] || 0) + (issue.count || 1);
         return result;
       }, {});
       const pages = Array.from(document.querySelectorAll('#book-container .a4-page'));
@@ -262,6 +271,8 @@ async function runOnce(browser, baseUrl, text, settings, checker, variant, attem
       return {
         issues,
         counts,
+        informationalCount,
+        strayDividerCount,
         tokenCount: tokens.length,
         paragraphCount: paragraphs.length,
         missingText: issues.filter(issue => issue.type === 'TEXT_MISSING').length,
@@ -296,6 +307,8 @@ async function runOnce(browser, baseUrl, text, settings, checker, variant, attem
       pageCount: audit.pageCount,
       issueCount: audit.issues.length,
       issueCounts: audit.counts,
+      informationalCount: audit.informationalCount,
+      strayDividerCount: audit.strayDividerCount,
       tokenCount: audit.tokenCount,
       paragraphCount: audit.paragraphCount,
       missingText: audit.missingText,
@@ -370,6 +383,8 @@ async function main() {
           pages: attempts[0].pageCount,
           issueCount: attempts[0].issueCount,
           issueCounts: attempts[0].issueCounts,
+          informationalCount: attempts[0].informationalCount,
+          strayDividerCount: attempts[0].strayDividerCount,
           tokenCount: attempts[0].tokenCount,
           paragraphCount: attempts[0].paragraphCount,
           missingText: attempts[0].missingText,
