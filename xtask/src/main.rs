@@ -2368,7 +2368,10 @@ mod tests {
             .iter()
             .position(|token| token == &super::JsToken::Identifier("join".to_string()))
             .unwrap_or(tokens.len());
-        assert!(join_index < tokens.len(), "path.join token not found: {tokens:?}");
+        assert!(
+            join_index < tokens.len(),
+            "path.join token not found: {tokens:?}"
+        );
         assert!(
             has_static_repository_root_binding(&tokens, "root", join_index),
             "the imported harness root binding was not recognized: {tokens:?}"
