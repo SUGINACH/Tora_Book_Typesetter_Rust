@@ -1470,18 +1470,7 @@ fn is_path_candidate(value: &str) -> bool {
     if lower.trim() != lower || lower.ends_with('/') || lower.is_empty() {
         return false;
     }
-    let known_extension = [
-        ".css", ".js", ".mjs", ".cjs", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".ico",
-        ".woff", ".woff2", ".ttf", ".otf", ".gif", ".avif",
-    ]
-    .iter()
-    .any(|extension| {
-        lower.ends_with(extension)
-            && lower
-                .rsplit('/')
-                .next()
-                .is_some_and(|filename| filename.len() > extension.len())
-    });
+    let known_extension = has_known_asset_extension(value);
     lower.starts_with("./")
         || lower.starts_with("../")
         || lower.starts_with('/')
@@ -2497,6 +2486,16 @@ mod tests {
         "#;
         let dependencies = extract_asset_dependencies("app.js", "javascript", javascript);
         assert!(dependencies.contains(&"local:fonts-extended.css".to_string()));
+    }
+
+    #[test]
+    fn explicit_html_text_markdown_and_pdf_paths_are_candidates() {
+        for path in ["renderer.html", "very_long_test_text.txt", "notes.md", "input.pdf"] {
+            assert!(
+                normalize_asset_reference("", path).is_some(),
+                "explicit file path was rejected: {path}"
+            );
+        }
     }
 
     #[test]
