@@ -2846,11 +2846,29 @@ mod tests {
 
     #[test]
     fn fonts_remain_blocked_until_license_review() {
-        assert_eq!(status_for("legacy-orange-v23", "font"), "blocked-license");
-        assert_eq!(status_for("legacy-orange-v23", "asset"), "verified-data");
         assert_eq!(
-            status_for("requirements-docs", "documentation"),
+            status_for("legacy-orange-v23", "font", "fonts/serif.woff2"),
+            "blocked-license"
+        );
+        assert_eq!(
+            status_for("legacy-orange-v23", "asset", "favicon.ico"),
+            "verified-data"
+        );
+        assert_eq!(
+            status_for("requirements-docs", "documentation", "requirements.md"),
             "spec-only"
+        );
+        assert_eq!(
+            status_for("legacy-orange-v23", "data", "reports/run-1/report.json"),
+            "historical-only"
+        );
+        assert_eq!(
+            status_for("legacy-imud-v20x", "settings", "presets/makom-bina-v20.5/default_settings.json"),
+            "historical-only"
+        );
+        assert_eq!(
+            status_for("legacy-orange-v23", "baseline", "expected_baseline.json"),
+            "verified-data"
         );
     }
 
