@@ -106,3 +106,14 @@
 - [CI 41363244229](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363244229) נכשל רק ב-rustfmt על assert_eq אחד; התיקון formatting-only ב-[commit 17c68ea](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/17c68ea72860798d5f1f31b2c02f9acca7a06a22).
 - [Rust CI 41363321746](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363321746) ו-[Manifest 41363321758](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363321758) queued/pending על 17c68ea; אין עדיין תוצאת קבלה.
 - Legacy runner 41361263075 נשאר full-corpus in progress; אין report מלא. שלב א נשאר פתוח.
+
+
+## Manifest forensic classification — 2026-11-02
+
+- Completed scan [41363321758](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363321758), artifact [13106386301](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41363321758/artifacts/13106386301), compared to [41360202733](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733), artifact [13105540442](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41360202733/artifacts/13105540442).
+- 18,854 IDs stable; no source hash changes. Edges 41,192→40,881; resolved 35,356→35,359; unresolved 413→139. Delta: 313 removed edges, 2 added; resolved +18/-15; unresolved -274.
+- All 139 unresolved edges across 17 records were inspected: 133 point to historical archive paths absent from the pinned IMUD tree; 3 point to Gold engine scripts referenced by renderer.html but absent from the pinned Gold tree; 2 are npm package bin entries misread as local paths from package-lock; 1 is a bare npm module specifier misread as a local path. Thus 136 are genuinely unresolved against pinned trees, 3 are extractor false positives.
+- Do not mark historical archive references resolved merely because they are historical. Decide whether those archive directories must be restored to the pinned source or explicitly remain historical-unresolved. Gold's three missing scripts require owner decision/restoration or explicit documented absence.
+- CI 41363362478 passed all 5 jobs. Follow-up extractor fix [1a1ce26](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/commit/1a1ce26b6fefa3db40decc304b86353284e466d6) excludes bare Node package specifiers from local module resolution and excludes package-lock npm bin entries from repo-local data extraction; two tests added. CI [41367799248](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367799248) and manifest [41367799385](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41367799385) pending.
+- Legacy full corpus [41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) remains in progress after smoke passed; no full report yet.
+- Stage A remains open; do not start Stage B.
