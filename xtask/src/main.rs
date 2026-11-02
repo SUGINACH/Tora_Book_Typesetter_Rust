@@ -924,11 +924,16 @@ fn has_static_repository_root_binding(tokens: &[JsToken], name: &str, before: us
                         && window[1] == JsToken::Punct('.')
                         && matches!(window[2], JsToken::Identifier(ref value) if value == "resolve")
                 });
+                let path_dirname = initializer.windows(3).any(|window| {
+                    matches!(window[0], JsToken::Identifier(ref value) if value == "path")
+                        && window[1] == JsToken::Punct('.')
+                        && matches!(window[2], JsToken::Identifier(ref value) if value == "dirname")
+                });
                 let known_anchor = initializer.iter().any(|token| {
                     matches!(
                         token,
                         JsToken::Identifier(value)
-                            if value == "__dirname" || value == "fileURLToPath"
+                            if value == "__dirname" || value == "__filename" || value == "fileURLToPath"
                     ) || matches!(token, JsToken::String(value) if value == ".")
                 });
                 let process_cwd = initializer.windows(3).any(|window| {
@@ -936,7 +941,7 @@ fn has_static_repository_root_binding(tokens: &[JsToken], name: &str, before: us
                         && window[1] == JsToken::Punct('.')
                         && matches!(window[2], JsToken::Identifier(ref value) if value == "cwd")
                 });
-                if (path_resolve && known_anchor) || process_cwd {
+                if ((path_resolve || path_dirname) && known_anchor) || process_cwd {
                     return true;
                 }
             }
@@ -2331,6 +2336,20 @@ mod tests {
             extract_asset_dependencies("tools/geometry-audit-cli.js", "javascript", javascript);
         assert!(
             dependencies.contains(&"local:selfhost-fonts/google-fonts-selfhost.css".to_string())
+        );
+    }
+
+    #[test]
+    fn path_join_resolves_directory_of_current_script() {
+        let javascript = br#"
+            const SCRIPTS_DIR = path.dirname(__filename);
+            const ENHANCED_SCRIPT = path.join(SCRIPTS_DIR, 'test-chapters-enhanced.js');
+        "#;
+        let dependencies =
+            extract_asset_dependencies("scripts/regression-test.js", "javascript", javascript);
+        assert!(
+            dependencies.contains(&"local:scripts/test-chapters-enhanced.js".to_string()),
+            "unexpected extracted dependencies: {dependencies:?}"
         );
     }
 
