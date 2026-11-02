@@ -868,12 +868,7 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                                 if let Some(JsToken::Identifier(name)) = tokens.get(declaration) {
                                     let upper = name.to_ascii_uppercase();
                                     output_destination = [
-                                        "OUT",
-                                        "OUTPUT",
-                                        "REPORT",
-                                        "SUMMARY",
-                                        "RESULT",
-                                        "LATEST",
+                                        "OUT", "OUTPUT", "REPORT", "SUMMARY", "RESULT", "LATEST",
                                         "ARTIFACT",
                                     ]
                                     .iter()
@@ -1059,11 +1054,14 @@ fn normalize_fetch_reference(source_path: &str, value: &str) -> Option<String> {
 }
 
 fn has_known_asset_extension(value: &str) -> bool {
-    let filename = value.rsplit('/').next().unwrap_or(value).to_ascii_lowercase();
+    let filename = value
+        .rsplit('/')
+        .next()
+        .unwrap_or(value)
+        .to_ascii_lowercase();
     [
-        ".css", ".js", ".mjs", ".cjs", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp",
-        ".ico", ".woff", ".woff2", ".ttf", ".otf", ".gif", ".avif", ".txt", ".html", ".md",
-        ".pdf",
+        ".css", ".js", ".mjs", ".cjs", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".ico",
+        ".woff", ".woff2", ".ttf", ".otf", ".gif", ".avif", ".txt", ".html", ".md", ".pdf",
     ]
     .iter()
     .any(|extension| filename.ends_with(extension) && filename.len() > extension.len())
