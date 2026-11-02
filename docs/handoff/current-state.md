@@ -197,3 +197,11 @@
 - Orange/Green share eight fixture paths; seven byte-identical, one differs in six header-type settings. Full evidence: `docs/provenance/source-of-truth-matrix.md` §12.
 - Task 4 remains open. Structural path counts do not establish coverage; next acceptance work is to map compatibility requirements to profile-owned tests.
 - Legacy full corpus run 41361263075 status: `in_progress`; last job remained in full-book corpus comparison.
+
+
+## Workflow checkpoint — 2026-11-02 03:02 UTC
+
+- Main/docs commit: `1a0cb91d0df73c22a52be8e0f23f37cf27a3f955`.
+- Code commit `526d6a0` has passing dedicated Rust CI [41376496424](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41376496424).
+- Docs-triggered Rust CI [41380773019](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41380773019) and manifest scan [41380737375](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41380737375) are in progress. The latter is a second scan of unchanged source code/pins and should be compared to artifact 13111866073 for reproducibility once it finishes.
+- Full corpus runner [41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) remains in progress; no full-corpus result yet.
