@@ -96,8 +96,9 @@ function readLines(file) {
 function chapterSignature(result) {
   return {
     pageCount: result.pageCount ?? null,
-    summary: result.summary ?? null,
-    issues: result.issues ?? null,
+    geomSummary: result.geomSummary ?? null,
+    geomIssues: result.geomIssues ?? null,
+    geomStats: result.geomStats ?? null,
     error: result.error ?? null
   };
 }
@@ -164,13 +165,15 @@ function main() {
 
   const first = attempts[0];
   const second = attempts[1];
+  const singleWholeCorpusFallback = first.mode?.mode === 'single-whole-corpus' && second.mode?.mode === 'single-whole-corpus';
+  assert(first.mode?.nativeChapterCount === 0 && second.mode?.nativeChapterCount === 0,
+    'Pinned Gold corpus now has native H2 chapter markers; single-document fallback must be reviewed');
   const bothRendered = attempts.every(a => a.exitCode === 0 && a.summary && a.chapter && Number(a.chapter.pageCount) > 0 && !a.chapter.error);
   const signaturesIdentical = !!first.signature && !!second.signature && JSON.stringify(first.signature) === JSON.stringify(second.signature);
   const externalRequests = attempts.flatMap(a => a.externalRequests);
   const pageErrors = attempts.flatMap(a => a.pageErrors);
   const consoleErrors = attempts.flatMap(a => a.consoleErrors);
   const nativeChapterCount = first.mode?.nativeChapterCount ?? null;
-  const singleWholeCorpusFallback = first.mode?.mode === 'single-whole-corpus' && second.mode?.mode === 'single-whole-corpus';
   const measured = bothRendered && signaturesIdentical && externalRequests.length === 0 && pageErrors.length === 0 && consoleErrors.length === 0;
   const status = measured ? 'measured-full-document' : 'blocked-render-error-or-nondeterminism';
   const firstSummary = first.summary;
@@ -178,8 +181,8 @@ function main() {
   const manifest = {
     schemaVersion: 1,
     status,
-    fullCorpusCovered: bothRendered,
-    continuousDocumentRender: bothRendered,
+    fullCorpusCovered: bothRendered && singleWholeCorpusFallback,
+    continuousDocumentRender: bothRendered && singleWholeCorpusFallback,
     nativeChapterMarkers: nativeChapterCount,
     adaptedToSingleWholeCorpus: singleWholeCorpusFallback,
     runner: 'tools/legacy-runner/run-gold-v21-full-corpus.cjs',
@@ -196,8 +199,9 @@ function main() {
     environment: { node: process.version, playwright: playwrightPackage.version, chromium: browser.stdout.trim(), viewport: { width: 1400, height: 1000 }, timeoutMs: 900000, network: 'offline-enforced by Playwright route guard' },
     measured: {
       pages: firstChapter?.pageCount ?? null,
-      summary: firstChapter?.summary ?? null,
-      issueCount: Array.isArray(firstChapter?.issues) ? firstChapter.issues.length : null,
+      geometrySummary: firstChapter?.geomSummary ?? null,
+      issueCount: Array.isArray(firstChapter?.geomIssues) ? firstChapter.geomIssues.length : null,
+      geometryStats: firstChapter?.geomStats ?? null,
       totals: firstSummary?.totals ?? null,
       renderErrors: attempts.filter(a => a.chapter?.error || a.exitCode !== 0).map(a => ({ attempt: a.attempt, exitCode: a.exitCode, error: a.chapter?.error ?? null })),
       deterministicTwoFullCorpusRenders: signaturesIdentical,
