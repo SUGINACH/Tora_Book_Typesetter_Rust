@@ -116,12 +116,13 @@ function buildOfflineFullCorpusScript(sourcePath, outputPath) {
   assert(source.includes(fontAnchor), 'Gold font-preflight insertion anchor changed');
   source = source.replace(fontAnchor, fontAnchor + [
     '      chapterResult.fontPreflight = await iframe.evaluate(async () => {',
-    '        await document.fonts.ready;',
     '        const faces = Array.from(document.fonts);',
-    "        const failed = faces.filter(face => face.status !== 'loaded');",
-    '        return { faceCount: faces.length, loaded: faces.length - failed.length, failed: failed.length, failures: failed.map(face => ({ family: face.family, weight: face.weight, style: face.style, status: face.status })) };',
+    '        const outcomes = await Promise.all(faces.map(async face => { try { await face.load(); return { family: face.family, weight: face.weight, status: face.status }; } catch (error) { return { family: face.family, weight: face.weight, status: "error", error: String(error) }; } }));',
+    '        await document.fonts.ready;',
+    "        const failed = outcomes.filter(face => face.status !== 'loaded');",
+    '        return { faceCount: faces.length, loaded: faces.length - failed.length, failed: failed.length, failures: failed };',
     '      });'
-  ].join('\\n'));
+  ].join('\n'));
   const pageAnchor = '    page = await context.newPage();';
   assert(source.includes(pageAnchor), 'Gold chapter runner page creation anchor changed');
   source = source.replace(pageAnchor, pageAnchor + '\n' + routeGuardLines('    ', 'GOLD_EXTERNAL_REQUESTS_PATH', 'GOLD_PAGE_ERRORS_PATH', 'GOLD_CONSOLE_ERRORS_PATH'));
