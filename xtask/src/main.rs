@@ -2368,7 +2368,7 @@ mod tests {
         assert_eq!(owner, "settings");
         assert!(migration.contains("lossless settings"));
         assert_eq!(fixtures.len(), 1);
-        assert!(fixtures[0].contains("Tora_Book_Typesetter_"));
+        assert!(fixtures[0].contains("IMUD_TORANI"));
     }
 
     #[test]
