@@ -837,8 +837,74 @@ fn tokenize_javascript(text: &str) -> Vec<JsToken> {
     tokens
 }
 
-fn has_static_repository_root_binding(tokens: &[JsToken], name: &str) -> bool {
+fn has_function_parameter(tokens: &[JsToken], name: &str) -> bool {
     for index in 0..tokens.len() {
+        if tokens.get(index) == Some(&JsToken::Identifier("function".to_string())) {
+            let mut open = index + 1;
+            while open < tokens.len() && tokens.get(open) != Some(&JsToken::Punct('(')) {
+                open += 1;
+            }
+            if open == tokens.len() {
+                continue;
+            }
+            let mut cursor = open + 1;
+            let mut depth = 1usize;
+            while cursor < tokens.len() && depth > 0 {
+                match tokens.get(cursor) {
+                    Some(JsToken::Punct('(')) => depth += 1,
+                    Some(JsToken::Punct(')')) => depth -= 1,
+                    Some(JsToken::Identifier(parameter)) if depth == 1 && parameter == name => {
+                        return true;
+                    }
+                    _ => {}
+                }
+                cursor += 1;
+            }
+        }
+
+        if tokens.get(index) == Some(&JsToken::Punct('(')) {
+            let mut cursor = index + 1;
+            let mut depth = 1usize;
+            let mut contains_name = false;
+            while cursor < tokens.len() && depth > 0 {
+                match tokens.get(cursor) {
+                    Some(JsToken::Punct('(')) => depth += 1,
+                    Some(JsToken::Punct(')')) => depth -= 1,
+                    Some(JsToken::Identifier(parameter)) if depth == 1 && parameter == name => {
+                        contains_name = true;
+                    }
+                    _ => {}
+                }
+                cursor += 1;
+            }
+            if contains_name
+                && tokens.get(cursor) == Some(&JsToken::Punct('='))
+                && tokens.get(cursor + 1) == Some(&JsToken::Punct('>'))
+            {
+                return true;
+            }
+        }
+
+        if matches!(tokens.get(index), Some(JsToken::Identifier(parameter)) if parameter == name)
+            && tokens.get(index + 1) == Some(&JsToken::Punct('='))
+            && tokens.get(index + 2) == Some(&JsToken::Punct('>'))
+        {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn has_static_repository_root_binding(tokens: &[JsToken], name: &str, before: usize) -> bool {
+    // A function parameter named "root" is runtime input, not proof of a
+    // repository-root alias. Be conservative rather than resolving arbitrary
+    // caller-supplied directories as repository assets.
+    if has_function_parameter(tokens, name) {
+        return false;
+    }
+
+    for index in 0..before.min(tokens.len()) {
         if !matches!(
             tokens.get(index),
             Some(JsToken::Identifier(kind)) if kind == "const" || kind == "let" || kind == "var"
@@ -851,8 +917,9 @@ fn has_static_repository_root_binding(tokens: &[JsToken], name: &str) -> bool {
                 if binding == name
                     && tokens.get(index + 2) == Some(&JsToken::Punct('=')) =>
             {
+                let start = (index + 3).min(tokens.len());
                 let end = (index + 20).min(tokens.len());
-                let initializer = &tokens[index + 3..end];
+                let initializer = &tokens[start..end];
                 let path_resolve = initializer.windows(3).any(|window| {
                     matches!(window[0], JsToken::Identifier(ref value) if value == "path")
                         && window[1] == JsToken::Punct('.')
@@ -1041,13 +1108,13 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                         Some(JsToken::Identifier(name)) if name == "__dirname" => Some(source_path),
                         Some(JsToken::Identifier(name))
                             if name == "SCRIPTS_DIR"
-                                && has_static_repository_root_binding(&tokens, "SCRIPTS_DIR") =>
+                                && has_static_repository_root_binding(&tokens, "SCRIPTS_DIR", index) =>
                         {
                             Some(source_path)
                         }
                         Some(JsToken::Identifier(name))
                             if (name == "root" || name == "ROOT")
-                                && has_static_repository_root_binding(&tokens, name) =>
+                                && has_static_repository_root_binding(&tokens, name, index) =>
                         {
                             Some("")
                         }
@@ -2245,6 +2312,18 @@ mod tests {
             }
         "#;
         let dependencies = extract_asset_dependencies("scripts/layout-ab.mjs", "javascript", javascript);
+        assert!(dependencies.is_empty());
+    }
+
+    #[test]
+    fn path_join_does_not_reuse_outer_root_for_shadowing_function_parameter() {
+        let javascript = br#"
+            const root = process.cwd();
+            function loadExternalTree(root) {
+                return fs.readFileSync(path.join(root, 'default_settings.json'), 'utf8');
+            }
+        "#;
+        let dependencies = extract_asset_dependencies("tools/runner.js", "javascript", javascript);
         assert!(dependencies.is_empty());
     }
 
