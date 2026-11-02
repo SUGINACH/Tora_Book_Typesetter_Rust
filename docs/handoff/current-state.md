@@ -181,3 +181,11 @@
 - Orange lineage reference commits for Green import, Gold reference and common ancestor are retrievable; see `docs/provenance/source-of-truth-matrix.md`.
 - The five newly uploaded source files were re-hashed and match the existing unattributed attachment records exactly. Their origin remains unresolved; they remain a separate source set.
 - Stage A tasks 1–3 are closed. Tasks 4–10 remain open. Stage B remains not started.
+
+
+## Task 4 progress — 2026-11-02
+
+- Five pinned executable-profile default settings files compared: union 267 keys, 246 common to all, 21 presence differences, zero differing values for keys shared by profiles.
+- Grouping: two Green-only engine keys, one Orange-only header key, eleven Gold+IMUD AQ keys, and seven Orange+Gold+IMUD decoration/divider keys.
+- Absence is not false/zero/empty; preserve profile-specific presence semantics. Full matrix in `docs/provenance/source-of-truth-matrix.md` §10.
+- Task 4 remains open; next inventory must cover presets, assets, tests and other profile-owned data.
