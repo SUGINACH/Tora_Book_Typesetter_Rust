@@ -59,7 +59,11 @@ function main() {
     '--summary', summaryRelative,
     '--fail-on', 'none',
     '--repeat-check',
-    '--full-model'
+    '--full-model',
+    // Full-document runs retain the complete geometry model and ledger, but
+    // disable per-step event tracing to avoid destabilizing Chromium on the
+    // entire corpus. Use a targeted fixture run when causal traces are needed.
+    '--step-audit-disabled'
   ], {
     cwd: legacyRoot,
     encoding: 'utf8',
@@ -92,6 +96,9 @@ function main() {
   assert(Array.isArray(report.run?.externalRequests) && report.run.externalRequests.length === 0,
     'browser attempted external network requests');
   assert(report.run?.determinismCheck?.identical === true, 'repeat-run layout signatures differ');
+  assert(report.run?.stepAudit?.enabled === false &&
+    report.run?.stepAudit?.disabledByRequest === true,
+    'full-corpus run must explicitly disable per-step tracing while retaining the full model and ledger');
   assert(Number.isInteger(report.pageCount) && report.pageCount > 0, 'no pages rendered');
 
   const fontPreflight = report.geometry?.fontPreflight;
