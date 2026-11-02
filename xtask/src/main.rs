@@ -2490,7 +2490,12 @@ mod tests {
 
     #[test]
     fn explicit_html_text_markdown_and_pdf_paths_are_candidates() {
-        for path in ["renderer.html", "very_long_test_text.txt", "notes.md", "input.pdf"] {
+        for path in [
+            "renderer.html",
+            "very_long_test_text.txt",
+            "notes.md",
+            "input.pdf",
+        ] {
             assert!(
                 normalize_asset_reference("", path).is_some(),
                 "explicit file path was rejected: {path}"
