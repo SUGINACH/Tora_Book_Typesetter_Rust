@@ -83,7 +83,7 @@ When two sources disagree:
 Five files were supplied alongside the Rust project: `app.js`, `decorations.js`, `typesetter.js`, `style.css`, `index.html`. Their byte sizes and SHA-256 hashes are recorded in `legacy-source-pins.json`. None matches the corresponding root-level file in the five executable repositories at the pinned commits.
 
 Until their origin is identified, they are an independent source set named `user-attachment-unattributed`. They must not overwrite a pinned repository snapshot or be assigned to Orange/Green/Gold/Yellow/IMUD by guesswork. Their content remains available for a later provenance diff.
-A byte-level recheck against the five files mounted with this conversation was performed on 2026-11-01. All five byte lengths and SHA-256 values matched the `unattributedUserAttachments` entries in `legacy-source-pins.json` exactly. This confirms that the provenance record describes the actual supplied files, not similarly named repository files. It does not identify their originating repository or branch.
+A byte-level recheck against the five files mounted with the conversation was performed on 2026-11-01 and repeated against the five files uploaded in the 2026-11-02 continuation. All five byte lengths and SHA-256 values matched the `unattributedUserAttachments` entries in `legacy-source-pins.json` exactly on both checks. This confirms that the provenance record describes the actual supplied files, not similarly named repository files. It does not identify their originating repository or branch.
 
 
 ## 8. Scope boundary
