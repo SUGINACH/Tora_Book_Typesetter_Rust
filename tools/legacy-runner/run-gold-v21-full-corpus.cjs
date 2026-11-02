@@ -13,6 +13,7 @@ const expected = {
   inputSha256: '7919f48b14779d3fb98fd19b62388b7b772e1f977c00229217dc481af5529419',
   settingsPath: 'default_settings.json',
   settingsSha256: '5ec4f40f41de5f1c8cbfcaa942b8703a0311cd30610c4346a22ab9f8d0efcc17',
+  styleCssSha256: '24381dc5a5077436877a9731039e90085f4adf9621296d9424a9a53afb50275f',
   packageLockPath: 'package-lock.json',
   packageLockSha256: 'ba4c754b2a187cbb149e57f939c73b25204f0a1434c5cc14fefd1aa1357fade0',
   chapterScriptPath: 'scripts/test-chapters-enhanced.js',
@@ -32,6 +33,48 @@ function sha256File(file) { return crypto.createHash('sha256').update(fs.readFil
 function assert(condition, message) { if (!condition) throw new Error('Gold V21 full-corpus measurement failed: ' + message); }
 function relative(file) { return path.relative(root, file).split(path.sep).join('/'); }
 function writeLine(file, value) { fs.appendFileSync(file, String(value) + String.fromCharCode(10)); }
+
+function prepareOfflineFonts() {
+  const fontSourceRoot = path.join(root, 'legacy', 'offline-fonts');
+  const expectedFontCommit = '0b0ee279464a3db14672cd3f4051275aba5985da';
+  const actualFontCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: fontSourceRoot, encoding: 'utf8'
+  }).trim();
+  assert(actualFontCommit === expectedFontCommit, 'self-hosted font source commit differs from the pin');
+  const sourceCssPath = path.join(fontSourceRoot, 'selfhost-fonts', 'google-fonts-selfhost.css');
+  const sourceCssSha256 = sha256File(sourceCssPath);
+  const expectedCssSha256 = 'eec01e2b2a65ab67ad959625dd7b3640dceeb09a5cee8b7677787a1e89acd229';
+  assert(sourceCssSha256 === expectedCssSha256, 'self-hosted Google font CSS hash mismatch');
+  const sourceCss = fs.readFileSync(sourceCssPath, 'utf8');
+  const fontUrls = [...sourceCss.matchAll(/url\(['"]?([^)'"]+)['"]?\)/g)].map(match => match[1]);
+  assert(fontUrls.length === 38, 'unexpected self-hosted font asset count: ' + fontUrls.length);
+  for (const url of fontUrls) {
+    assert(!url.includes('..') && !/^https?:/i.test(url), 'self-hosted font CSS contains a non-local asset URL');
+    assert(fs.existsSync(path.join(fontSourceRoot, 'selfhost-fonts', url)), 'self-hosted font asset is missing: ' + url);
+  }
+  const destination = path.join(legacyRoot, 'selfhost-fonts');
+  fs.rmSync(destination, { recursive: true, force: true });
+  fs.cpSync(path.join(fontSourceRoot, 'selfhost-fonts'), destination, { recursive: true });
+  const styleCssPath = path.join(legacyRoot, 'style.css');
+  const originalStyleCssSha256 = sha256File(styleCssPath);
+  assert(originalStyleCssSha256 === expected.styleCssSha256, 'pinned source style.css hash mismatch');
+  let styleCss = fs.readFileSync(styleCssPath, 'utf8');
+  const remoteImport = /^@import\s+url\(['"]https:\/\/fonts\.googleapis\.com\/css2\?[^'"]+['"]\);\s*$/gm;
+  const imports = [...styleCss.matchAll(remoteImport)];
+  assert(imports.length === 1, 'expected exactly one Google Fonts @import in pinned style.css');
+  styleCss = styleCss.replace(remoteImport, "@import url('selfhost-fonts/google-fonts-selfhost.css');");
+  assert(!styleCss.includes('fonts.googleapis.com'), 'remote Google Fonts import remains after offline preparation');
+  fs.writeFileSync(styleCssPath, styleCss, 'utf8');
+  return {
+    sourceRepository: 'SUGINACH/Tora_Book_Typesetter_Orange',
+    sourceCommit: actualFontCommit,
+    cssPath: 'selfhost-fonts/google-fonts-selfhost.css',
+    cssSha256: sourceCssSha256,
+    fontAssetCount: fontUrls.length,
+    originalStyleCssSha256,
+    offlineStyleCssSha256: sha256File(styleCssPath)
+  };
+}
 
 function routeGuardLines(indent, externalEnv, pageErrorEnv, consoleErrorEnv) {
   return [
@@ -123,6 +166,7 @@ function main() {
   const browser = spawnSync(process.execPath, ['-e', "const {chromium}=require('playwright'); (async()=>{const b=await chromium.launch({headless:true});process.stdout.write(b.version());await b.close();})().catch(e=>{console.error(e);process.exit(1)});"], { cwd: legacyRoot, encoding: 'utf8' });
   assert(browser.status === 0 && browser.stdout.trim() === expected.chromiumVersion, 'Chromium version mismatch: ' + (browser.stdout || browser.stderr));
 
+  const offlineFonts = prepareOfflineFonts();
   const artifactDir = path.join(root, 'artifacts');
   fs.mkdirSync(artifactDir, { recursive: true });
   const offlineScriptPath = path.join(legacyRoot, 'scripts', 'test-chapters-enhanced.full-corpus.offline.cjs');
@@ -191,9 +235,9 @@ function main() {
       packageLockPath: expected.packageLockPath, packageLockSha256: sha256File(lockPath),
       chapterScriptPath: expected.chapterScriptPath, chapterScriptSha256: sha256File(chapterScriptPath),
       determinismScriptPath: expected.determinismScriptPath, determinismScriptSha256: sha256File(determinismScriptPath),
-      offlineScriptSha256: sha256File(offlineScriptPath), fontCss: expected.fontCss
+      offlineScriptSha256: sha256File(offlineScriptPath), fontCss: expected.fontCss, offlineFonts
     },
-    environment: { node: process.version, playwright: playwrightPackage.version, chromium: browser.stdout.trim(), viewport: { width: 1400, height: 1000 }, timeoutMs: 900000, network: 'offline-enforced by Playwright route guard' },
+    environment: { node: process.version, playwright: playwrightPackage.version, chromium: browser.stdout.trim(), offlineFonts, viewport: { width: 1400, height: 1000 }, timeoutMs: 900000, network: 'offline-enforced by Playwright route guard' },
     measured: {
       pages: firstChapter?.pageCount ?? null,
       geometrySummary: firstChapter?.geomSummary ?? null,
