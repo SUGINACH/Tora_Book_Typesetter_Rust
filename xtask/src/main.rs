@@ -215,10 +215,10 @@ fn scan_source(source: &SourceSpec, records: &mut Vec<FileRecord>) -> io::Result
             .and_then(OsStr::to_str)
             .unwrap_or("unknown")
             .to_string();
-        let status = status_for(&source.profile, &kind);
+        let status = status_for(&source.profile, &kind, &source_path);
         let (parser_or_consumer, rust_owner, migration_rule, parity_fixtures) =
             ownership_for(source, &source_path, &kind);
-        let (test_ids, acceptance_criteria) = tests_for(source, &kind, &rust_owner);
+        let (test_ids, acceptance_criteria) = tests_for(source, &kind, &rust_owner, &source_path);
         let asset_dependencies = extract_asset_dependencies(&source_path, &kind, &bytes);
         let notes = match kind.as_str() {
             "font" => "Byte identity scanned; glyph coverage, font tables and redistribution license are not yet verified. Ownership is provisional.",
@@ -262,15 +262,35 @@ fn ownership_for(
     kind: &str,
 ) -> (String, String, String, Vec<String>) {
     let lower = source_path.to_ascii_lowercase();
-    let fixture_path = match source.profile.as_str() {
-        "legacy-orange-v23" => "tests/fixtures/geometry-audit-smoke.txt",
+    let profile_fixture_path = match source.profile.as_str() {
+        "legacy-orange-v23" => "very_long_test_text.txt",
         "legacy-green-v23" | "legacy-gold-v21" | "legacy-imud-v20x" => {
             "text_files_for_typesetter_tests/very_long_test_text.txt"
         }
-        "legacy-yellow-v10" => "very_long_test_text.txt",
+        "legacy-yellow-v10" => "long_test_text.txt",
         _ => "source_code/V_current_snapshot.txt",
     };
-    let profile_fixture = format!("{}@{}:{}", source.repository, source.commit, fixture_path);
+    let profile_fixture = format!(
+        "{}@{}:{}", source.repository, source.commit, profile_fixture_path
+    );
+    let source_fixture = format!("{}@{}:{}", source.repository, source.commit, source_path);
+
+    let decoration_data = matches!(
+        lower.as_str(),
+        "header_ornaments.json"
+            | "note_rules.json"
+            | "ornaments_left_right.json"
+            | "ornaments_up_down.json"
+            | "section_dividers.json"
+            | "shaar_back.json"
+            | "shaar_main.json"
+            | "shaar_sub.json"
+    );
+    let asset_manifest_data = matches!(
+        lower.as_str(),
+        "assets_manifest.json" | "fonts-extended.json" | "fonts/fonts.json"
+    );
+
     let (parser, owner, migration) = if source.profile == "requirements-docs" {
         (
             "requirements-and-research".to_string(),
@@ -293,15 +313,13 @@ fn ownership_for(
         (
             "legacy-independent-geometry-audit".to_string(),
             "audit".to_string(),
-            "reimplement as an independent audit; do not use audit measurements as layout inputs"
-                .to_string(),
+            "reimplement as an independent audit; do not use audit measurements as layout inputs".to_string(),
         )
     } else if lower.ends_with("geometry-audit-cli.js") {
         (
             "legacy-offline-renderer-runner".to_string(),
             "xtask".to_string(),
-            "retain as read-only pinned oracle; do not link legacy JavaScript into Rust crates"
-                .to_string(),
+            "retain as read-only pinned oracle; do not link legacy JavaScript into Rust crates".to_string(),
         )
     } else if lower == "app.js" || lower.ends_with("/app.js") {
         (
@@ -322,16 +340,29 @@ fn ownership_for(
             "legacy-renderer-adapter".to_string(),
             "retain only as a compatibility/export adapter; never use browser reflow to decide Rust pagination".to_string(),
         )
-    } else if lower.contains("setting")
-        || lower.contains("preset")
-        || lower.contains("default_settings")
-        || kind == "settings"
-    {
+    } else if lower.contains("setting") || lower.contains("preset") || lower.contains("default_settings") || kind == "settings" {
         (
             "legacy-profile-settings-loader".to_string(),
             "settings".to_string(),
-            "preserve losslessly and resolve defaults only within the selected legacy profile"
-                .to_string(),
+            "preserve losslessly and resolve defaults only within the selected legacy profile".to_string(),
+        )
+    } else if decoration_data {
+        (
+            "legacy-decoration-and-layout-data".to_string(),
+            "engine-core::decorations".to_string(),
+            "parse and preserve profile-owned decoration/header/note/divider data; never substitute another profile's values".to_string(),
+        )
+    } else if asset_manifest_data {
+        (
+            "legacy-asset-and-font-manifest".to_string(),
+            "asset-registry".to_string(),
+            "validate manifest paths and font inventory against exact profile assets and font hashes".to_string(),
+        )
+    } else if kind == "baseline" {
+        (
+            "legacy-measured-baseline".to_string(),
+            "compat-test-harness".to_string(),
+            "preserve as an immutable profile-specific comparison baseline; never overwrite from another profile".to_string(),
         )
     } else if kind == "font" {
         (
@@ -343,8 +374,7 @@ fn ownership_for(
         (
             "legacy-asset-loader".to_string(),
             "asset-registry".to_string(),
-            "validate and hash assets; retain offline and profile-specific dependencies"
-                .to_string(),
+            "validate and hash assets; retain offline and profile-specific dependencies".to_string(),
         )
     } else if kind == "fixture" || kind == "corpus" {
         (
@@ -356,8 +386,7 @@ fn ownership_for(
         (
             "documentation-and-history".to_string(),
             "docs/history".to_string(),
-            "historical-only; cite as context and require executable evidence for behavior claims"
-                .to_string(),
+            "historical-only; cite as context and require executable evidence for behavior claims".to_string(),
         )
     } else if kind == "test-infrastructure" {
         (
@@ -375,28 +404,55 @@ fn ownership_for(
         (
             "legacy-source-inventory".to_string(),
             "legacy-source-reference".to_string(),
-            "historical-only until a concrete feature owner and parity fixture are approved"
-                .to_string(),
+            "historical-only until a concrete feature owner and parity fixture are approved".to_string(),
         )
     };
-    let fixtures = if matches!(kind, "fixture" | "corpus")
-        || owner == "engine-core"
-        || owner == "engine-core::decorations"
+
+    let mut fixtures = Vec::new();
+    if matches!(kind, "fixture" | "corpus" | "baseline") {
+        fixtures.push(source_fixture.clone());
+    }
+    if matches!(
+        owner.as_str(),
+        "engine-core"
+            | "engine-core::decorations"
+            | "app-core"
+            | "settings"
+            | "asset-registry"
+            | "legacy-renderer-adapter"
+            | "audit"
+            | "xtask"
+    ) && kind != "font"
     {
-        vec![profile_fixture]
-    } else if owner == "xtask" || owner == "audit" {
-        vec!["tools/legacy-runner/README.md".to_string()]
-    } else {
-        Vec::new()
-    };
+        fixtures.push(profile_fixture);
+    }
+    if matches!(owner.as_str(), "settings" | "asset-registry" | "engine-core::decorations")
+        && matches!(kind, "settings" | "data" | "asset" | "fixture")
+    {
+        fixtures.push(source_fixture);
+    }
+    fixtures.sort();
+    fixtures.dedup();
     (parser, owner, migration, fixtures)
 }
 
-fn tests_for(source: &SourceSpec, kind: &str, owner: &str) -> (Vec<String>, String) {
+fn tests_for(source: &SourceSpec, kind: &str, owner: &str, source_path: &str) -> (Vec<String>, String) {
     if source.profile == "requirements-docs" {
         return (
             vec!["SPEC-TO-ADR".to_string()],
             "Every accepted requirement links to a feature/test or ADR; prose alone never proves executable behavior.".to_string(),
+        );
+    }
+    if kind == "baseline" {
+        return (
+            vec!["SRC-PIN-HASH".to_string(), "BASELINE-IDENTITY".to_string(), "DETERMINISM-REPEAT".to_string()],
+            "The profile-specific measured baseline hash and schema are immutable; replay must compare against this exact profile baseline and never rewrite it implicitly.".to_string(),
+        );
+    }
+    if kind == "fixture" && source_path.to_ascii_lowercase().contains("settings") {
+        return (
+            vec!["SRC-PIN-HASH".to_string(), "SETTINGS-ROUNDTRIP".to_string(), "PROFILE-REPLAY".to_string()],
+            "The exact profile settings fixture parses and round-trips without dropping unknown keys; it is exercised only under its owning profile.".to_string(),
         );
     }
     if matches!(kind, "fixture" | "corpus") {
@@ -408,6 +464,12 @@ fn tests_for(source: &SourceSpec, kind: &str, owner: &str) -> (Vec<String>, Stri
                 "DETERMINISM-REPEAT".to_string(),
             ],
             "Pinned input byte length and SHA-256 must match; replay only with this profile's own settings/fonts; repeated canonical output hashes must be identical.".to_string(),
+        );
+    }
+    if kind == "data" {
+        return (
+            vec!["SRC-PIN-HASH".to_string(), "DATA-ROUNDTRIP".to_string(), "PROFILE-REPLAY".to_string()],
+            "Profile-owned JSON data is parsed and losslessly round-tripped; its exact source file is retained as a fixture and is never substituted across profiles.".to_string(),
         );
     }
     match owner {
@@ -422,49 +484,31 @@ fn tests_for(source: &SourceSpec, kind: &str, owner: &str) -> (Vec<String>, Stri
             "Zero unexplained missing/duplicated/reordered source spans; one valid decision record per required layout block; identical repeated output.".to_string(),
         ),
         "settings" => (
-            vec![
-                "SRC-PIN-HASH".to_string(),
-                "SETTINGS-ROUNDTRIP".to_string(),
-            ],
-            "Unknown settings keys survive lossless round-trip; defaults are resolved only inside the owning profile; no silent cross-profile fallback.".to_string(),
+            vec!["SRC-PIN-HASH".to_string(), "SETTINGS-ROUNDTRIP".to_string(), "PROFILE-REPLAY".to_string()],
+            "Unknown settings keys survive lossless round-trip; defaults are resolved only inside the selected profile; the exact settings source is a fixture.".to_string(),
         ),
         "font-environment" => (
             vec!["SRC-PIN-HASH".to_string(), "FONT-PREFLIGHT".to_string()],
             "Every required face loads and required glyph coverage is reported; failed faces are zero; redistribution license is reviewed separately.".to_string(),
         ),
         "asset-registry" => (
-            vec![
-                "SRC-PIN-HASH".to_string(),
-                "ASSET-REFERENCE-CLOSURE".to_string(),
-            ],
-            "Every local reference resolves to a pinned asset; no missing dependency, path traversal or unapproved external URL.".to_string(),
+            vec!["SRC-PIN-HASH".to_string(), "ASSET-REFERENCE-CLOSURE".to_string()],
+            "Every local reference resolves to a pinned asset; no missing dependency, path traversal or unapproved external URL; the exact asset/manifest is a fixture.".to_string(),
         ),
         "legacy-renderer-adapter" => (
-            vec![
-                "SRC-PIN-HASH".to_string(),
-                "LEGACY-DOM-GEOMETRY".to_string(),
-                "DETERMINISM-REPEAT".to_string(),
-            ],
+            vec!["SRC-PIN-HASH".to_string(), "LEGACY-DOM-GEOMETRY".to_string(), "DETERMINISM-REPEAT".to_string(), "PROFILE-REPLAY".to_string()],
             "Page/column/block bounds are measured with explicit units and tolerances; zero clipping/overflow; browser output never feeds Rust layout decisions.".to_string(),
         ),
         "xtask" | "audit" => (
-            vec!["SRC-PIN-HASH".to_string(), "LEGACY-DOM-GEOMETRY".to_string()],
-            "Pinned runner/audit source hash matches; offline run records zero external requests and emits a complete report.".to_string(),
+            vec!["SRC-PIN-HASH".to_string(), "LEGACY-DOM-GEOMETRY".to_string(), "PROFILE-REPLAY".to_string()],
+            "Pinned runner/audit source hash matches; offline run records zero external requests and emits a complete report for its own profile fixture.".to_string(),
         ),
         "app-core" => (
-            vec![
-                "SRC-PIN-HASH".to_string(),
-                "SETTINGS-ROUNDTRIP".to_string(),
-                "PROFILE-REPLAY".to_string(),
-            ],
+            vec!["SRC-PIN-HASH".to_string(), "SETTINGS-ROUNDTRIP".to_string(), "PROFILE-REPLAY".to_string()],
             "Application jobs carry immutable profile/config/input identities; unknown settings are not dropped and cancellation cannot publish stale output.".to_string(),
         ),
         "compat-test-harness" => (
-            vec![
-                "SRC-PIN-HASH".to_string(),
-                "PROFILE-REPLAY".to_string(),
-                "DETERMINISM-REPEAT".to_string(),
-            ],
+            vec!["SRC-PIN-HASH".to_string(), "PROFILE-REPLAY".to_string(), "DETERMINISM-REPEAT".to_string()],
             "The fixture executes under its exact source profile and environment; repeat output signatures match.".to_string(),
         ),
         "build-system" => (
@@ -477,7 +521,6 @@ fn tests_for(source: &SourceSpec, kind: &str, owner: &str) -> (Vec<String>, Stri
         ),
     }
 }
-
 fn parse_runner_evidence_line(line: &str) -> Option<[&str; 8]> {
     let mut fields = line.split('\t');
     let parsed = [
@@ -1853,16 +1896,35 @@ fn is_relevant(path: &str) -> bool {
     )
 }
 
-fn status_for(profile: &str, kind: &str) -> &'static str {
+fn status_for(profile: &str, kind: &str, source_path: &str) -> &'static str {
+    let lower = source_path.to_ascii_lowercase();
     if profile == "requirements-docs" && kind == "documentation" {
         "spec-only"
     } else if kind == "font" {
         "blocked-license"
-    } else if matches!(kind, "settings" | "data" | "asset" | "fixture" | "corpus") {
+    } else if is_historical_record_path(&lower) {
+        "historical-only"
+    } else if matches!(
+        kind,
+        "settings" | "data" | "asset" | "fixture" | "corpus" | "style" | "baseline" | "dom-contract"
+    ) {
         "verified-data"
     } else {
         "historical-only"
     }
+}
+
+fn is_historical_record_path(lower: &str) -> bool {
+    lower.starts_with("docs/")
+        || lower.starts_with("reports/")
+        || lower.starts_with("debug/")
+        || lower == "reference-analysis.json"
+        || lower == "fonts-priority.json"
+        || lower == "fonts/fonts/fonts.json"
+        || lower == "package.json"
+        || lower == "package-lock.json"
+        || lower.starts_with("archive/")
+        || lower.starts_with("presets/makom-bina-v20.5/")
 }
 
 fn classify(path: &str) -> String {
@@ -1872,7 +1934,15 @@ fn classify(path: &str) -> String {
         .unwrap_or("")
         .to_ascii_lowercase();
     let lower = path.to_ascii_lowercase();
-    if matches!(extension.as_str(), "woff" | "woff2" | "ttf" | "otf" | "eot") {
+    if lower.starts_with("docs/") || lower.starts_with("reports/") || lower.starts_with("debug/") || lower == "reference-analysis.json" {
+        "documentation".to_string()
+    } else if lower == "package.json" || lower == "package-lock.json" {
+        "build-config".to_string()
+    } else if lower == "expected_baseline.json" {
+        "baseline".to_string()
+    } else if lower.starts_with("tests/fixtures/") || lower == "tests/layout/baseline.json" {
+        "fixture".to_string()
+    } else if matches!(extension.as_str(), "woff" | "woff2" | "ttf" | "otf" | "eot") {
         "font".to_string()
     } else if matches!(
         extension.as_str(),
@@ -1909,7 +1979,6 @@ fn classify(path: &str) -> String {
         "other".to_string()
     }
 }
-
 fn render_manifest(sources: &[SourceSpec], records: &[FileRecord]) -> String {
     let mut output = String::new();
     output.push_str(
