@@ -783,7 +783,7 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                 {
                     if let Some(JsToken::String(value)) = tokens.get(index + 2) {
                         let normalized = if identifier == "fetch" {
-                            normalize_asset_reference(source_path, value)
+                            normalize_fetch_reference(source_path, value)
                         } else {
                             normalize_module_reference(source_path, value)
                         };
@@ -820,7 +820,19 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                 ) && tokens.get(index + 1) == Some(&JsToken::Punct(':'))
                 {
                     if let Some(JsToken::String(value)) = tokens.get(index + 2) {
-                        if let Some(normalized) = normalize_module_reference(source_path, value) {
+                        if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                            output.insert(normalized);
+                        }
+                    }
+                }
+
+                // Direct DOM asset URL assignments (link.href = "...").
+                if matches!(identifier.as_str(), "href" | "src" | "poster")
+                    && tokens.get(index.wrapping_sub(1)) == Some(&JsToken::Punct('.'))
+                    && tokens.get(index + 1) == Some(&JsToken::Punct('='))
+                {
+                    if let Some(JsToken::String(value)) = tokens.get(index + 2) {
+                        if let Some(normalized) = normalize_asset_reference(source_path, value) {
                             output.insert(normalized);
                         }
                     }
@@ -843,6 +855,34 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                         _ => None,
                     };
                     if let Some(base) = base {
+                        let mut declaration = index;
+                        let mut output_destination = false;
+                        while declaration > 0 {
+                            if matches!(tokens.get(declaration - 1), Some(JsToken::Punct(';'))) {
+                                break;
+                            }
+                            if matches!(
+                                tokens.get(declaration - 1),
+                                Some(JsToken::Identifier(kind)) if kind == "const" || kind == "let" || kind == "var"
+                            ) {
+                                if let Some(JsToken::Identifier(name)) = tokens.get(declaration) {
+                                    let upper = name.to_ascii_uppercase();
+                                    output_destination = [
+                                        "OUT",
+                                        "OUTPUT",
+                                        "REPORT",
+                                        "SUMMARY",
+                                        "RESULT",
+                                        "LATEST",
+                                        "ARTIFACT",
+                                    ]
+                                    .iter()
+                                    .any(|marker| upper.contains(marker));
+                                }
+                                break;
+                            }
+                            declaration -= 1;
+                        }
                         let mut cursor = index + 3;
                         let mut depth = 1usize;
                         let mut segments = Vec::new();
@@ -862,10 +902,12 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                             }
                             cursor += 1;
                         }
-                        if valid && !segments.is_empty() {
+                        if valid && !output_destination && !segments.is_empty() {
                             let joined = segments.join("/");
-                            if let Some(normalized) = normalize_asset_reference(base, &joined) {
-                                output.insert(normalized);
+                            if has_known_asset_extension(&joined) {
+                                if let Some(normalized) = normalize_asset_reference(base, &joined) {
+                                    output.insert(normalized);
+                                }
                             }
                         }
                     }
@@ -1005,6 +1047,26 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
         }
         index += 1;
     }
+}
+
+fn normalize_fetch_reference(source_path: &str, value: &str) -> Option<String> {
+    // Browser fetch() resolves against document.baseURI, not the JS file path.
+    // Test runners load renderer.html from the repository root.
+    if source_path.starts_with("tests/") && !value.starts_with("./") && !value.starts_with("../") {
+        return normalize_asset_reference("", value);
+    }
+    normalize_asset_reference(source_path, value)
+}
+
+fn has_known_asset_extension(value: &str) -> bool {
+    let filename = value.rsplit('/').next().unwrap_or(value).to_ascii_lowercase();
+    [
+        ".css", ".js", ".mjs", ".cjs", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp",
+        ".ico", ".woff", ".woff2", ".ttf", ".otf", ".gif", ".avif", ".txt", ".html", ".md",
+        ".pdf",
+    ]
+    .iter()
+    .any(|extension| filename.ends_with(extension) && filename.len() > extension.len())
 }
 
 fn normalize_module_reference(source_path: &str, value: &str) -> Option<String> {
@@ -1963,12 +2025,16 @@ mod tests {
             const checker = fs.readFileSync(path.join(__dirname, '..', 'layout', 'check_layout.js'), 'utf8');
             const defaults = fs.readFileSync(path.join(root, 'default_settings.json'), 'utf8');
             await page.goto(baseUrl + '/renderer.html', { waitUntil: 'load' });
+            const out = val('--out') || path.join(__dirname, 'results', 'latest.json');
+            const outputDir = path.join(__dirname, '..', 'issue-reports');
         "#;
         let dependencies =
             extract_asset_dependencies("tests/layout/run-suite.js", "javascript", javascript);
         assert!(dependencies.contains(&"local:tests/layout/check_layout.js".to_string()));
         assert!(dependencies.contains(&"local:default_settings.json".to_string()));
         assert!(dependencies.contains(&"local:renderer.html".to_string()));
+        assert!(!dependencies.contains(&"local:tests/layout/results/latest.json".to_string()));
+        assert!(!dependencies.contains(&"local:issue-reports".to_string()));
     }
 
     #[test]
@@ -1979,6 +2045,49 @@ mod tests {
         let dependencies =
             extract_asset_dependencies("archive/v20.2-tip/verify_cut.js", "javascript", javascript);
         assert!(dependencies.contains(&"local:archive/v20.2-tip/typesetter.js".to_string()));
+    }
+
+    #[test]
+    fn nested_template_literals_do_not_hide_later_static_fetches() {
+        let javascript = br#"
+            const anchorRow = (kind !== 'textStyle')
+              ? `<div>${EXT_ANCHOR_OPTIONS.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</div>`
+              : '';
+            panel.innerHTML = `
+              <span>${icon} ${name}</span>
+              ${anchorRow}
+            `;
+            fetch('styles.css');
+        "#;
+        let dependencies =
+            extract_asset_dependencies("archive/v20.2-tip/script.js", "javascript", javascript);
+        assert!(dependencies.contains(&"local:archive/v20.2-tip/styles.css".to_string()));
+    }
+
+    #[test]
+    fn browser_test_fetch_paths_resolve_from_document_root() {
+        let javascript = br#"
+            await page.evaluate(async () => {
+                const defaults = await (await fetch('default_settings.json')).json();
+            });
+        "#;
+        let dependencies = extract_asset_dependencies(
+            "tests/features/20-settings-io.test.js",
+            "javascript",
+            javascript,
+        );
+        assert!(dependencies.contains(&"local:default_settings.json".to_string()));
+        assert!(!dependencies.contains(&"local:tests/features/default_settings.json".to_string()));
+    }
+
+    #[test]
+    fn direct_dom_href_assignment_is_an_asset_reference() {
+        let javascript = br#"
+            const link = document.createElement('link');
+            link.href = 'fonts-extended.css';
+        "#;
+        let dependencies = extract_asset_dependencies("app.js", "javascript", javascript);
+        assert!(dependencies.contains(&"local:fonts-extended.css".to_string()));
     }
 
     #[test]
