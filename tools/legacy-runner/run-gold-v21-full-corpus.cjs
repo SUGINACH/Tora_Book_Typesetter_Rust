@@ -66,10 +66,6 @@ function prepareGoldRendererOverlay() {
     assert(exactExpectedOverlay.split(tag).length === 2, 'pinned renderer must contain exactly one stale script tag: ' + script);
     exactExpectedOverlay = exactExpectedOverlay.replace(tag, '');
   }
-  exactExpectedOverlay = exactExpectedOverlay.replace(
-    '  <div id="measuring-box"></div>\n\n  <script src="decorations.js"></script>',
-    '  <div id="measuring-box"></div>\n  <script src="decorations.js"></script>'
-  );
   assert(exactExpectedOverlay === overlayText,
     'same-profile renderer overlay differs by more than the three absent optional instrumentation tags');
   const originalSha256 = sha256File(rendererPath);
