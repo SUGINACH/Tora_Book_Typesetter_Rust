@@ -837,6 +837,68 @@ fn tokenize_javascript(text: &str) -> Vec<JsToken> {
     tokens
 }
 
+fn has_static_repository_root_binding(tokens: &[JsToken], name: &str) -> bool {
+    for index in 0..tokens.len() {
+        if !matches!(
+            tokens.get(index),
+            Some(JsToken::Identifier(kind)) if kind == "const" || kind == "let" || kind == "var"
+        ) {
+            continue;
+        }
+
+        match tokens.get(index + 1) {
+            Some(JsToken::Identifier(binding))
+                if binding == name
+                    && tokens.get(index + 2) == Some(&JsToken::Punct('=')) =>
+            {
+                let end = (index + 20).min(tokens.len());
+                let initializer = &tokens[index + 3..end];
+                let path_resolve = initializer.windows(3).any(|window| {
+                    matches!(window[0], JsToken::Identifier(ref value) if value == "path")
+                        && window[1] == JsToken::Punct('.')
+                        && matches!(window[2], JsToken::Identifier(ref value) if value == "resolve")
+                });
+                let known_anchor = initializer.iter().any(|token| {
+                    matches!(
+                        token,
+                        JsToken::Identifier(value)
+                            if value == "__dirname" || value == "fileURLToPath" || value == "cwd"
+                    ) || matches!(token, JsToken::String(value) if value == ".")
+                });
+                if path_resolve && known_anchor {
+                    return true;
+                }
+            }
+            Some(JsToken::Punct('{')) => {
+                let mut cursor = index + 2;
+                let mut has_root_property = false;
+                while cursor < tokens.len() && tokens.get(cursor) != Some(&JsToken::Punct('}')) {
+                    if matches!(tokens.get(cursor), Some(JsToken::Identifier(property)) if property == name)
+                    {
+                        has_root_property = true;
+                    }
+                    cursor += 1;
+                }
+                if has_root_property
+                    && tokens.get(cursor + 1) == Some(&JsToken::Punct('='))
+                    && tokens.get(cursor + 2)
+                        == Some(&JsToken::Identifier("require".to_string()))
+                    && tokens.get(cursor + 3) == Some(&JsToken::Punct('('))
+                {
+                    if let Some(JsToken::String(module)) = tokens.get(cursor + 4) {
+                        if module.contains("harness") {
+                            return true;
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    false
+}
+
 fn static_string_expression(tokens: &[JsToken], start: usize) -> Option<(String, usize)> {
     let mut cursor = start;
     let mut value = String::new();
@@ -971,12 +1033,19 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                     && tokens.get(index + 1) == Some(&JsToken::Punct('('))
                 {
                     let base = match tokens.get(index + 2) {
+                        Some(JsToken::Identifier(name)) if name == "__dirname" => Some(source_path),
                         Some(JsToken::Identifier(name))
-                            if name == "__dirname" || name == "SCRIPTS_DIR" =>
+                            if name == "SCRIPTS_DIR"
+                                && has_static_repository_root_binding(&tokens, "SCRIPTS_DIR") =>
                         {
                             Some(source_path)
                         }
-                        Some(JsToken::Identifier(name)) if name == "root" => Some(""),
+                        Some(JsToken::Identifier(name))
+                            if (name == "root" || name == "ROOT")
+                                && has_static_repository_root_binding(&tokens, name) =>
+                        {
+                            Some("")
+                        }
                         _ => None,
                     };
                     if let Some(base) = base {
@@ -2158,6 +2227,33 @@ mod tests {
         assert!(dependencies.contains(&"local:renderer.html".to_string()));
         assert!(!dependencies.contains(&"local:tests/layout/results/latest.json".to_string()));
         assert!(!dependencies.contains(&"local:issue-reports".to_string()));
+    }
+
+    #[test]
+    fn path_join_ignores_runtime_root_parameters() {
+        let javascript = br#"
+            async function runTree(browser, root, plan) {
+                const settings = fs.readFileSync(path.join(root, 'default_settings.json'), 'utf8');
+            }
+            function hasFonts(root) {
+                return fs.existsSync(path.join(root, 'fonts', 'fonts.json'));
+            }
+        "#;
+        let dependencies = extract_asset_dependencies("scripts/layout-ab.mjs", "javascript", javascript);
+        assert!(dependencies.is_empty());
+    }
+
+    #[test]
+    fn path_join_resolves_declared_repository_root_and_imported_harness_root() {
+        let javascript = br#"
+            const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+            fs.readFileSync(path.join(ROOT, 'default_settings.json'), 'utf8');
+            const { root, startServer } = require('./lib/harness');
+            fs.readFileSync(path.join(root, 'renderer.html'), 'utf8');
+        "#;
+        let dependencies = extract_asset_dependencies("scripts/runner.mjs", "javascript", javascript);
+        assert!(dependencies.contains(&"local:default_settings.json".to_string()));
+        assert!(dependencies.contains(&"local:renderer.html".to_string()));
     }
 
     #[test]
