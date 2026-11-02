@@ -363,3 +363,13 @@
 - Verified the three lineage reference commits cited by Orange provenance are retrievable: Green import point `0ddaf89010e84e9e999c0e1faef2888994393915`, Gold reference point `31ed2ca830c1868cb2c9157d080f8922d112ff8e`, and common-ancestor reference `5c646c1fc2ea52233be76618463933dbe013cf2c`. Their role/relationship is recorded in `docs/provenance/source-of-truth-matrix.md`; existence checks alone are not presented as a full patch-level port audit.
 - Re-hashed the five files uploaded with this continuation. Their byte lengths and SHA-256 values match all five `unattributedUserAttachments` entries exactly. They remain an independent, unattributed source set; no branch/repository was guessed.
 - Task 3 acceptance criterion (exact reproducible pins and recorded Orange–Green–Gold lineage) is satisfied; task 3 is now checked complete in the 100-task plan. Tasks 1–3 are closed. Tasks 4–10 remain open; Stage B is not started.
+
+
+### Task 4 partial — pinned default-settings conflict scan — 2026-11-02
+
+- Compared the root `default_settings.json` from Orange, Green, Gold, Yellow and IMUD at the exact pinned commits.
+- Counts: 254 / 248 / 264 / 246 / 264 keys; union 267; intersection 246.
+- There are 21 key-presence differences and **zero conflicting JSON values/types among keys present in multiple profiles**.
+- Presence-only groups: Green-only `allow-terminal-residual-fallback=true` and `balance-chapter-end="balance"`; Orange-only `hdr-h1-title-mode="full"`; Gold+IMUD-only 11 `aq-*` keys; Orange+Gold+IMUD 7 ornament/divider keys.
+- Missing is not false/zero/empty and must remain distinct in the future settings model. Gold/IMUD default-settings blob identity does not unify their engine behavior.
+- Detailed table and interpretation rule: `docs/provenance/source-of-truth-matrix.md` §10. Task 4 remains open pending the equivalent inventory for presets, assets, tests and remaining source classes.
