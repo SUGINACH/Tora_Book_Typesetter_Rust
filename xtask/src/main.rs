@@ -587,7 +587,9 @@ fn extract_asset_dependencies(source_path: &str, kind: &str, bytes: &[u8]) -> Ve
         // Settings and data files are structured catalogs. Retain their
         // explicit file-name values, but reject extension-only and directory
         // fragments in normalize_asset_reference.
-        if matches!(kind, "settings" | "data") {
+        if matches!(kind, "settings" | "data")
+            && !lower_path.ends_with("package-lock.json")
+        {
             for value in extract_quoted_strings(&text) {
                 if is_path_candidate(&value) {
                     if let Some(normalized) = normalize_asset_reference(source_path, &value) {
@@ -715,7 +717,7 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                 let next_is_open_call = tokens.get(index + 1) == Some(&JsToken::Punct('('));
                 if identifier == "import" {
                     if let Some(JsToken::String(value)) = tokens.get(index + 1) {
-                        if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                        if let Some(normalized) = normalize_module_reference(source_path, value) {
                             output.insert(normalized);
                         }
                     }
@@ -724,7 +726,7 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                     && next_is_open_call
                 {
                     if let Some(JsToken::String(value)) = tokens.get(index + 2) {
-                        if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                        if let Some(normalized) = normalize_module_reference(source_path, value) {
                             output.insert(normalized);
                         }
                     }
@@ -735,7 +737,7 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                     && tokens.get(index + 2) == Some(&JsToken::Punct('('))
                 {
                     if let Some(JsToken::String(value)) = tokens.get(index + 3) {
-                        if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                        if let Some(normalized) = normalize_module_reference(source_path, value) {
                             output.insert(normalized);
                         }
                     }
@@ -744,7 +746,7 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                 // Static module specifiers: import ... from "x" / export ... from "x".
                 if identifier == "from" {
                     if let Some(JsToken::String(value)) = tokens.get(index + 1) {
-                        if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                        if let Some(normalized) = normalize_module_reference(source_path, value) {
                             output.insert(normalized);
                         }
                     }
@@ -757,7 +759,7 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                 ) && tokens.get(index + 1) == Some(&JsToken::Punct(':'))
                 {
                     if let Some(JsToken::String(value)) = tokens.get(index + 2) {
-                        if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                        if let Some(normalized) = normalize_module_reference(source_path, value) {
                             output.insert(normalized);
                         }
                     }
@@ -797,7 +799,7 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                                     JsToken::Punct(']') => depth -= 1,
                                     JsToken::String(value) if depth == 1 => {
                                         if let Some(normalized) =
-                                            normalize_asset_reference(source_path, value)
+                                            normalize_module_reference(source_path, value)
                                         {
                                             output.insert(normalized);
                                         }
@@ -833,6 +835,16 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
         }
         index += 1;
     }
+}
+
+fn normalize_module_reference(source_path: &str, value: &str) -> Option<String> {
+    // Bare specifiers (for example "playwright/package.json") are resolved by
+    // Node's package resolver, not relative to the source file. Only explicit
+    // relative or root-relative module paths are local repository assets.
+    if !(value.starts_with("./") || value.starts_with("../") || value.starts_with('/')) {
+        return None;
+    }
+    normalize_asset_reference(source_path, value)
 }
 
 fn extract_url_functions(text: &str, output: &mut BTreeSet<String>, source_path: &str) {
@@ -1795,6 +1807,37 @@ mod tests {
             status_for("requirements-docs", "documentation"),
             "spec-only"
         );
+    }
+
+    #[test]
+    fn bare_javascript_module_specifiers_are_not_local_assets() {
+        let javascript = br#"
+            const playwright = require("playwright/package.json");
+            import packagePart from "some-package/subpath";
+            const local = require("./local.js");
+            fetch("./assets/catalog.json");
+        "#;
+        let dependencies =
+            extract_asset_dependencies("tools/runner.js", "javascript", javascript);
+        assert!(!dependencies.iter().any(|value| value.contains("playwright")));
+        assert!(!dependencies.iter().any(|value| value.contains("some-package")));
+        assert!(dependencies.contains(&"local:tools/local.js".to_string()));
+        assert!(dependencies.contains(&"local:tools/assets/catalog.json".to_string()));
+    }
+
+    #[test]
+    fn package_lock_bin_paths_are_not_repository_asset_dependencies() {
+        let lockfile = br#"{
+            "packages": {
+                "node_modules/playwright": {
+                    "resolved": "https://registry.npmjs.org/playwright/-/playwright.tgz",
+                    "bin": { "playwright": "cli.js" }
+                }
+            }
+        }"#;
+        let dependencies = extract_asset_dependencies("package-lock.json", "data", lockfile);
+        assert!(!dependencies.iter().any(|value| value == "local:cli.js"));
+        assert!(dependencies.iter().any(|value| value.starts_with("external:")));
     }
 
     #[test]
