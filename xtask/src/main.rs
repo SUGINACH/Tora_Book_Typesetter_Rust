@@ -826,6 +826,108 @@ fn extract_javascript_dependencies(text: &str, output: &mut BTreeSet<String>, so
                     }
                 }
 
+                // Static path.join(__dirname|root|SCRIPTS_DIR, ...) calls
+                // represent concrete repository file paths when every segment
+                // is literal. This covers Node test fixtures and script entrypoints.
+                if identifier == "join"
+                    && tokens.get(index.wrapping_sub(1)) == Some(&JsToken::Punct('.'))
+                    && tokens.get(index + 1) == Some(&JsToken::Punct('('))
+                {
+                    let base = match tokens.get(index + 2) {
+                        Some(JsToken::Identifier(name)) if name == "__dirname" || name == "SCRIPTS_DIR" => {
+                            Some(source_path)
+                        }
+                        Some(JsToken::Identifier(name)) if name == "root" => Some(""),
+                        _ => None,
+                    };
+                    if let Some(base) = base {
+                        let mut cursor = index + 3;
+                        let mut depth = 1usize;
+                        let mut segments = Vec::new();
+                        let mut valid = true;
+                        while cursor < tokens.len() && depth > 0 {
+                            match &tokens[cursor] {
+                                JsToken::Punct('(') => depth += 1,
+                                JsToken::Punct(')') => depth -= 1,
+                                JsToken::String(value) if depth == 1 => segments.push(value.clone()),
+                                JsToken::Template(_) | JsToken::Identifier(_) if depth == 1 => {
+                                    valid = false;
+                                    break;
+                                }
+                                _ => {}
+                            }
+                            cursor += 1;
+                        }
+                        if valid && !segments.is_empty() {
+                            let joined = segments.join("/");
+                            if let Some(normalized) = normalize_asset_reference(base, &joined) {
+                                output.insert(normalized);
+                            }
+                        }
+                    }
+                }
+
+                // Static Playwright page.goto(baseUrl + "/renderer.html") and
+                // equivalent static page paths resolve from the served document root.
+                if identifier == "goto"
+                    && tokens.get(index.wrapping_sub(1)) == Some(&JsToken::Punct('.'))
+                    && tokens.get(index + 1) == Some(&JsToken::Punct('('))
+                {
+                    let mut cursor = index + 2;
+                    let mut depth = 1usize;
+                    let mut static_path = None;
+                    while cursor < tokens.len() && depth > 0 {
+                        match &tokens[cursor] {
+                            JsToken::Punct('(') => depth += 1,
+                            JsToken::Punct(')') => depth -= 1,
+                            JsToken::Punct(',') if depth == 1 => break,
+                            JsToken::String(value) if depth == 1 => {
+                                if static_path.is_some() {
+                                    static_path = None;
+                                    break;
+                                }
+                                static_path = Some(value.as_str());
+                            }
+                            _ => {}
+                        }
+                        cursor += 1;
+                    }
+                    if let Some(value) = static_path {
+                        if let Some(normalized) = normalize_asset_reference("", value) {
+                            output.insert(normalized);
+                        }
+                    }
+                }
+
+                // fs.readFileSync(process.argv[n] || "fallback.ext") has a
+                // static fallback file even though its preferred path is dynamic.
+                if identifier == "readFileSync"
+                    && tokens.get(index + 1) == Some(&JsToken::Punct('('))
+                {
+                    let mut cursor = index + 2;
+                    let mut has_fallback = false;
+                    let mut fallback = None;
+                    while cursor < tokens.len() {
+                        match &tokens[cursor] {
+                            JsToken::Punct(',') | JsToken::Punct(')') => break,
+                            JsToken::Punct('|') if tokens.get(cursor + 1) == Some(&JsToken::Punct('|')) => {
+                                has_fallback = true;
+                                cursor += 1;
+                            }
+                            JsToken::String(value) => fallback = Some(value.as_str()),
+                            _ => {}
+                        }
+                        cursor += 1;
+                    }
+                    if has_fallback {
+                        if let Some(value) = fallback {
+                            if let Some(normalized) = normalize_asset_reference(source_path, value) {
+                                output.insert(normalized);
+                            }
+                        }
+                    }
+                }
+
                 // Static arrays with names that explicitly describe asset
                 // inventories (for example PRIORITY_FONT_FILES). These preserve
                 // real font basenames used to construct runtime URLs.
@@ -1846,6 +1948,33 @@ mod tests {
                 "unexpected dependency {rejected:?} in {dependencies:?}"
             );
         }
+    }
+
+    #[test]
+    fn path_join_and_playwright_navigation_preserve_static_files() {
+        let javascript = br#"
+            const checker = fs.readFileSync(path.join(__dirname, '..', 'layout', 'check_layout.js'), 'utf8');
+            const defaults = fs.readFileSync(path.join(root, 'default_settings.json'), 'utf8');
+            await page.goto(baseUrl + '/renderer.html', { waitUntil: 'load' });
+        "#;
+        let dependencies =
+            extract_asset_dependencies("tests/layout/run-suite.js", "javascript", javascript);
+        assert!(dependencies.contains(&"local:tests/layout/check_layout.js".to_string()));
+        assert!(dependencies.contains(&"local:default_settings.json".to_string()));
+        assert!(dependencies.contains(&"local:renderer.html".to_string()));
+    }
+
+    #[test]
+    fn read_file_sync_static_fallback_is_a_dependency() {
+        let javascript = br#"
+            const source = fs.readFileSync(process.argv[2] || 'typesetter.js', 'utf8');
+        "#;
+        let dependencies = extract_asset_dependencies(
+            "archive/v20.2-tip/verify_cut.js",
+            "javascript",
+            javascript,
+        );
+        assert!(dependencies.contains(&"local:archive/v20.2-tip/typesetter.js".to_string()));
     }
 
     #[test]
