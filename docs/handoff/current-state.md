@@ -172,3 +172,12 @@
 - These are not currently classified as extractor false positives. Source-owner decisions/restoration required before manifest/provenance acceptance. No suppressions, baseline changes, or tolerance changes.
 - Legacy full corpus [41361263075](https://github.com/SUGINACH/Tora_Book_Typesetter_Rust/actions/runs/41361263075) still in progress at full-book comparison; prior smoke/renderer/DOM/ledger passed; report pending.
 - Stage A: tasks 1–2 closed, 3–10 open. Stage B not started.
+
+
+## Stage A provenance gate update — 2026-11-02
+
+- Six pinned commits and six tree SHAs were revalidated against GitHub: all match.
+- All **47/47** pinned file Git blob SHA-1 values match the corresponding pinned trees (Orange 15, Green 7, Gold 7, Yellow 7, IMUD 6, Typesetter_doc 5).
+- Orange lineage reference commits for Green import, Gold reference and common ancestor are retrievable; see `docs/provenance/source-of-truth-matrix.md`.
+- The five newly uploaded source files were re-hashed and match the existing unattributed attachment records exactly. Their origin remains unresolved; they remain a separate source set.
+- Stage A tasks 1–3 are closed. Tasks 4–10 remain open. Stage B remains not started.
